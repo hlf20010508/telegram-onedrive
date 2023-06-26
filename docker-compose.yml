@@ -1,0 +1,14 @@
+version: '3'
+services:
+  telegram-onedrive:
+    container_name: telegram-onedrive
+    image: hlf01/telegram-onedrive
+    restart: always
+    network_mode: host
+    environment:
+      - TOKEN=$TOKEN
+      - client_id=$client_id
+      - client_secret=$client_secret
+      - redirect_uri=$redirect_uri
+      - remote_root_path=$remote_root_path
+    command: python bot.py
