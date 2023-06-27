@@ -1,5 +1,7 @@
 *
 !bot.py
-!log.py
 !onedrive.py
-!auth_code_server.py
+!auth_server.py
+!ssl
+!templates
+!run.sh

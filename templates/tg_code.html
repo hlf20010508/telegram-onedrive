@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Code</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+    <div id="app">
+        <el-form :model="form" ref="form" label-width="100px">
+            <el-form-item label="Telegram Code">
+              <el-input v-model="form.code"></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="submitForm">Submit</el-button>
+            </el-form-item>
+          </el-form>
+    </div>
+</body>
+
+<script src="https://unpkg.com/vue@2/dist/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script>
+    new Vue({
+        el: '#app',
+        data: function() {
+            return {
+                form: {
+                    code: ''
+                }
+            }
+        },
+        methods: {
+            submitForm(){
+                axios.post('/tg', {
+                    code: this.form.code
+                })
+            }
+        },
+    })
+</script>
+</html>

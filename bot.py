@@ -1,146 +1,116 @@
+from telethon import TelegramClient, events
 import os
-from time import time
-from telegram import Update
-from telegram.ext import (
-    filters,
-    ApplicationBuilder,
-    ContextTypes,
-    CommandHandler,
-    MessageHandler,
-    ConversationHandler,
-)
-from log import logger
 from onedrive import Onedrive
+from time import sleep
+import requests
+import urllib3
 
+urllib3.disable_warnings()
 
-# telegram
-TOKEN = os.environ['TOKEN']
+# telegram api
+tg_api_id = int(os.environ['tg_api_id'])
+tg_api_hash = os.environ['tg_api_hash']
+tg_user_phone = os.environ['tg_user_phone']
+tg_login_uri = os.environ['tg_login_uri']
+
+# telegram bot
+tg_bot_token = os.environ['tg_bot_token']
+
+tg_bot = TelegramClient('bot', tg_api_id, tg_api_hash, sequential_updates=True).start(bot_token=tg_bot_token)
+tg_client = TelegramClient('user', tg_api_id, tg_api_hash, sequential_updates=True)
 
 # onedrive
-client_id = os.environ['client_id']
-client_secret = os.environ['client_secret']
+od_client_id = os.environ['client_id']
+od_client_secret = os.environ['client_secret']
 redirect_uri = os.environ['redirect_uri']
 remote_root_path = os.environ.get('remote_root_path', '/')
 
 onedrive = Onedrive(
-    client_id=client_id,
-    client_secret=client_secret,
+    client_id=od_client_id,
+    client_secret=od_client_secret,
     redirect_uri=redirect_uri,
     remote_root_path=remote_root_path,
 )
-
-help_text = """
-`/auth` to authorize for OneDrive
-"""
-
-start_text = """
-Upload files to Onedrive.
-`/auth` to authorize for OneDrive
-`/help` for help.
-"""
-
-AUTH_CODE = 0
 
 temp_dir = 'temp'
 
 if not os.path.exists(temp_dir):
     os.mkdir(temp_dir)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        chat_id = update.effective_chat.id
-        logger("User %s started a conversation.\n" % chat_id)
-        await context.bot.send_message(chat_id=chat_id, text=start_text)
-    except Exception as e:
-        logger("In start:\n%\n" % e)
+@tg_bot.on(events.NewMessage(pattern='/start'))
+async def start(event):
+    """Send a message when the command /start is issued."""
+    await event.respond("Upload files to Onedrive.\n`/auth` to authorize for OneDrive.\n`/help` for help.")
+    raise events.StopPropagation
 
+@tg_bot.on(events.NewMessage(pattern='/help'))
+async def help(event):
+    """Send a message when the command /start is issued."""
+    await event.respond("`/auth` to authorize for OneDrive.")
+    raise events.StopPropagation
 
-async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        chat_id = update.effective_chat.id
-        logger("User %s requested help.\n" % chat_id)
-        await context.bot.send_message(chat_id=chat_id, text=help_text)
-    except Exception as e:
-        logger("In help:\n%\n" % e)
+@tg_bot.on(events.NewMessage(pattern='/auth'))
+async def auth(event):
+    async with tg_bot.conversation(event.chat_id) as conv:
 
-
-async def auth_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        chat_id = update.effective_chat.id
-        logger("User %s requested auth.\n" % chat_id)
+        async def tg_code_callback():
+            await conv.send_message("Please visit %s to input your code."%tg_login_uri)
+            res = requests.get(url=os.path.join(tg_login_uri, 'tg'), verify=False).json()
+            while not res['success']:
+                sleep(1)
+                res = requests.get(url=os.path.join(tg_login_uri, 'tg'), verify=False).json()
+            return res['code']
+        
+        def od_code_callback():
+            res = requests.get(url=os.path.join(tg_login_uri, 'auth'), params={'get': True}, verify=False).json()
+            while not res['success']:
+                sleep(1)
+                res = requests.get(url=os.path.join(tg_login_uri, 'auth'), params={'get': True}, verify=False).json()
+                print(res)
+            return res['code']
+        
+        global tg_client
+        tg_client = await tg_client.start(tg_user_phone, code_callback=tg_code_callback)
         auth_url = onedrive.get_auth_url()
-        await update.message.reply_text(
-            "Here are the authorization url:\n\n%s\n\nPlease enter the returned code."%auth_url
-        )
-        return AUTH_CODE
-    except Exception as e:
-        logger("In auth:\n%\n" % e)
-
-
-async def auth_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        chat_id = update.effective_chat.id
-        code = update.message.text
-        logger("User %s requested auth_code.\n" % chat_id)
+        await conv.send_message("Here are the authorization url:\n\n%s"%auth_url)
+        code = od_code_callback()
         onedrive.auth(code)
-        await update.message.reply_text("Authorization successful!")
-        logger("Authorization successful!\n")
-        return ConversationHandler.END
-    except Exception as e:
-        logger("In auth_code:\n%\n" % e)
+        await conv.send_message("Authorization successful!")
+    raise events.StopPropagation
 
+@tg_bot.on(events.NewMessage)
+async def transfer(event):
+    async def upload(name, message):
+        local_path = await message.download_media(file=os.path.join(temp_dir, name))
+        print('File saved to', local_path)
+        remote_path = onedrive.upload(local_path)
+        print('File uploaded to', remote_path)
+        os.remove(local_path)
+        await message.delete()
+    if event.media:
+        onedrive_bot = await tg_bot.get_me()
+        onedrive_bot = await tg_client.get_entity('@%s'%onedrive_bot.username)
+        async for message in tg_client.iter_messages(onedrive_bot):
+            try:
+                if message.media.document:
+                    if event.media.document.id == message.media.document.id:
+                        name = "%d%s" % (event.media.document.id, event.file.ext)
+                        await upload(name, message)
+                        break
+            except:
+                pass
 
-async def auth_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        chat_id = update.effective_chat.id
-        logger("User %s requested auth_cancel.\n" % chat_id)
-        await update.message.reply_text("Authorization canceled.")
-        logger("Authorization canceled.\n")
-        return ConversationHandler.END
-    except Exception as e:
-        logger("In auth_cancel:\n%\n" % e)
+            try:
+                if message.media.photo:
+                    if event.media.photo.id == message.media.photo.id:
+                        name = "%d%s" % (event.media.photo.id, event.file.ext)
+                        await upload(name, message)
+                        break
+            except:
+                pass
 
+def main():
+    tg_bot.run_until_disconnected()
 
-async def video(update: Update, context: ContextTypes().DEFAULT_TYPE):
-    try:
-        chat_id = update.effective_chat.id
-        message_id = update.message.message_id
-        content = update.message.video
-        logger("User %s sent a video")
-        file = await content.get_file()
-        ext = file.file_path.split(".")[-1]
-        name = "%d.%s" % (int(time()), ext)
-        file_path = os.path.join(temp_dir, name)
-        await file.download_to_drive(file_path)
-        logger("Video was downloaded to %s" % file_path)
-        remote_path = onedrive.upload(file_path)
-        logger("Video was uploaded to %s" % remote_path)
-        os.remove(file_path)
-        logger("Video was removed")
-        await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
-        logger("Message was removed")
-    except Exception as e:
-        logger("In video:\n%\n" % e)
-
-
-if __name__ == "__main__":
-    try:
-        application = ApplicationBuilder().token(TOKEN).build()
-
-        start_handler = CommandHandler("start", start)
-        help_handler = CommandHandler("help", help)
-        video_handler = MessageHandler(filters.VIDEO, video)
-        conv_handler = ConversationHandler(
-            entry_points=[CommandHandler("auth", auth_url)],
-            states={0: [MessageHandler(filters.TEXT, auth_code)]},
-            fallbacks=[CommandHandler("auth_cancel", auth_cancel)],
-        )
-
-        application.add_handler(start_handler)
-        application.add_handler(help_handler)
-        application.add_handler(conv_handler)
-        application.add_handler(video_handler)
-
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
-    except Exception as e:
-        logger("In main:\n%\n" % e)
+if __name__ == '__main__':
+    main()

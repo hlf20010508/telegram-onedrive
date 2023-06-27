@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-python-telegram-bot = "*"
 onedrivesdk = "==1.1.8"
 flask = "*"
+telethon = "*"
+requests = "*"
