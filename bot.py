@@ -1,29 +1,34 @@
-from telethon import TelegramClient, events
+from telethon import TelegramClient, events, utils
+from telethon.tl import types
 import os
 from onedrive import Onedrive
 from time import sleep
 import requests
 import urllib3
+import asyncio
+import math
 
 urllib3.disable_warnings()
 
 # telegram api
-tg_api_id = int(os.environ['tg_api_id'])
-tg_api_hash = os.environ['tg_api_hash']
-tg_user_phone = os.environ['tg_user_phone']
-tg_login_uri = os.environ['tg_login_uri']
+tg_api_id = int(os.environ["tg_api_id"])
+tg_api_hash = os.environ["tg_api_hash"]
+tg_user_phone = os.environ["tg_user_phone"]
+tg_login_uri = os.environ["tg_login_uri"]
 
 # telegram bot
-tg_bot_token = os.environ['tg_bot_token']
+tg_bot_token = os.environ["tg_bot_token"]
 
-tg_bot = TelegramClient('bot', tg_api_id, tg_api_hash, sequential_updates=True).start(bot_token=tg_bot_token)
-tg_client = TelegramClient('user', tg_api_id, tg_api_hash, sequential_updates=True)
+tg_bot = TelegramClient("bot", tg_api_id, tg_api_hash, sequential_updates=True).start(
+    bot_token=tg_bot_token
+)
+tg_client = TelegramClient("user", tg_api_id, tg_api_hash, sequential_updates=True)
 
 # onedrive
-od_client_id = os.environ['client_id']
-od_client_secret = os.environ['client_secret']
-redirect_uri = os.environ['redirect_uri']
-remote_root_path = os.environ.get('remote_root_path', '/')
+od_client_id = os.environ["client_id"]
+od_client_secret = os.environ["client_secret"]
+redirect_uri = os.environ["redirect_uri"]
+remote_root_path = os.environ.get("remote_root_path", "/")
 
 onedrive = Onedrive(
     client_id=od_client_id,
@@ -32,85 +37,168 @@ onedrive = Onedrive(
     remote_root_path=remote_root_path,
 )
 
-temp_dir = 'temp'
+temp_dir = "temp"
 
 if not os.path.exists(temp_dir):
     os.mkdir(temp_dir)
 
-@tg_bot.on(events.NewMessage(pattern='/start'))
+
+@tg_bot.on(events.NewMessage(pattern="/start"))
 async def start(event):
     """Send a message when the command /start is issued."""
-    await event.respond("Upload files to Onedrive.\n`/auth` to authorize for OneDrive.\n`/help` for help.")
+    await event.respond(
+        "Upload files to Onedrive.\n`/auth` to authorize for Telegram and OneDrive.\n`/help` for help."
+    )
     raise events.StopPropagation
 
-@tg_bot.on(events.NewMessage(pattern='/help'))
+
+@tg_bot.on(events.NewMessage(pattern="/help"))
 async def help(event):
     """Send a message when the command /start is issued."""
-    await event.respond("`/auth` to authorize for OneDrive.")
+    await event.respond("`/auth` to authorize for Telegram and OneDrive.")
     raise events.StopPropagation
 
-@tg_bot.on(events.NewMessage(pattern='/auth'))
+
+@tg_bot.on(events.NewMessage(pattern="/auth"))
 async def auth(event):
     async with tg_bot.conversation(event.chat_id) as conv:
 
         async def tg_code_callback():
-            await conv.send_message("Please visit %s to input your code."%tg_login_uri)
-            res = requests.get(url=os.path.join(tg_login_uri, 'tg'), verify=False).json()
-            while not res['success']:
+            await conv.send_message(
+                "Please visit %s to input your code." % tg_login_uri
+            )
+            res = requests.get(
+                url=os.path.join(tg_login_uri, "tg"), verify=False
+            ).json()
+            while not res["success"]:
                 sleep(1)
-                res = requests.get(url=os.path.join(tg_login_uri, 'tg'), verify=False).json()
-            return res['code']
-        
+                res = requests.get(
+                    url=os.path.join(tg_login_uri, "tg"), verify=False
+                ).json()
+            return res["code"]
+
         def od_code_callback():
-            res = requests.get(url=os.path.join(tg_login_uri, 'auth'), params={'get': True}, verify=False).json()
-            while not res['success']:
+            res = requests.get(
+                url=os.path.join(tg_login_uri, "auth"),
+                params={"get": True},
+                verify=False,
+            ).json()
+            while not res["success"]:
                 sleep(1)
-                res = requests.get(url=os.path.join(tg_login_uri, 'auth'), params={'get': True}, verify=False).json()
-                print(res)
-            return res['code']
-        
+                res = requests.get(
+                    url=os.path.join(tg_login_uri, "auth"),
+                    params={"get": True},
+                    verify=False,
+                ).json()
+            return res["code"]
+
         global tg_client
         tg_client = await tg_client.start(tg_user_phone, code_callback=tg_code_callback)
         auth_url = onedrive.get_auth_url()
-        await conv.send_message("Here are the authorization url:\n\n%s"%auth_url)
+        await conv.send_message("Here are the authorization url:\n\n%s" % auth_url)
         code = od_code_callback()
         onedrive.auth(code)
         await conv.send_message("Authorization successful!")
     raise events.StopPropagation
 
+
+async def multi_parts_downloader(
+    client, document, path, conn_num=10, progress_callback=None
+):
+    async def download_part(input_location, offset, part_size):
+        stream = client.iter_download(
+            input_location, offset=offset, request_size=part_size, limit=part_size
+        )
+        part = await stream.__anext__()
+        await stream.close()
+        return part
+
+    with open(path, "wb") as file:
+        input_location = types.InputDocumentFileLocation(
+            id=document.id,
+            access_hash=document.access_hash,
+            file_reference=document.file_reference,
+            thumb_size="",
+        )
+        task_list = []
+        part_size = int(utils.get_appropriated_part_size(document.size) * 1024)
+        total_part_num = (
+            1 if part_size >= document.size else math.ceil(document.size / part_size)
+        )
+        current_part_num = 0
+        current_size = 0
+        offset = 0
+        while current_part_num < total_part_num:
+            task_list.append(
+                asyncio.ensure_future(download_part(input_location, offset, part_size))
+            )
+            current_part_num += 1
+            if current_part_num < total_part_num:
+                offset += part_size
+            if current_part_num % conn_num == 0 or current_part_num == total_part_num:
+                for part in await asyncio.gather(*task_list):
+                    file.write(part)
+                    current_size += len(part)
+                task_list.clear()
+                if progress_callback:
+                    progress_callback(current_size, document.size)
+
+
 @tg_bot.on(events.NewMessage)
 async def transfer(event):
-    async def upload(name, message):
-        local_path = await message.download_media(file=os.path.join(temp_dir, name))
-        print('File saved to', local_path)
-        remote_path = onedrive.upload(local_path)
-        print('File uploaded to', remote_path)
+    def callback(current, total):
+        current = current / (1024 * 1024)
+        total = total / (1024 * 1024)
+        print(
+            "Downloaded %.2fMB out of %.2fMB: %.2f%%"
+            % (current, total, current / total * 100)
+        )
+
+    def upload(local_path):
+        remote_path = onedrive.upload(local_path, show_status=True)
+        print("File uploaded to", remote_path)
         os.remove(local_path)
-        await message.delete()
+
     if event.media:
         onedrive_bot = await tg_bot.get_me()
-        onedrive_bot = await tg_client.get_entity('@%s'%onedrive_bot.username)
-        async for message in tg_client.iter_messages(onedrive_bot):
-            try:
-                if message.media.document:
-                    if event.media.document.id == message.media.document.id:
-                        name = "%d%s" % (event.media.document.id, event.file.ext)
-                        await upload(name, message)
-                        break
-            except:
-                pass
+        onedrive_bot = await tg_client.get_entity("@%s" % onedrive_bot.username)
+        iter_messages = tg_client.iter_messages(onedrive_bot)
+        messages_list = []
+        if "document" in event.media.to_dict().keys():
+            async for message in iter_messages:
+                if message.media:
+                    if "document" in message.media.to_dict().keys():
+                        if event.media.document.id == message.media.document.id:
+                            name = "%d%s" % (event.media.document.id, event.file.ext)
+                            local_path = os.path.join(temp_dir, name)
+                            await multi_parts_downloader(
+                                tg_client,
+                                message.media.document,
+                                local_path,
+                                progress_callback=callback,
+                            )
+                            print("File saved to", local_path)
+                            upload(local_path)
+                            await message.delete()
+                            break
 
-            try:
-                if message.media.photo:
-                    if event.media.photo.id == message.media.photo.id:
-                        name = "%d%s" % (event.media.photo.id, event.file.ext)
-                        await upload(name, message)
-                        break
-            except:
-                pass
+        if "photo" in event.media.to_dict().keys():
+            async for message in iter_messages:
+                if message.media:
+                    if "photo" in message.media.to_dict().keys():
+                        if event.media.photo.id == message.media.photo.id:
+                            name = "%d%s" % (event.media.photo.id, event.file.ext)
+                            local_path = os.path.join(temp_dir, name)
+                            await message.download_media(file=local_path)
+                            print("File saved to", local_path)
+                            upload(local_path)
+                            await message.delete()
+                            break
+
 
 def main():
     tg_bot.run_until_disconnected()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
