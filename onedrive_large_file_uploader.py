@@ -37,7 +37,7 @@ import os
 import time
 
 __PART_SIZE = 10 * 1024 * 1024
-__MAX_SINGLE_FILE_UPLOAD = 100 * 1024 * 1024
+__MAX_SINGLE_FILE_UPLOAD = 10 * 1024 * 1024
 
 
 class ItemUploadFragment(RequestBase):
