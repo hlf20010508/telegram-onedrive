@@ -1,10 +1,12 @@
 # telegram-onedrive
-> A telegram bot to transfer files to onedrive without file size limitation.
+> A telegram bot to transfer files to onedrive without file size limitation. Restricted content supported.
 
 ## Introduction
 This project is based on telethon.
 
 This bot can transfer the file you send or forward to OneDrive automatically.
+
+It can even transfer restricted content, just send the message link to the bot.
 
 No file size limitation.
 
@@ -28,8 +30,9 @@ That's why you need to prepare a lot of things to use this bot.
 
 ## Usage
 - Forward or upload files(or videos, photos) to the bot.
-- Wait until transferations complete.
-- If the transferation is successful, the message will be delete.
+- If you want to transfer restricted content from group or channel, right click the content, copy the message link, and send to the bot.
+- Wait until the transfer completes.
+- If the transfer is successful, the message will be deleted.
 
 ## Preparation
 - Open `docker-compose.yml` and edit the environment config.

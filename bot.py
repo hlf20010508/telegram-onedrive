@@ -11,6 +11,7 @@ import asyncio
 import math
 from time import sleep
 import subprocess
+import re
 from telethon import TelegramClient, events, utils
 from telethon.tl import types
 import requests
@@ -60,7 +61,7 @@ else:
 async def start(event):
     """Send a message when the command /start is issued."""
     await event.respond(
-        "Upload files to Onedrive.\n/auth to authorize for Telegram and OneDrive.\n/help for help."
+        "Transfer files to Onedrive.\n\nForward or upload files to me, or pass message link to transfer restricted content from group or channel.\n\n/auth to authorize for Telegram and OneDrive.\n/help for help."
     )
     raise events.StopPropagation
 
@@ -68,7 +69,7 @@ async def start(event):
 @tg_bot.on(events.NewMessage(pattern="/help"))
 async def help(event):
     """Send a message when the command /help is issued."""
-    await event.respond("/auth to authorize for Telegram and OneDrive.")
+    await event.respond("/auth to authorize for Telegram and OneDrive.\n\nTo transfer files, forward or upload to me.\nTo transfer restricted content, right click the content, copy the message link, and send to me.")
     raise events.StopPropagation
 
 
@@ -160,6 +161,17 @@ async def multi_parts_downloader(
                 if progress_callback:
                     progress_callback(current_size, document.size)
 
+def get_link(string):
+    regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+    url = re.findall(regex,string)   
+    try:
+        link = [x[0] for x in url][0]
+        if link:
+            return link
+        else:
+            return False
+    except Exception:
+        return False
 
 @tg_bot.on(events.NewMessage)
 async def transfer(event):
@@ -177,12 +189,12 @@ async def transfer(event):
         for file in os.listdir(temp_dir):
             os.remove(os.path.join(temp_dir, file))
 
-    if event.media:
+    if event.media and not isinstance(event.media, types.MessageMediaWebPage):
         onedrive_bot = await tg_bot.get_me()
         try:
             onedrive_bot = await tg_client.get_entity("@%s" % onedrive_bot.username)
         except:
-            await event.respond("You haven't login to Telegram.\nUse /auth to login.")
+            await event.respond("You haven't logined to Telegram.\nUse /auth to login.")
             raise events.StopPropagation
         iter_messages = tg_client.iter_messages(onedrive_bot)
         if "document" in event.media.to_dict().keys():
@@ -215,7 +227,46 @@ async def transfer(event):
                             upload(local_path)
                             await message.delete()
                             break
-
+    
+    else:
+        msg_link = get_link(event.text)
+        if msg_link:
+            # res = await event.respond('Transfering from message link...')
+            chat = ""
+            if "?single" in msg_link:
+                msg_link = msg_link.split("?single")[0]
+            msg_id = int(msg_link.split("/")[-1])
+            if 't.me/c/' in msg_link:
+                if 't.me/b/' in msg_link:
+                    chat = str(msg_link.split("/")[-2])
+                else:
+                    chat = int('-100' + str(msg_link.split("/")[-2]))
+            try:
+                message = await tg_client.get_messages(chat, ids=msg_id)
+            except:
+                await event.respond("You haven't logined to Telegram.\nUse /auth to login.")
+                raise events.StopPropagation
+            if "document" in message.media.to_dict().keys():
+                name = "%d%s" % (message.media.document.id, message.file.ext)
+                local_path = os.path.join(temp_dir, name)
+                await multi_parts_downloader(
+                    tg_client,
+                    message.media.document,
+                    local_path,
+                    progress_callback=callback,
+                )
+                print("File saved to", local_path)
+                upload(local_path)
+                await event.delete()
+            if "photo" in message.media.to_dict().keys():
+                name = "%d%s" % (message.media.photo.id, message.file.ext)
+                local_path = os.path.join(temp_dir, name)
+                await message.download_media(file=local_path)
+                print("File saved to", local_path)
+                upload(local_path)
+                await event.delete()
+            # await res.delete()
+            
 
 def main():
     tg_bot.run_until_disconnected()
