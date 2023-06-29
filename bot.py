@@ -116,6 +116,7 @@ async def auth(event):
         code = od_code_callback()
         onedrive.auth(code)
         await conv.send_message("Authorization successful!")
+        auth_server.kill()
     raise events.StopPropagation
 
 
