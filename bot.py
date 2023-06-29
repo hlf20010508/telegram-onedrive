@@ -16,8 +16,6 @@ from telethon.tl import types
 import requests
 from onedrive import Onedrive
 
-auth_server = subprocess.Popen(('python', 'auth_server.py'))
-
 urllib3.disable_warnings()
 
 temp_dir = "temp"
@@ -76,6 +74,7 @@ async def help(event):
 
 @tg_bot.on(events.NewMessage(pattern="/auth"))
 async def auth(event):
+    auth_server = subprocess.Popen(('python', 'auth_server.py'))
     async with tg_bot.conversation(event.chat_id) as conv:
 
         async def tg_code_callback():
@@ -116,7 +115,7 @@ async def auth(event):
         code = od_code_callback()
         onedrive.auth(code)
         await conv.send_message("Authorization successful!")
-        auth_server.kill()
+    auth_server.kill()
     raise events.StopPropagation
 
 
