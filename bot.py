@@ -195,6 +195,7 @@ async def transfer(event):
             onedrive_bot = await tg_client.get_entity("@%s" % onedrive_bot.username)
         except:
             await event.respond("You haven't logined to Telegram.\nUse /auth to login.")
+            await event.delete()
             raise events.StopPropagation
         iter_messages = tg_client.iter_messages(onedrive_bot)
         if "document" in event.media.to_dict().keys():
@@ -245,6 +246,7 @@ async def transfer(event):
                 message = await tg_client.get_messages(chat, ids=msg_id)
             except:
                 await event.respond("You haven't logined to Telegram.\nUse /auth to login.")
+                await event.delete()
                 raise events.StopPropagation
             if "document" in message.media.to_dict().keys():
                 name = "%d%s" % (message.media.document.id, message.file.ext)
