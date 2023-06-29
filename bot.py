@@ -53,6 +53,9 @@ onedrive = Onedrive(
 
 if not os.path.exists(temp_dir):
     os.mkdir(temp_dir)
+else:
+    for file in os.listdir(temp_dir):
+        os.remove(os.path.join(temp_dir, file))
 
 
 @tg_bot.on(events.NewMessage(pattern="/start"))
@@ -171,7 +174,8 @@ async def transfer(event):
     def upload(local_path):
         remote_path = onedrive.upload(local_path, show_status=True)
         print("File uploaded to", remote_path)
-        os.remove(local_path)
+        for file in os.listdir(temp_dir):
+            os.remove(os.path.join(temp_dir, file))
 
     if event.media:
         onedrive_bot = await tg_bot.get_me()
