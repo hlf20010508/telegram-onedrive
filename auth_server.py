@@ -1,3 +1,10 @@
+"""
+:project: telegram-onedrive
+:author: L-ING
+:copyright: (C) 2023 L-ING <hlf01@icloud.com>
+:license: MIT, see LICENSE for more details.
+"""
+
 from flask import Flask, render_template, request, jsonify
 import os
 
@@ -53,4 +60,6 @@ def onedrive_code():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5070, ssl_context=("ssl/server.crt", "ssl/server.key"))
+    server_uri = os.environ["server_uri"]
+    port = int(server_uri.split(':')[-1].split('/')[0])
+    app.run(host="0.0.0.0", port=port, ssl_context=("ssl/server.crt", "ssl/server.key"))

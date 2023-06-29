@@ -4,5 +4,4 @@
 !auth_server.py
 !ssl
 !templates
-!run.sh
 !onedrive_large_file_uploader.py

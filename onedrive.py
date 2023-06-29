@@ -1,6 +1,13 @@
+"""
+:project: telegram-onedrive
+:author: L-ING
+:copyright: (C) 2023 L-ING <hlf01@icloud.com>
+:license: MIT, see LICENSE for more details.
+"""
+
 import onedrivesdk
 import os
-import onedrive_large_file_uploader
+import onedrive_large_file_uploader  # overwrite `ItemRequestBuilder.upload_async` method
 
 
 class Onedrive:

@@ -1,43 +1,55 @@
-from telethon import TelegramClient, events, utils
-from telethon.tl import types
+"""
+:project: telegram-onedrive
+:author: L-ING
+:copyright: (C) 2023 L-ING <hlf01@icloud.com>
+:license: MIT, see LICENSE for more details.
+"""
+
 import os
-from onedrive import Onedrive
-from time import sleep
-import requests
 import urllib3
 import asyncio
 import math
+from time import sleep
+import subprocess
+from telethon import TelegramClient, events, utils
+from telethon.tl import types
+import requests
+from onedrive import Onedrive
+
+auth_server = subprocess.Popen(('python', 'auth_server.py'))
 
 urllib3.disable_warnings()
+
+temp_dir = "temp"
+
+# auth server
+server_uri = os.environ["server_uri"]
 
 # telegram api
 tg_api_id = int(os.environ["tg_api_id"])
 tg_api_hash = os.environ["tg_api_hash"]
 tg_user_phone = os.environ["tg_user_phone"]
-tg_login_uri = os.environ["tg_login_uri"]
 
 # telegram bot
 tg_bot_token = os.environ["tg_bot_token"]
 
+# onedrive
+od_client_id = os.environ["od_client_id"]
+od_client_secret = os.environ["od_client_secret"]
+remote_root_path = os.environ.get("remote_root_path", "/")
+
+# clients
 tg_bot = TelegramClient("bot", tg_api_id, tg_api_hash, sequential_updates=True).start(
     bot_token=tg_bot_token
 )
 tg_client = TelegramClient("user", tg_api_id, tg_api_hash, sequential_updates=True)
 
-# onedrive
-od_client_id = os.environ["client_id"]
-od_client_secret = os.environ["client_secret"]
-redirect_uri = os.environ["redirect_uri"]
-remote_root_path = os.environ.get("remote_root_path", "/")
-
 onedrive = Onedrive(
     client_id=od_client_id,
     client_secret=od_client_secret,
-    redirect_uri=redirect_uri,
+    redirect_uri=os.path.join(server_uri, "auth"),
     remote_root_path=remote_root_path,
 )
-
-temp_dir = "temp"
 
 if not os.path.exists(temp_dir):
     os.mkdir(temp_dir)
@@ -54,7 +66,7 @@ async def start(event):
 
 @tg_bot.on(events.NewMessage(pattern="/help"))
 async def help(event):
-    """Send a message when the command /start is issued."""
+    """Send a message when the command /help is issued."""
     await event.respond("`/auth` to authorize for Telegram and OneDrive.")
     raise events.StopPropagation
 
@@ -65,37 +77,39 @@ async def auth(event):
 
         async def tg_code_callback():
             await conv.send_message(
-                "Please visit %s to input your code." % tg_login_uri
+                "Please visit %s to input your code to login to Telegram." % server_uri
             )
-            res = requests.get(
-                url=os.path.join(tg_login_uri, "tg"), verify=False
-            ).json()
+            res = requests.get(url=os.path.join(server_uri, "tg"), verify=False).json()
             while not res["success"]:
                 sleep(1)
                 res = requests.get(
-                    url=os.path.join(tg_login_uri, "tg"), verify=False
+                    url=os.path.join(server_uri, "tg"), verify=False
                 ).json()
             return res["code"]
 
         def od_code_callback():
             res = requests.get(
-                url=os.path.join(tg_login_uri, "auth"),
+                url=os.path.join(server_uri, "auth"),
                 params={"get": True},
                 verify=False,
             ).json()
             while not res["success"]:
                 sleep(1)
                 res = requests.get(
-                    url=os.path.join(tg_login_uri, "auth"),
+                    url=os.path.join(server_uri, "auth"),
                     params={"get": True},
                     verify=False,
                 ).json()
             return res["code"]
 
+        await conv.send_message("Logining into Telegram...")
         global tg_client
         tg_client = await tg_client.start(tg_user_phone, code_callback=tg_code_callback)
+        await conv.send_message("Login to Telegram successful!")
         auth_url = onedrive.get_auth_url()
-        await conv.send_message("Here are the authorization url:\n\n%s" % auth_url)
+        await conv.send_message(
+            "Here are the authorization url of OneDrive:\n\n%s" % auth_url
+        )
         code = od_code_callback()
         onedrive.auth(code)
         await conv.send_message("Authorization successful!")
@@ -163,7 +177,6 @@ async def transfer(event):
         onedrive_bot = await tg_bot.get_me()
         onedrive_bot = await tg_client.get_entity("@%s" % onedrive_bot.username)
         iter_messages = tg_client.iter_messages(onedrive_bot)
-        messages_list = []
         if "document" in event.media.to_dict().keys():
             async for message in iter_messages:
                 if message.media:
