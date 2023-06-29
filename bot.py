@@ -62,7 +62,7 @@ else:
 async def start(event):
     """Send a message when the command /start is issued."""
     await event.respond(
-        "Upload files to Onedrive.\n`/auth` to authorize for Telegram and OneDrive.\n`/help` for help."
+        "Upload files to Onedrive.\n/auth to authorize for Telegram and OneDrive.\n/help for help."
     )
     raise events.StopPropagation
 
@@ -70,7 +70,7 @@ async def start(event):
 @tg_bot.on(events.NewMessage(pattern="/help"))
 async def help(event):
     """Send a message when the command /help is issued."""
-    await event.respond("`/auth` to authorize for Telegram and OneDrive.")
+    await event.respond("/auth to authorize for Telegram and OneDrive.")
     raise events.StopPropagation
 
 
@@ -180,7 +180,11 @@ async def transfer(event):
 
     if event.media:
         onedrive_bot = await tg_bot.get_me()
-        onedrive_bot = await tg_client.get_entity("@%s" % onedrive_bot.username)
+        try:
+            onedrive_bot = await tg_client.get_entity("@%s" % onedrive_bot.username)
+        except:
+            await event.respond("You haven't login to Telegram.\nUse /auth to login.")
+            raise events.StopPropagation
         iter_messages = tg_client.iter_messages(onedrive_bot)
         if "document" in event.media.to_dict().keys():
             async for message in iter_messages:
