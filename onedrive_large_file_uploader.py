@@ -36,9 +36,7 @@ import math
 import os
 import time
 
-__PART_SIZE = (
-    10 * 1024 * 1024
-)  # recommended file size. Should be multiple of 320 * 1024
+__PART_SIZE = 10 * 1024 * 1024
 __MAX_SINGLE_FILE_UPLOAD = 100 * 1024 * 1024
 
 
