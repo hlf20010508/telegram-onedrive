@@ -300,6 +300,8 @@ async def transfer(event):
         remote_path = await onedrive.upload(local_path, upload_status=callback)
         logger("File uploaded to %s"%remote_path)
         clear_temp()
+        if not delete_flag:
+            await event.reply('Done.')
         await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
 
     if isinstance(event.message.peer_id, types.PeerUser):
