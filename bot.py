@@ -13,7 +13,7 @@ from time import sleep
 import subprocess
 import re
 import inspect
-from telethon import TelegramClient, events, utils
+from telethon import TelegramClient, events
 from telethon.tl import types
 import requests
 from onedrive import Onedrive
@@ -62,23 +62,39 @@ else:
 @tg_bot.on(events.NewMessage(pattern="/start", incoming=True))
 async def start(event):
     """Send a message when the command /start is issued."""
-    await event.respond(
-        "Transfer files to Onedrive.\n\nForward or upload files to me, or pass message link to transfer restricted content from group or channel.\n\n/auth to authorize for Telegram and OneDrive.\n/help for help."
-    )
+    await event.respond('''
+Transfer files to Onedrive.
+
+Forward or upload files to me, or pass message link to transfer restricted content from group or channel.
+
+/auth: Authorize for Telegram and OneDrive.
+/links message_link range: Transfer sequential restricted content.
+/help: Ask for help.
+    ''')
     raise events.StopPropagation
 
 
 @tg_bot.on(events.NewMessage(pattern="/help", incoming=True))
 async def help(event):
     """Send a message when the command /help is issued."""
-    await event.respond("/auth to authorize for Telegram and OneDrive.\n\nTo transfer files, forward or upload to me.\nTo transfer restricted content, right click the content, copy the message link, and send to me.")
+    await event.respond('''
+/auth to authorize for Telegram and OneDrive.
+/links message_link range: Transfer sequential restricted content.
+
+To transfer files, forward or upload to me.
+To transfer restricted content, right click the content, copy the message link, and send to me.
+    ''')
     raise events.StopPropagation
 
 
 @tg_bot.on(events.NewMessage(pattern="/auth", incoming=True))
 async def auth(event):
     if isinstance(event.message.peer_id, types.PeerUser):
-        await event.respond("This bot must be used in a Group or Channel!\n\n Add this bot to a Group or Channel as Admin, and give it ability to Delete Messages.")
+        await event.respond('''
+This bot must be used in a Group or Channel!
+
+Add this bot to a Group or Channel as Admin, and give it ability to Delete Messages.
+        ''')
         raise events.StopPropagation
     auth_server = subprocess.Popen(('python', 'auth_server.py'))
     async with tg_bot.conversation(event.chat_id) as conv:
@@ -194,6 +210,14 @@ def get_link(string):
 
 @tg_bot.on(events.NewMessage(pattern="/links", incoming=True))
 async def links(event):
+    if isinstance(event.message.peer_id, types.PeerUser):
+        await event.delete()
+        await event.respond('''
+This bot must be used in a Group or Channel!
+
+Add this bot to a Group or Channel as Admin, and give it ability to Delete Messages.
+        ''')
+        raise events.StopPropagation
     try:
         cmd = event.text.split()
         link = cmd[1]
@@ -206,11 +230,19 @@ async def links(event):
                 await tg_client.send_message(event.chat_id, message='%s/%d'%(link_body, head_message_id + offset))
         except:
             await event.delete()
-            await event.respond("You haven't logined to Telegram.\nUse /auth to login.")
+            await event.respond('''
+You haven't logined to Telegram.
+
+Use /auth to login.
+            ''')
             raise events.StopPropagation
     except:
         await event.delete()
-        await event.respond("Command /links format wrong.\n\nUsage: /links message_link range")
+        await event.respond('''
+Command /links format wrong.
+
+Usage: /links message_link range
+        ''')
         raise events.StopPropagation
     raise events.StopPropagation
 
@@ -237,7 +269,12 @@ async def transfer(event):
         await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
 
     if isinstance(event.message.peer_id, types.PeerUser):
-        await event.respond("This bot must be used in a Group or Channel!\n\n Add this bot to a Group or Channel as Admin, and give it ability to Delete Messages.")
+        await event.delete()
+        await event.respond('''
+This bot must be used in a Group or Channel!
+
+Add this bot to a Group or Channel as Admin, and give it ability to Delete Messages.
+        ''')
         raise events.StopPropagation
 
     if event.media and not isinstance(event.media, types.MessageMediaWebPage):
@@ -245,7 +282,11 @@ async def transfer(event):
             message = await tg_client.get_messages(event.message.peer_id, ids=event.message.id)
         except:
             await event.delete()
-            await event.respond("You haven't logined to Telegram.\nUse /auth to login.")
+            await event.respond('''
+You haven't logined to Telegram.
+
+Use /auth to login.
+            ''')
             raise events.StopPropagation
 
         if "document" in event.media.to_dict().keys():
@@ -291,28 +332,35 @@ async def transfer(event):
                 message = await tg_client.get_messages(chat, ids=msg_id)
             except:
                 await event.delete()
-                await event.respond("You haven't logined to Telegram.\nUse /auth to login.")
-                raise events.StopPropagation
+                await event.respond('''
+You haven't logined to Telegram.
 
-            if "document" in message.media.to_dict().keys():
-                name = "%d%s" % (message.media.document.id, message.file.ext)
-                local_path = os.path.join(temp_dir, name)
-                await multi_parts_downloader(
-                    tg_client,
-                    message.media.document,
-                    local_path,
-                    progress_callback=callback,
-                )
-                print("File saved to", local_path)
-                upload(local_path)
-                await event.delete()
-            if "photo" in message.media.to_dict().keys():
-                name = "%d%s" % (message.media.photo.id, message.file.ext)
-                local_path = os.path.join(temp_dir, name)
-                await message.download_media(file=local_path, progress_callback=callback)
-                print("File saved to", local_path)
-                upload(local_path)
-                await event.delete()
+Use /auth to login.
+                ''')
+                raise events.StopPropagation
+            if message:
+                if "document" in message.media.to_dict().keys():
+                    name = "%d%s" % (message.media.document.id, message.file.ext)
+                    local_path = os.path.join(temp_dir, name)
+                    await multi_parts_downloader(
+                        tg_client,
+                        message.media.document,
+                        local_path,
+                        progress_callback=callback,
+                    )
+                    print("File saved to", local_path)
+                    upload(local_path)
+                    await event.delete()
+                if "photo" in message.media.to_dict().keys():
+                    name = "%d%s" % (message.media.photo.id, message.file.ext)
+                    local_path = os.path.join(temp_dir, name)
+                    await message.download_media(file=local_path, progress_callback=callback)
+                    print("File saved to", local_path)
+                    upload(local_path)
+                    await event.delete()
+            else:
+                await event.reply("Message not found.")
+    raise events.StopPropagation
 
 def main():
     tg_bot.run_until_disconnected()

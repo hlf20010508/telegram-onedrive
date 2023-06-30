@@ -20,8 +20,12 @@ That's why you need to prepare a lot of things to use this bot.
 
 ## Bot Command
 - `/start` to start with bot
-- `/auth`  to authorize telegram and onedrive
-- `/help`  for help
+- `/auth` to authorize telegram and onedrive
+- `/links message_link range` to transfer sequential restricted content.
+- `/help` for help
+
+Example:  
+`/links https://t.me/c/xxxxxxx/100 2` will transfer `https://t.me/c/xxxxxxx/100` and `https://t.me/c/xxxxxxx/101`.
 
 ## Authorization Steps
 - Send `/auth`
