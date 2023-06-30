@@ -254,9 +254,7 @@ async def transfer(event):
         total = total / (1024 * 1024)
         status = "%s %.2fMB out of %.2fMB: %.2f%%"% (up_or_down, current, total, current / total * 100)
         print(status)
-        msg_link = get_link(event.text)
-        if not msg_link:
-            msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
+        msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
         await tg_bot.edit_message(status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
 
     async def upload(local_path):
