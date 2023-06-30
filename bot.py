@@ -80,8 +80,8 @@ Transfer files to Onedrive.
 Forward or upload files to me, or pass message link to transfer restricted content from group or channel.
 
 /auth: Authorize for Telegram and OneDrive.
-/links message_link range: Transfer sequential restricted content.
-/autoDelete true/false: Whether bot can auto delete messages.
+`/links` message_link range: Transfer sequential restricted content.
+`/autoDelete` true/false: Whether bot can auto delete messages.
 /help: Ask for help.
     ''')
     raise events.StopPropagation
@@ -92,8 +92,8 @@ async def help(event):
     """Send a message when the command /help is issued."""
     await event.respond('''
 /auth to authorize for Telegram and OneDrive.
-/links message_link range: Transfer sequential restricted content.
-/autoDelete true/false: Whether bot can auto delete messages.
+`/links` message_link range: Transfer sequential restricted content.
+`/autoDelete` true/false: Whether bot can auto delete messages.
 
 To transfer files, forward or upload to me.
 To transfer restricted content, right click the content, copy the message link, and send to me.
@@ -166,10 +166,10 @@ Add this bot to a Group or Channel as Admin, and give it ability to Delete Messa
 async def auto_delete(event):
     global delete_flag
     error_message = '''
-Command /autoDelete Usage:
+Command `/autoDelete` Usage:
 
-/autoDelete true to auto delete message.
-/autoDelete false to not auto delete message.
+`/autoDelete true` to auto delete message.
+`/autoDelete false` to not auto delete message.
 '''
     cmd = cmd_parser(event)
     if len(cmd) == 0:
@@ -204,7 +204,7 @@ async def multi_parts_downloader(
             thumb_size="",
         )
         task_list = []
-        part_size = 1024 * 1024
+        part_size = 5 * 1024 * 1024
         total_part_num = (
             1 if part_size >= document.size else math.ceil(document.size / part_size)
         )
@@ -275,9 +275,9 @@ Use /auth to login.
     except:
         await delete_message(event)
         await event.respond('''
-Command /links format wrong.
+Command `/links` format wrong.
 
-Usage: /links message_link range
+Usage: `/links` message_link range
         ''')
         raise events.StopPropagation
     raise events.StopPropagation
@@ -298,7 +298,7 @@ async def transfer(event):
         nonlocal up_or_down
         up_or_down = "Uploaded"
         remote_path = await onedrive.upload(local_path, upload_status=callback)
-        logger("File uploaded to", remote_path)
+        logger("File uploaded to %s"%remote_path)
         clear_temp()
         await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
 
@@ -336,7 +336,7 @@ Use /auth to login.
                                 local_path,
                                 progress_callback=callback,
                             )
-                            logger("File saved to", local_path)
+                            logger("File saved to %s"%local_path)
                             await upload(local_path)
                             await delete_message(message)
 
@@ -347,7 +347,7 @@ Use /auth to login.
                             name = "%d%s" % (event.media.photo.id, event.file.ext)
                             local_path = os.path.join(temp_dir, name)
                             await message.download_media(file=local_path, progress_callback=callback)
-                            logger("File saved to", local_path)
+                            logger("File saved to %s"%local_path)
                             await upload(local_path)
                             await delete_message(message)
         except Exception as e:
@@ -386,14 +386,14 @@ Use /auth to login.
                             local_path,
                             progress_callback=callback,
                         )
-                        logger("File saved to", local_path)
+                        logger("File saved to %s"%local_path)
                         await upload(local_path)
                         await delete_message(event)
                     if "photo" in message.media.to_dict().keys():
                         name = "%d%s" % (message.media.photo.id, message.file.ext)
                         local_path = os.path.join(temp_dir, name)
                         await message.download_media(file=local_path, progress_callback=callback)
-                        logger("File saved to", local_path)
+                        logger("File saved to %s"%local_path)
                         await upload(local_path)
                         await delete_message(event)
                 except Exception as e:
