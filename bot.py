@@ -17,6 +17,7 @@ from telethon import TelegramClient, events
 from telethon.tl import types
 import requests
 from onedrive import Onedrive
+from log import logger
 
 urllib3.disable_warnings()
 
@@ -253,7 +254,7 @@ async def transfer(event):
         current = current / (1024 * 1024)
         total = total / (1024 * 1024)
         status = "%s %.2fMB out of %.2fMB: %.2f%%"% (up_or_down, current, total, current / total * 100)
-        print(status)
+        logger(status)
         msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
         await tg_bot.edit_message(status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
 
@@ -261,7 +262,7 @@ async def transfer(event):
         nonlocal up_or_down
         up_or_down = "Uploaded"
         remote_path = await onedrive.upload(local_path, upload_status=callback)
-        print("File uploaded to", remote_path)
+        logger("File uploaded to", remote_path)
         for file in os.listdir(temp_dir):
             os.remove(os.path.join(temp_dir, file))
         await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
@@ -286,33 +287,36 @@ You haven't logined to Telegram.
 Use /auth to login.
             ''')
             raise events.StopPropagation
+        
+        try:
+            if "document" in event.media.to_dict().keys():
+                if message.media:
+                    if "document" in message.media.to_dict().keys():
+                        if event.media.document.id == message.media.document.id:
+                            name = "%d%s" % (event.media.document.id, event.file.ext)
+                            local_path = os.path.join(temp_dir, name)
+                            await multi_parts_downloader(
+                                tg_client,
+                                message.media.document,
+                                local_path,
+                                progress_callback=callback,
+                            )
+                            logger("File saved to", local_path)
+                            await upload(local_path)
+                            await message.delete()
 
-        if "document" in event.media.to_dict().keys():
-            if message.media:
-                if "document" in message.media.to_dict().keys():
-                    if event.media.document.id == message.media.document.id:
-                        name = "%d%s" % (event.media.document.id, event.file.ext)
-                        local_path = os.path.join(temp_dir, name)
-                        await multi_parts_downloader(
-                            tg_client,
-                            message.media.document,
-                            local_path,
-                            progress_callback=callback,
-                        )
-                        print("File saved to", local_path)
-                        await upload(local_path)
-                        await message.delete()
-
-        if "photo" in event.media.to_dict().keys():
-            if message.media:
-                if "photo" in message.media.to_dict().keys():
-                    if event.media.photo.id == message.media.photo.id:
-                        name = "%d%s" % (event.media.photo.id, event.file.ext)
-                        local_path = os.path.join(temp_dir, name)
-                        await message.download_media(file=local_path, progress_callback=callback)
-                        print("File saved to", local_path)
-                        await upload(local_path)
-                        await message.delete()
+            if "photo" in event.media.to_dict().keys():
+                if message.media:
+                    if "photo" in message.media.to_dict().keys():
+                        if event.media.photo.id == message.media.photo.id:
+                            name = "%d%s" % (event.media.photo.id, event.file.ext)
+                            local_path = os.path.join(temp_dir, name)
+                            await message.download_media(file=local_path, progress_callback=callback)
+                            logger("File saved to", local_path)
+                            await upload(local_path)
+                            await message.delete()
+        except Exception as e:
+            logger(e)
     
     else:
         msg_link = get_link(event.text)
@@ -337,25 +341,28 @@ Use /auth to login.
                 ''')
                 raise events.StopPropagation
             if message:
-                if "document" in message.media.to_dict().keys():
-                    name = "%d%s" % (message.media.document.id, message.file.ext)
-                    local_path = os.path.join(temp_dir, name)
-                    await multi_parts_downloader(
-                        tg_client,
-                        message.media.document,
-                        local_path,
-                        progress_callback=callback,
-                    )
-                    print("File saved to", local_path)
-                    upload(local_path)
-                    await event.delete()
-                if "photo" in message.media.to_dict().keys():
-                    name = "%d%s" % (message.media.photo.id, message.file.ext)
-                    local_path = os.path.join(temp_dir, name)
-                    await message.download_media(file=local_path, progress_callback=callback)
-                    print("File saved to", local_path)
-                    upload(local_path)
-                    await event.delete()
+                try:
+                    if "document" in message.media.to_dict().keys():
+                        name = "%d%s" % (message.media.document.id, message.file.ext)
+                        local_path = os.path.join(temp_dir, name)
+                        await multi_parts_downloader(
+                            tg_client,
+                            message.media.document,
+                            local_path,
+                            progress_callback=callback,
+                        )
+                        logger("File saved to", local_path)
+                        upload(local_path)
+                        await event.delete()
+                    if "photo" in message.media.to_dict().keys():
+                        name = "%d%s" % (message.media.photo.id, message.file.ext)
+                        local_path = os.path.join(temp_dir, name)
+                        await message.download_media(file=local_path, progress_callback=callback)
+                        logger("File saved to", local_path)
+                        upload(local_path)
+                        await event.delete()
+                except Exception as e:
+                    logger(e)
             else:
                 await event.reply("Message not found.")
     raise events.StopPropagation
