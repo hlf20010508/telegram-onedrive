@@ -152,13 +152,17 @@ async def multi_parts_downloader(
             thumb_size="",
         )
         task_list = []
-        part_size = int(utils.get_appropriated_part_size(document.size) * 1024)
+        part_size = 1024 * 1024
         total_part_num = (
             1 if part_size >= document.size else math.ceil(document.size / part_size)
         )
         current_part_num = 0
         current_size = 0
         offset = 0
+        if progress_callback:
+            cor = progress_callback(current_size, document.size)
+            if inspect.isawaitable(cor):
+                await cor
         while current_part_num < total_part_num:
             task_list.append(
                 asyncio.ensure_future(download_part(input_location, offset, part_size))
