@@ -53,11 +53,14 @@ onedrive = Onedrive(
     remote_root_path=remote_root_path,
 )
 
+def clear_temp():
+    for file in os.listdir(temp_dir):
+        os.remove(os.path.join(temp_dir, file))
+
 if not os.path.exists(temp_dir):
     os.mkdir(temp_dir)
 else:
-    for file in os.listdir(temp_dir):
-        os.remove(os.path.join(temp_dir, file))
+    clear_temp()
 
 
 @tg_bot.on(events.NewMessage(pattern="/start", incoming=True))
@@ -249,6 +252,7 @@ Usage: /links message_link range
 
 @tg_bot.on(events.NewMessage(incoming=True))
 async def transfer(event):
+    clear_temp()
     up_or_down = 'Downloaded'
     async def callback(current, total):
         current = current / (1024 * 1024)
@@ -263,8 +267,7 @@ async def transfer(event):
         up_or_down = "Uploaded"
         remote_path = await onedrive.upload(local_path, upload_status=callback)
         logger("File uploaded to", remote_path)
-        for file in os.listdir(temp_dir):
-            os.remove(os.path.join(temp_dir, file))
+        clear_temp()
         await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
 
     if isinstance(event.message.peer_id, types.PeerUser):
