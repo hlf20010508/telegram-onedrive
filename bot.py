@@ -23,6 +23,7 @@ urllib3.disable_warnings()
 
 temp_dir = "temp"
 status_bar = None
+delete_flag = False
 
 # auth server
 server_uri = os.environ["server_uri"]
@@ -62,6 +63,13 @@ if not os.path.exists(temp_dir):
 else:
     clear_temp()
 
+def cmd_parser(event):
+    return event.text.split()[1:]
+
+async def delete_message(message):
+    global delete_flag
+    if delete_flag:
+        await message.delete()
 
 @tg_bot.on(events.NewMessage(pattern="/start", incoming=True))
 async def start(event):
@@ -73,6 +81,7 @@ Forward or upload files to me, or pass message link to transfer restricted conte
 
 /auth: Authorize for Telegram and OneDrive.
 /links message_link range: Transfer sequential restricted content.
+/autoDelete true/false: Whether bot can auto delete messages.
 /help: Ask for help.
     ''')
     raise events.StopPropagation
@@ -84,6 +93,7 @@ async def help(event):
     await event.respond('''
 /auth to authorize for Telegram and OneDrive.
 /links message_link range: Transfer sequential restricted content.
+/autoDelete true/false: Whether bot can auto delete messages.
 
 To transfer files, forward or upload to me.
 To transfer restricted content, right click the content, copy the message link, and send to me.
@@ -152,6 +162,28 @@ Add this bot to a Group or Channel as Admin, and give it ability to Delete Messa
     auth_server.kill()
     raise events.StopPropagation
 
+@tg_bot.on(events.NewMessage(pattern="/autoDelete", incoming=True))
+async def auto_delete(event):
+    global delete_flag
+    error_message = '''
+Command /autoDelete Usage:
+
+/autoDelete true to auto delete message.
+/autoDelete false to not auto delete message.
+'''
+    cmd = cmd_parser(event)
+    if len(cmd) == 0:
+        await event.respond(error_message)
+    elif cmd[0] == 'true':
+        delete_flag = True
+        await event.respond('Bot will auto delete message.')
+    elif cmd[0] == 'false':
+        delete_flag = False
+        await event.respond("Bot won't auto delete message.")
+    else:
+        await event.respond(error_message)
+    raise events.StopPropagation
+
 
 async def multi_parts_downloader(
     client, document, path, conn_num=10, progress_callback=None
@@ -215,7 +247,7 @@ def get_link(string):
 @tg_bot.on(events.NewMessage(pattern="/links", incoming=True))
 async def links(event):
     if isinstance(event.message.peer_id, types.PeerUser):
-        await event.delete()
+        await delete_message(event)
         await event.respond('''
 This bot must be used in a Group or Channel!
 
@@ -223,17 +255,17 @@ Add this bot to a Group or Channel as Admin, and give it ability to Delete Messa
         ''')
         raise events.StopPropagation
     try:
-        cmd = event.text.split()
-        link = cmd[1]
+        cmd = cmd_parser(event)
+        link = cmd[0]
         head_message_id = int(link.split('/')[-1])
         link_body = '/'.join(link.split('/')[:-1])
-        offsets = int(cmd[2])
-        await event.delete()
+        offsets = int(cmd[1])
+        await delete_message(event)
         try:
             for offset in range(offsets):
                 await tg_client.send_message(event.chat_id, message='%s/%d'%(link_body, head_message_id + offset))
         except:
-            await event.delete()
+            await delete_message(event)
             await event.respond('''
 You haven't logined to Telegram.
 
@@ -241,7 +273,7 @@ Use /auth to login.
             ''')
             raise events.StopPropagation
     except:
-        await event.delete()
+        await delete_message(event)
         await event.respond('''
 Command /links format wrong.
 
@@ -271,7 +303,7 @@ async def transfer(event):
         await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
 
     if isinstance(event.message.peer_id, types.PeerUser):
-        await event.delete()
+        await delete_message(event)
         await event.respond('''
 This bot must be used in a Group or Channel!
 
@@ -283,7 +315,7 @@ Add this bot to a Group or Channel as Admin, and give it ability to Delete Messa
         try:
             message = await tg_client.get_messages(event.message.peer_id, ids=event.message.id)
         except:
-            await event.delete()
+            await delete_message(event)
             await event.respond('''
 You haven't logined to Telegram.
 
@@ -306,7 +338,7 @@ Use /auth to login.
                             )
                             logger("File saved to", local_path)
                             await upload(local_path)
-                            await message.delete()
+                            await delete_message(message)
 
             if "photo" in event.media.to_dict().keys():
                 if message.media:
@@ -317,7 +349,7 @@ Use /auth to login.
                             await message.download_media(file=local_path, progress_callback=callback)
                             logger("File saved to", local_path)
                             await upload(local_path)
-                            await message.delete()
+                            await delete_message(message)
         except Exception as e:
             logger(e)
     
@@ -336,7 +368,7 @@ Use /auth to login.
             try:
                 message = await tg_client.get_messages(chat, ids=msg_id)
             except:
-                await event.delete()
+                await delete_message(event)
                 await event.respond('''
 You haven't logined to Telegram.
 
@@ -356,14 +388,14 @@ Use /auth to login.
                         )
                         logger("File saved to", local_path)
                         await upload(local_path)
-                        await event.delete()
+                        await delete_message(event)
                     if "photo" in message.media.to_dict().keys():
                         name = "%d%s" % (message.media.photo.id, message.file.ext)
                         local_path = os.path.join(temp_dir, name)
                         await message.download_media(file=local_path, progress_callback=callback)
                         logger("File saved to", local_path)
                         await upload(local_path)
-                        await event.delete()
+                        await delete_message(event)
                 except Exception as e:
                     logger(e)
             else:

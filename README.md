@@ -22,6 +22,7 @@ That's why you need to prepare a lot of things to use this bot.
 - `/start` to start with bot
 - `/auth` to authorize telegram and onedrive
 - `/links message_link range` to transfer sequential restricted content.
+- `/autoDelete true/false` decides whether bot can auto delete message.
 - `/help` for help
 
 Example:  
@@ -39,7 +40,6 @@ Example:
 - In the group or channel, forward or upload files(or videos, photos).
 - If you want to transfer restricted content from a group or channel, right click the content, copy the message link, and send the link.
 - Wait until the transfer completes. You can check status on pinned status message.
-- If the transfer is successful, the message will be deleted.
 
 ## Preparation
 - Open `docker-compose.yml` and edit the environment config.
