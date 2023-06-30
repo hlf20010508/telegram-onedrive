@@ -19,17 +19,18 @@ So this project use a user account to download files and a bot account to play t
 That's why you need to prepare a lot of things to use this bot.
 
 ## Bot Command
-- `/start` to start with bot
-- `/auth` to authorize telegram and onedrive
+- `/start` to start with bot.
+- `/auth` to authorize telegram and onedrive.
+- `/status` to show pinned status message.
 - `/links message_link range` to transfer sequential restricted content.
 - `/autoDelete true/false` decides whether bot can auto delete message.
-- `/help` for help
+- `/help` for help.
 
 Example:  
 `/links https://t.me/c/xxxxxxx/100 2` will transfer `https://t.me/c/xxxxxxx/100` and `https://t.me/c/xxxxxxx/101`.
 
 ## Authorization Steps
-- Send `/auth`
+- Send `/auth`.
 - Wait and you'll receive the login code from telegram.
 - Visit the uri the bot sends, and submit the code.
 - Then the bot will send the authorization uri for OneDrive, visit it and login.

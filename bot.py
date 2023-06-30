@@ -71,6 +71,31 @@ async def delete_message(message):
     if delete_flag:
         await message.delete()
 
+async def check_in_group(event):
+    if isinstance(event.message.peer_id, types.PeerUser):
+        await event.respond('''
+This bot must be used in a Group or Channel!
+
+Add this bot to a Group or Channel as Admin, and give it ability to Delete Messages.
+        ''')
+        raise events.StopPropagation
+
+async def res_not_login(event):
+    await event.respond('''
+You haven't logined to Telegram.
+
+Use /auth to login.
+    ''')
+    raise events.StopPropagation
+
+cmd_helper = '''/auth: Authorize for Telegram and OneDrive.
+/status: Show pinned status message.
+
+`/links` message_link range: Transfer sequential restricted content.
+`/autoDelete true` to auto delete message.
+`/autoDelete false` to not auto delete message.
+'''
+
 @tg_bot.on(events.NewMessage(pattern="/start", incoming=True))
 async def start(event):
     """Send a message when the command /start is issued."""
@@ -79,11 +104,9 @@ Transfer files to Onedrive.
 
 Forward or upload files to me, or pass message link to transfer restricted content from group or channel.
 
-/auth: Authorize for Telegram and OneDrive.
-`/links` message_link range: Transfer sequential restricted content.
-`/autoDelete` true/false: Whether bot can auto delete messages.
+%s
 /help: Ask for help.
-    ''')
+    '''%cmd_helper)
     raise events.StopPropagation
 
 
@@ -91,25 +114,17 @@ Forward or upload files to me, or pass message link to transfer restricted conte
 async def help(event):
     """Send a message when the command /help is issued."""
     await event.respond('''
-/auth to authorize for Telegram and OneDrive.
-`/links` message_link range: Transfer sequential restricted content.
-`/autoDelete` true/false: Whether bot can auto delete messages.
+%s
 
 To transfer files, forward or upload to me.
 To transfer restricted content, right click the content, copy the message link, and send to me.
-    ''')
+    '''%cmd_helper)
     raise events.StopPropagation
 
 
 @tg_bot.on(events.NewMessage(pattern="/auth", incoming=True))
 async def auth(event):
-    if isinstance(event.message.peer_id, types.PeerUser):
-        await event.respond('''
-This bot must be used in a Group or Channel!
-
-Add this bot to a Group or Channel as Admin, and give it ability to Delete Messages.
-        ''')
-        raise events.StopPropagation
+    await check_in_group(event)
     auth_server = subprocess.Popen(('python', 'auth_server.py'))
     async with tg_bot.conversation(event.chat_id) as conv:
 
@@ -184,6 +199,19 @@ Command `/autoDelete` Usage:
         await event.respond(error_message)
     raise events.StopPropagation
 
+@tg_bot.on(events.NewMessage(pattern="/status", incoming=True))
+async def status(event):
+    await check_in_group(event)
+    global status_bar
+    try:
+        async for message in tg_client.iter_messages(event.chat_id, filter=types.InputMessagesFilterPinned()):
+            await tg_client.unpin_message(event.chat_id, message)
+    except:
+        await res_not_login(event)
+    status_bar = await event.respond("Status:\n\nNo job yet.")
+    await tg_bot.pin_message(event.chat_id, status_bar)
+    raise events.StopPropagation
+        
 
 async def multi_parts_downloader(
     client, document, path, conn_num=10, progress_callback=None
@@ -246,14 +274,7 @@ def get_link(string):
 
 @tg_bot.on(events.NewMessage(pattern="/links", incoming=True))
 async def links(event):
-    if isinstance(event.message.peer_id, types.PeerUser):
-        await delete_message(event)
-        await event.respond('''
-This bot must be used in a Group or Channel!
-
-Add this bot to a Group or Channel as Admin, and give it ability to Delete Messages.
-        ''')
-        raise events.StopPropagation
+    await check_in_group(event)
     try:
         cmd = cmd_parser(event)
         link = cmd[0]
@@ -266,12 +287,7 @@ Add this bot to a Group or Channel as Admin, and give it ability to Delete Messa
                 await tg_client.send_message(event.chat_id, message='%s/%d'%(link_body, head_message_id + offset))
         except:
             await delete_message(event)
-            await event.respond('''
-You haven't logined to Telegram.
-
-Use /auth to login.
-            ''')
-            raise events.StopPropagation
+            await res_not_login(event)
     except:
         await delete_message(event)
         await event.respond('''
@@ -304,26 +320,14 @@ async def transfer(event):
             await event.reply('Done.')
         await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
 
-    if isinstance(event.message.peer_id, types.PeerUser):
-        await delete_message(event)
-        await event.respond('''
-This bot must be used in a Group or Channel!
-
-Add this bot to a Group or Channel as Admin, and give it ability to Delete Messages.
-        ''')
-        raise events.StopPropagation
+    await check_in_group(event)
 
     if event.media and not isinstance(event.media, types.MessageMediaWebPage):
         try:
             message = await tg_client.get_messages(event.message.peer_id, ids=event.message.id)
         except:
             await delete_message(event)
-            await event.respond('''
-You haven't logined to Telegram.
-
-Use /auth to login.
-            ''')
-            raise events.StopPropagation
+            await res_not_login(event)
         
         try:
             if "document" in event.media.to_dict().keys():
@@ -371,12 +375,7 @@ Use /auth to login.
                 message = await tg_client.get_messages(chat, ids=msg_id)
             except:
                 await delete_message(event)
-                await event.respond('''
-You haven't logined to Telegram.
-
-Use /auth to login.
-                ''')
-                raise events.StopPropagation
+                await res_not_login(event)
             if message:
                 try:
                     if "document" in message.media.to_dict().keys():
