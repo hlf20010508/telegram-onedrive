@@ -355,14 +355,14 @@ Use /auth to login.
                             progress_callback=callback,
                         )
                         logger("File saved to", local_path)
-                        upload(local_path)
+                        await upload(local_path)
                         await event.delete()
                     if "photo" in message.media.to_dict().keys():
                         name = "%d%s" % (message.media.photo.id, message.file.ext)
                         local_path = os.path.join(temp_dir, name)
                         await message.download_media(file=local_path, progress_callback=callback)
                         logger("File saved to", local_path)
-                        upload(local_path)
+                        await upload(local_path)
                         await event.delete()
                 except Exception as e:
                     logger(e)
