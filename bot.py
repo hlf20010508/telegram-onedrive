@@ -12,6 +12,7 @@ import math
 from time import sleep
 import subprocess
 import re
+import inspect
 from telethon import TelegramClient, events, utils
 from telethon.tl import types
 import requests
@@ -20,6 +21,7 @@ from onedrive import Onedrive
 urllib3.disable_warnings()
 
 temp_dir = "temp"
+status_bar = None
 
 # auth server
 server_uri = os.environ["server_uri"]
@@ -57,7 +59,7 @@ else:
         os.remove(os.path.join(temp_dir, file))
 
 
-@tg_bot.on(events.NewMessage(pattern="/start"))
+@tg_bot.on(events.NewMessage(pattern="/start", incoming=True))
 async def start(event):
     """Send a message when the command /start is issued."""
     await event.respond(
@@ -66,15 +68,18 @@ async def start(event):
     raise events.StopPropagation
 
 
-@tg_bot.on(events.NewMessage(pattern="/help"))
+@tg_bot.on(events.NewMessage(pattern="/help", incoming=True))
 async def help(event):
     """Send a message when the command /help is issued."""
     await event.respond("/auth to authorize for Telegram and OneDrive.\n\nTo transfer files, forward or upload to me.\nTo transfer restricted content, right click the content, copy the message link, and send to me.")
     raise events.StopPropagation
 
 
-@tg_bot.on(events.NewMessage(pattern="/auth"))
+@tg_bot.on(events.NewMessage(pattern="/auth", incoming=True))
 async def auth(event):
+    if isinstance(event.message.peer_id, types.PeerUser):
+        await event.respond("This bot must be used in a Group or Channel!\n\n Add this bot to a Group or Channel as Admin, and give it ability to Delete Messages.")
+        raise events.StopPropagation
     auth_server = subprocess.Popen(('python', 'auth_server.py'))
     async with tg_bot.conversation(event.chat_id) as conv:
 
@@ -104,11 +109,15 @@ async def auth(event):
                     verify=False,
                 ).json()
             return res["code"]
-
+            
         await conv.send_message("Logining into Telegram...")
         global tg_client
         tg_client = await tg_client.start(tg_user_phone, code_callback=tg_code_callback)
         await conv.send_message("Login to Telegram successful!")
+
+        async for message in tg_client.iter_messages(event.chat_id, filter=types.InputMessagesFilterPinned()):
+            await tg_client.unpin_message(event.chat_id, message)
+
         auth_url = onedrive.get_auth_url()
         await conv.send_message(
             "Here are the authorization url of OneDrive:\n\n%s" % auth_url
@@ -116,6 +125,10 @@ async def auth(event):
         code = od_code_callback()
         onedrive.auth(code)
         await conv.send_message("Authorization successful!")
+
+        global status_bar
+        status_bar = await conv.send_message("Status:\n\nNo job yet.")
+        await tg_bot.pin_message(event.chat_id, status_bar)
     auth_server.kill()
     raise events.StopPropagation
 
@@ -159,7 +172,9 @@ async def multi_parts_downloader(
                     current_size += len(part)
                 task_list.clear()
                 if progress_callback:
-                    progress_callback(current_size, document.size)
+                    cor = progress_callback(current_size, document.size)
+                    if inspect.isawaitable(cor):
+                        await cor
 
 def get_link(string):
     regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
@@ -173,66 +188,92 @@ def get_link(string):
     except Exception:
         return False
 
-@tg_bot.on(events.NewMessage)
+@tg_bot.on(events.NewMessage(pattern="/links", incoming=True))
+async def links(event):
+    try:
+        cmd = event.text.split()
+        link = cmd[1]
+        head_message_id = int(link.split('/')[-1])
+        link_body = '/'.join(link.split('/')[:-1])
+        offsets = int(cmd[2])
+        await event.delete()
+        try:
+            for offset in range(offsets):
+                await tg_client.send_message(event.chat_id, message='%s/%d'%(link_body, head_message_id + offset))
+        except:
+            await event.delete()
+            await event.respond("You haven't logined to Telegram.\nUse /auth to login.")
+            raise events.StopPropagation
+    except:
+        await event.delete()
+        await event.respond("Command /links format wrong.\n\nUsage: /links message_link range")
+        raise events.StopPropagation
+    raise events.StopPropagation
+
+@tg_bot.on(events.NewMessage(incoming=True))
 async def transfer(event):
-    def callback(current, total):
+    up_or_down = 'Downloaded'
+    async def callback(current, total):
         current = current / (1024 * 1024)
         total = total / (1024 * 1024)
-        print(
-            "Downloaded %.2fMB out of %.2fMB: %.2f%%"
-            % (current, total, current / total * 100)
-        )
+        status = "%s %.2fMB out of %.2fMB: %.2f%%"% (up_or_down, current, total, current / total * 100)
+        print(status)
+        msg_link = get_link(event.text)
+        if not msg_link:
+            msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
+        await tg_bot.edit_message(status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
 
-    def upload(local_path):
-        remote_path = onedrive.upload(local_path, show_status=True)
+    async def upload(local_path):
+        nonlocal up_or_down
+        up_or_down = "Uploaded"
+        remote_path = await onedrive.upload(local_path, upload_status=callback)
         print("File uploaded to", remote_path)
         for file in os.listdir(temp_dir):
             os.remove(os.path.join(temp_dir, file))
+        await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
+
+    if isinstance(event.message.peer_id, types.PeerUser):
+        await event.respond("This bot must be used in a Group or Channel!\n\n Add this bot to a Group or Channel as Admin, and give it ability to Delete Messages.")
+        raise events.StopPropagation
 
     if event.media and not isinstance(event.media, types.MessageMediaWebPage):
-        onedrive_bot = await tg_bot.get_me()
         try:
-            onedrive_bot = await tg_client.get_entity("@%s" % onedrive_bot.username)
+            message = await tg_client.get_messages(event.message.peer_id, ids=event.message.id)
         except:
-            await event.respond("You haven't logined to Telegram.\nUse /auth to login.")
             await event.delete()
+            await event.respond("You haven't logined to Telegram.\nUse /auth to login.")
             raise events.StopPropagation
-        iter_messages = tg_client.iter_messages(onedrive_bot)
+
         if "document" in event.media.to_dict().keys():
-            async for message in iter_messages:
-                if message.media:
-                    if "document" in message.media.to_dict().keys():
-                        if event.media.document.id == message.media.document.id:
-                            name = "%d%s" % (event.media.document.id, event.file.ext)
-                            local_path = os.path.join(temp_dir, name)
-                            await multi_parts_downloader(
-                                tg_client,
-                                message.media.document,
-                                local_path,
-                                progress_callback=callback,
-                            )
-                            print("File saved to", local_path)
-                            upload(local_path)
-                            await message.delete()
-                            break
+            if message.media:
+                if "document" in message.media.to_dict().keys():
+                    if event.media.document.id == message.media.document.id:
+                        name = "%d%s" % (event.media.document.id, event.file.ext)
+                        local_path = os.path.join(temp_dir, name)
+                        await multi_parts_downloader(
+                            tg_client,
+                            message.media.document,
+                            local_path,
+                            progress_callback=callback,
+                        )
+                        print("File saved to", local_path)
+                        await upload(local_path)
+                        await message.delete()
 
         if "photo" in event.media.to_dict().keys():
-            async for message in iter_messages:
-                if message.media:
-                    if "photo" in message.media.to_dict().keys():
-                        if event.media.photo.id == message.media.photo.id:
-                            name = "%d%s" % (event.media.photo.id, event.file.ext)
-                            local_path = os.path.join(temp_dir, name)
-                            await message.download_media(file=local_path)
-                            print("File saved to", local_path)
-                            upload(local_path)
-                            await message.delete()
-                            break
+            if message.media:
+                if "photo" in message.media.to_dict().keys():
+                    if event.media.photo.id == message.media.photo.id:
+                        name = "%d%s" % (event.media.photo.id, event.file.ext)
+                        local_path = os.path.join(temp_dir, name)
+                        await message.download_media(file=local_path, progress_callback=callback)
+                        print("File saved to", local_path)
+                        await upload(local_path)
+                        await message.delete()
     
     else:
         msg_link = get_link(event.text)
         if msg_link:
-            # res = await event.respond('Transfering from message link...')
             chat = ""
             if "?single" in msg_link:
                 msg_link = msg_link.split("?single")[0]
@@ -245,9 +286,10 @@ async def transfer(event):
             try:
                 message = await tg_client.get_messages(chat, ids=msg_id)
             except:
-                await event.respond("You haven't logined to Telegram.\nUse /auth to login.")
                 await event.delete()
+                await event.respond("You haven't logined to Telegram.\nUse /auth to login.")
                 raise events.StopPropagation
+
             if "document" in message.media.to_dict().keys():
                 name = "%d%s" % (message.media.document.id, message.file.ext)
                 local_path = os.path.join(temp_dir, name)
@@ -263,12 +305,10 @@ async def transfer(event):
             if "photo" in message.media.to_dict().keys():
                 name = "%d%s" % (message.media.photo.id, message.file.ext)
                 local_path = os.path.join(temp_dir, name)
-                await message.download_media(file=local_path)
+                await message.download_media(file=local_path, progress_callback=callback)
                 print("File saved to", local_path)
                 upload(local_path)
                 await event.delete()
-            # await res.delete()
-            
 
 def main():
     tg_bot.run_until_disconnected()

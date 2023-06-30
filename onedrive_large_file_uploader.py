@@ -34,7 +34,8 @@ from onedrivesdk.helpers.file_slice import FileSlice
 import json
 import math
 import os
-import time
+import inspect
+import asyncio
 
 __PART_SIZE = 10 * 1024 * 1024
 __MAX_SINGLE_FILE_UPLOAD = 10 * 1024 * 1024
@@ -112,7 +113,7 @@ class ItemUploadFragmentBuilder(RequestBuilderBase):
         return self.request(begin, length, options).post()
 
 
-def fragment_upload_async(self, local_path, conflict_behavior=None, upload_status=None):
+async def fragment_upload_async(self, local_path, conflict_behavior=None, upload_status=None):
     """Uploads file using PUT using multipart upload if needed.
 
     Args:
@@ -145,7 +146,9 @@ def fragment_upload_async(self, local_path, conflict_behavior=None, upload_statu
             total_parts = math.ceil(file_size / __PART_SIZE)
             for i in range(total_parts):
                 if upload_status:
-                    upload_status(i, total_parts)
+                    cor = upload_status(i * __PART_SIZE, file_size)
+                    if inspect.isawaitable(cor):
+                        await cor
 
                 length = min(__PART_SIZE, file_size - i * __PART_SIZE)
                 tries = 0
@@ -155,7 +158,7 @@ def fragment_upload_async(self, local_path, conflict_behavior=None, upload_statu
                         resp = upload_builder.post(i * __PART_SIZE, length)
                     except OneDriveError as exc:
                         if exc.status_code in (408, 500, 502, 503, 504) and tries < 5:
-                            time.sleep(0.1)
+                            await asyncio.sleep(0.1)
                             continue
                         elif exc.status_code == 416:
                             # Fragment already received
@@ -170,7 +173,9 @@ def fragment_upload_async(self, local_path, conflict_behavior=None, upload_statu
                         continue
                     break  # while True
         if upload_status:
-            upload_status(total_parts, total_parts)  # job completed
+            cor = upload_status(file_size, file_size)  # job completed
+            if inspect.isawaitable(cor):
+                await cor
         # return last response
         return resp
 

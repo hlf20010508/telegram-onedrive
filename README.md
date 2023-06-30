@@ -4,9 +4,11 @@
 ## Introduction
 This project is based on telethon.
 
+This bot works in Group or Channel.
+
 This bot can transfer the file you send or forward to OneDrive automatically.
 
-It can even transfer restricted content, just send the message link to the bot.
+It can even transfer restricted content, just send the message link.
 
 No file size limitation.
 
@@ -22,16 +24,17 @@ That's why you need to prepare a lot of things to use this bot.
 - `/help`  for help
 
 ## Authorization Steps
-- Input `/auth`
+- Send `/auth`
 - Wait and you'll receive the login code from telegram.
 - Visit the uri the bot sends, and submit the code.
 - Then the bot will send the authorization uri for OneDrive, visit it and login.
 - If the bot says `Authorization successful!`, everything is done.
 
 ## Usage
-- Forward or upload files(or videos, photos) to the bot.
-- If you want to transfer restricted content from group or channel, right click the content, copy the message link, and send to the bot.
-- Wait until the transfer completes.
+- Add this bot to a group or channel.
+- In the group or channel, forward or upload files(or videos, photos).
+- If you want to transfer restricted content from a group or channel, right click the content, copy the message link, and send the link.
+- Wait until the transfer completes. You can check status on pinned status message.
 - If the transfer is successful, the message will be deleted.
 
 ## Preparation

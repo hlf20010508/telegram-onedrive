@@ -35,17 +35,14 @@ class Onedrive:
             auth_code, self.redirect_uri, self.client_secret
         )
 
-    def upload_status(self, current_parts, total_parts):
-        print("Uploaded: %.2f%%" % (current_parts / total_parts * 100))
-
-    def upload(self, file_path, show_status=False):
+    async def upload(self, file_path, upload_status=None):
         name = file_path.split("/")[-1]
-        if show_status:
-            self.client.item(path=self.remote_root_path).children[name].upload_async(
-                file_path, upload_status=self.upload_status
+        if upload_status:
+            await self.client.item(path=self.remote_root_path).children[name].upload_async(
+                file_path, upload_status=upload_status
             )
         else:
-            self.client.item(path=self.remote_root_path).children[name].upload_async(
+            await self.client.item(path=self.remote_root_path).children[name].upload_async(
                 file_path
             )
         return os.path.join(self.remote_root_path, name)
