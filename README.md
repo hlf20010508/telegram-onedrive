@@ -33,7 +33,7 @@ Example:
 - Send `/auth`.
 - Wait and you'll receive the login code from telegram.
 - Visit the uri the bot sends, and submit the code.
-- Then the bot will send the authorization uri for OneDrive, visit it and login.
+- After submission, it will redirect to the authorization uri for OneDrive. Login and authorize.
 - If the bot says `Authorization successful!`, everything is done.
 
 ## Usage
@@ -46,7 +46,7 @@ Example:
 - Open `docker-compose.yml` and edit the environment config.
 - `server_uri` is your domain. You need to specify a port, like `https://example.com:8080`, or `https://127.0.0.1:8080` if you don't have a web server. Protocol must be "https", not "http". The self-signed ssl files may be expired, if so you can generate it on your own, or wait for my update.
 - Create a Telegram bot through [BotFather](https://t.me/BotFather). Record `token` as `tg_bot_token`.
-- Create a Telegram application on [my.telegram.org](https://my.telegram.org). See [details](https://docs.telethon.dev/en/stable/basic/signing-in.html). Record `api_id` as `tg_api_id`, `api_hash` as `tg_api_id`.
+- Create a Telegram application on [my.telegram.org](https://my.telegram.org). See [details](https://docs.telethon.dev/en/stable/basic/signing-in.html). Record `api_id` as `tg_api_id`, `api_hash` as `tg_api_hash`.
 - `tg_user_phone` is the phone number you just used to login to my.telegram.org.
 - Create a OneDrive application on [portal.azure.com](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) App registrations.
     - Press `New registrations`.
