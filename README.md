@@ -22,25 +22,29 @@ That's why you need to prepare a lot of things to use this bot.
 - `/start` to start with bot.
 - `/auth` to authorize telegram and onedrive.
 - `/status` to show pinned status message.
+- `/clear` to clear all history except status message.
 - `/links message_link range` to transfer sequential restricted content.
+- `/url file_url` to upload file through url.
 - `/autoDelete true/false` decides whether bot can auto delete message.
 - `/help` for help.
 
 Example:  
 `/links https://t.me/c/xxxxxxx/100 2` will transfer `https://t.me/c/xxxxxxx/100` and `https://t.me/c/xxxxxxx/101`.
+`/url https://example.com/file.txt` will upload `file.txt` to Onedrive. It calls Onedrive's API, which means Onedrive's server will visit the url and download the file for you.
 
 ## Authorization Steps
 - Send `/auth`.
 - Wait and you'll receive the login code from telegram.
 - Visit the uri the bot sends, and submit the code.
-- After submission, it will redirect to the authorization uri for OneDrive. Login and authorize.
-- If the bot says `Authorization successful!`, everything is done.
+- After submission, it will send the authorization uri for OneDrive. Visit, login and authorize.
+- If the bot says `Onedrive authorization successful!`, everything is done.
 
 ## Usage
 - Add this bot to a group or channel.
 - In the group or channel, forward or upload files(or videos, photos).
 - If you want to transfer restricted content from a group or channel, right click the content, copy the message link, and send the link.
 - Wait until the transfer completes. You can check status on pinned status message.
+- Use `/help` for more information about other commands.
 
 ## Preparation
 - Open `docker-compose.yml` and edit the environment config.
@@ -48,6 +52,7 @@ Example:
 - Create a Telegram bot through [BotFather](https://t.me/BotFather). Record `token` as `tg_bot_token`.
 - Create a Telegram application on [my.telegram.org](https://my.telegram.org). See [details](https://docs.telethon.dev/en/stable/basic/signing-in.html). Record `api_id` as `tg_api_id`, `api_hash` as `tg_api_hash`.
 - `tg_user_phone` is the phone number you just used to login to my.telegram.org.
+- `tg_user_name` is your telegram user name. Check your profile, find your user name, it should be like `@user`, then record `user` as `tg_user_name`. Optional, default to void. If you don't set this parameter, every one can control your bot.
 - Create a OneDrive application on [portal.azure.com](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) App registrations.
     - Press `New registrations`.
     - Fill `Name`.
@@ -57,7 +62,8 @@ Example:
     - Press `Register`.
     - In application's `Overview`, record `Application (client) ID` as `od_client_id`.
     - Go to application's `Certificates & secrets`, press `Client secrets`, and press `New client secret`. Then fill `Description`, and choose an `Expires`. Finnaly, press `Add`. Record `Value` as `od_client_secret`.
-- `remote_root_path` is a directory on OneDrive. Like `/MyFiles/Telegram`.
+- `remote_root_path` is a directory on OneDrive. Like `/MyFiles/Telegram`. Default to `/`.
+- `delete_flag` decides whether bot can auto delete message. Pass `true` or `false`. Optional, default to `false`.
 
 ## Launch Through Docker
 ```sh

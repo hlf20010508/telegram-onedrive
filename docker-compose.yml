@@ -11,7 +11,9 @@ services:
       - tg_api_id=$tg_api_id
       - tg_api_hash=$tg_api_hash
       - tg_user_phone=$tg_user_phone
+      - tg_user_name=$tg_user_name
       - od_client_id=$od_client_id
       - od_client_secret=$od_client_secret
       - remote_root_path=$remote_root_path
+      - delete_flag=$delete_flag
     command: python bot.py

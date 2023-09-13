@@ -9,10 +9,10 @@ import os
 import urllib3
 import asyncio
 import math
-from time import sleep
 import subprocess
 import re
 import inspect
+from io import BytesIO
 from telethon import TelegramClient, events
 from telethon.tl import types
 import requests
@@ -21,30 +21,39 @@ from log import logger
 
 urllib3.disable_warnings()
 
-temp_dir = "temp"
 status_bar = None
-delete_flag = False
+
+cmd_helper = '''- /auth: Authorize for Telegram and OneDrive.
+- /status: Show pinned status message.
+- /clear: Clear all history except status message.
+
+- `/links` message_link range: Transfer sequential restricted content.
+- `/url` file_url: Upload file through url.
+- `/autoDelete true` to auto delete message.
+- `/autoDelete false` to not auto delete message.
+'''
 
 # auth server
 server_uri = os.environ["server_uri"]
-
 # telegram api
 tg_api_id = int(os.environ["tg_api_id"])
 tg_api_hash = os.environ["tg_api_hash"]
 tg_user_phone = os.environ["tg_user_phone"]
-
+tg_user_name = os.environ.get("tg_user_name", None)
 # telegram bot
 tg_bot_token = os.environ["tg_bot_token"]
-
 # onedrive
 od_client_id = os.environ["od_client_id"]
 od_client_secret = os.environ["od_client_secret"]
 remote_root_path = os.environ.get("remote_root_path", "/")
 
+delete_flag = True if os.environ.get("delete_flag", "false") == 'true' else False
+
 # clients
 tg_bot = TelegramClient("bot", tg_api_id, tg_api_hash, sequential_updates=True).start(
     bot_token=tg_bot_token
 )
+
 tg_client = TelegramClient("user", tg_api_id, tg_api_hash, sequential_updates=True)
 
 onedrive = Onedrive(
@@ -54,22 +63,23 @@ onedrive = Onedrive(
     remote_root_path=remote_root_path,
 )
 
-def clear_temp():
-    for file in os.listdir(temp_dir):
-        os.remove(os.path.join(temp_dir, file))
-
-if not os.path.exists(temp_dir):
-    os.mkdir(temp_dir)
-else:
-    clear_temp()
 
 def cmd_parser(event):
     return event.text.split()[1:]
+
+
+async def clear_history(event):
+    ids = []
+    async for message in tg_client.iter_messages(event.chat_id):
+        ids.append(message.id)
+    await tg_client.delete_messages(event.chat_id, ids)
+
 
 async def delete_message(message):
     global delete_flag
     if delete_flag:
         await message.delete()
+
 
 async def check_in_group(event):
     if isinstance(event.message.peer_id, types.PeerUser):
@@ -80,23 +90,100 @@ Add this bot to a Group or Channel as Admin, and give it ability to Delete Messa
         ''')
         raise events.StopPropagation
 
+
+async def check_login(event):
+    try:
+        if await tg_client.get_me():
+            return True
+        else:
+            await res_not_login(event)
+            return False
+    except:
+        await res_not_login(event)
+        return False
+
+
 async def res_not_login(event):
     await event.respond('''
 You haven't logined to Telegram.
-
-Use /auth to login.
     ''')
-    raise events.StopPropagation
+    await auth(event)
 
-cmd_helper = '''/auth: Authorize for Telegram and OneDrive.
-/status: Show pinned status message.
 
-`/links` message_link range: Transfer sequential restricted content.
-`/autoDelete true` to auto delete message.
-`/autoDelete false` to not auto delete message.
-'''
+async def download_part(client, input_location, offset, part_size):
+        stream = client.iter_download(
+            input_location, offset=offset, request_size=part_size, limit=part_size
+        )
+        part = await stream.__anext__()
+        await stream.close()
+        return part
 
-@tg_bot.on(events.NewMessage(pattern="/start", incoming=True))
+
+async def multi_parts_uploader(
+    client, document, name, conn_num=5, progress_callback=None
+):
+    input_location = types.InputDocumentFileLocation(
+        id=document.id,
+        access_hash=document.access_hash,
+        file_reference=document.file_reference,
+        thumb_size="",
+    )
+
+    upload_session = onedrive.multipart_upload_session_builder(name)
+    uploader = onedrive.multipart_uploader(upload_session, document.size)
+
+    task_list = []
+    part_size = 2 * 1024 * 1024
+    total_part_num = (
+        1 if part_size >= document.size else math.ceil(document.size / part_size)
+    )
+    current_part_num = 0
+    current_size = 0
+    offset = 0
+    pre_offset = 0
+    if progress_callback:
+        cor = progress_callback(current_size, document.size)
+        if inspect.isawaitable(cor):
+            await cor
+
+    buffer = BytesIO()
+    while current_part_num < total_part_num:
+        task_list.append(
+            asyncio.ensure_future(download_part(client, input_location, offset, part_size))
+        )
+        current_part_num += 1
+        if current_part_num < total_part_num:
+            offset += part_size
+        if current_part_num % conn_num == 0 or current_part_num == total_part_num:
+            for part in await asyncio.gather(*task_list):
+                buffer.write(part)
+                current_size += len(part)
+            task_list.clear()
+            buffer.seek(0)
+            await onedrive.multipart_upload(uploader, buffer, pre_offset, buffer.getbuffer().nbytes)
+            pre_offset = offset
+            buffer = BytesIO()
+            if progress_callback:
+                cor = progress_callback(current_size, document.size)
+                if inspect.isawaitable(cor):
+                    await cor
+    buffer.close()
+
+
+def get_link(string):
+    regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+    url = re.findall(regex,string)   
+    try:
+        link = [x[0] for x in url][0]
+        if link:
+            return link
+        else:
+            return False
+    except Exception:
+        return False
+
+
+@tg_bot.on(events.NewMessage(pattern="/start", incoming=True, from_users=tg_user_name))
 async def start(event):
     """Send a message when the command /start is issued."""
     await event.respond('''
@@ -105,24 +192,25 @@ Transfer files to Onedrive.
 Forward or upload files to me, or pass message link to transfer restricted content from group or channel.
 
 %s
-/help: Ask for help.
+- /help: Ask for help.
     '''%cmd_helper)
     raise events.StopPropagation
 
 
-@tg_bot.on(events.NewMessage(pattern="/help", incoming=True))
+@tg_bot.on(events.NewMessage(pattern="/help", incoming=True, from_users=tg_user_name))
 async def help(event):
     """Send a message when the command /help is issued."""
     await event.respond('''
 %s
 
-To transfer files, forward or upload to me.
-To transfer restricted content, right click the content, copy the message link, and send to me.
+- To transfer files, forward or upload to me.
+- To transfer restricted content, right click the content, copy the message link, and send to me.
+- Uploading through url will call Onedrive's API, which means Onedrive's server will visit the url and download the file for you.
     '''%cmd_helper)
     raise events.StopPropagation
 
 
-@tg_bot.on(events.NewMessage(pattern="/auth", incoming=True))
+@tg_bot.on(events.NewMessage(pattern="/auth", incoming=True, from_users=tg_user_name))
 async def auth(event):
     await check_in_group(event)
     auth_server = subprocess.Popen(('python', 'auth_server.py'))
@@ -134,20 +222,20 @@ async def auth(event):
             )
             res = requests.get(url=os.path.join(server_uri, "tg"), verify=False).json()
             while not res["success"]:
-                sleep(1)
+                await asyncio.sleep(1)
                 res = requests.get(
                     url=os.path.join(server_uri, "tg"), verify=False
                 ).json()
             return res["code"]
 
-        def od_code_callback():
+        async def od_code_callback():
             res = requests.get(
                 url=os.path.join(server_uri, "auth"),
                 params={"get": True},
                 verify=False,
             ).json()
             while not res["success"]:
-                sleep(1)
+                await asyncio.sleep(1)
                 res = requests.get(
                     url=os.path.join(server_uri, "auth"),
                     params={"get": True},
@@ -160,24 +248,26 @@ async def auth(event):
         tg_client = await tg_client.start(tg_user_phone, code_callback=tg_code_callback)
         await conv.send_message("Login to Telegram successful!")
 
+        try:
+            onedrive.load_session()
+        except:
+            auth_url = onedrive.get_auth_url()
+            await conv.send_message(
+                "Here are the authorization url of OneDrive:\n\n%s" % auth_url
+            )
+            code = await od_code_callback()
+            onedrive.auth(code)
+        await conv.send_message("Onedrive authorization successful!")
+
         async for message in tg_client.iter_messages(event.chat_id, filter=types.InputMessagesFilterPinned()):
             await tg_client.unpin_message(event.chat_id, message)
-
-        auth_url = onedrive.get_auth_url()
-        await conv.send_message(
-            "Here are the authorization url of OneDrive:\n\n%s" % auth_url
-        )
-        code = od_code_callback()
-        onedrive.auth(code)
-        await conv.send_message("Authorization successful!")
-
         global status_bar
         status_bar = await conv.send_message("Status:\n\nNo job yet.")
         await tg_bot.pin_message(event.chat_id, status_bar)
     auth_server.kill()
-    raise events.StopPropagation
 
-@tg_bot.on(events.NewMessage(pattern="/autoDelete", incoming=True))
+
+@tg_bot.on(events.NewMessage(pattern="/autoDelete", incoming=True, from_users=tg_user_name))
 async def auto_delete(event):
     global delete_flag
     error_message = '''
@@ -199,82 +289,77 @@ Command `/autoDelete` Usage:
         await event.respond(error_message)
     raise events.StopPropagation
 
-@tg_bot.on(events.NewMessage(pattern="/status", incoming=True))
+
+@tg_bot.on(events.NewMessage(pattern="/status", incoming=True, from_users=tg_user_name))
 async def status(event):
     await check_in_group(event)
-    global status_bar
-    try:
+    if await check_login(event):
+        global status_bar
         async for message in tg_client.iter_messages(event.chat_id, filter=types.InputMessagesFilterPinned()):
             await tg_client.unpin_message(event.chat_id, message)
-    except:
-        await res_not_login(event)
-    status_bar = await event.respond("Status:\n\nNo job yet.")
-    await tg_bot.pin_message(event.chat_id, status_bar)
+        status_bar = await event.respond("Status:\n\nNo job yet.")
+        await tg_bot.pin_message(event.chat_id, status_bar)
     raise events.StopPropagation
-        
 
-async def multi_parts_downloader(
-    client, document, path, conn_num=10, progress_callback=None
-):
-    async def download_part(input_location, offset, part_size):
-        stream = client.iter_download(
-            input_location, offset=offset, request_size=part_size, limit=part_size
-        )
-        part = await stream.__anext__()
-        await stream.close()
-        return part
 
-    with open(path, "wb") as file:
-        input_location = types.InputDocumentFileLocation(
-            id=document.id,
-            access_hash=document.access_hash,
-            file_reference=document.file_reference,
-            thumb_size="",
-        )
-        task_list = []
-        part_size = 5 * 1024 * 1024
-        total_part_num = (
-            1 if part_size >= document.size else math.ceil(document.size / part_size)
-        )
-        current_part_num = 0
-        current_size = 0
-        offset = 0
-        if progress_callback:
-            cor = progress_callback(current_size, document.size)
-            if inspect.isawaitable(cor):
-                await cor
-        while current_part_num < total_part_num:
-            task_list.append(
-                asyncio.ensure_future(download_part(input_location, offset, part_size))
-            )
-            current_part_num += 1
-            if current_part_num < total_part_num:
-                offset += part_size
-            if current_part_num % conn_num == 0 or current_part_num == total_part_num:
-                for part in await asyncio.gather(*task_list):
-                    file.write(part)
-                    current_size += len(part)
-                task_list.clear()
-                if progress_callback:
-                    cor = progress_callback(current_size, document.size)
-                    if inspect.isawaitable(cor):
-                        await cor
+@tg_bot.on(events.NewMessage(pattern="/clear", incoming=True, from_users=tg_user_name))
+async def clear(event):
+    await check_in_group(event)
+    await check_login(event)
+    await clear_history(event)
+    await status(event)
+    raise events.StopPropagation
 
-def get_link(string):
-    regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
-    url = re.findall(regex,string)   
+
+@tg_bot.on(events.NewMessage(pattern="/url", incoming=True, from_users=tg_user_name))
+async def url(event):
+    await check_in_group(event)
+    await check_login(event)
+
     try:
-        link = [x[0] for x in url][0]
-        if link:
-            return link
-        else:
-            return False
-    except Exception:
-        return False
+        cmd = cmd_parser(event)
+        _url = cmd[0]
+        name = _url.split('/')[-1]
+    except:
+        await delete_message(event)
+        await event.respond('''
+Command `/url` format wrong.
 
-@tg_bot.on(events.NewMessage(pattern="/links", incoming=True))
+Usage: `/url` file_url
+    ''')
+        raise events.StopPropagation
+
+    try:
+        progress_url = onedrive.upload_from_url(_url)
+        print(progress_url)
+        progress = onedrive.upload_from_url_progress(progress_url)
+        while progress['status'] in ['notStarted', 'inProgress']:
+            status = "Uploaded: %.2f%%" % float(progress['percentageComplete'])
+            logger(status)
+            msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
+            await tg_bot.edit_message(status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
+            await asyncio.sleep(5)
+            progress = onedrive.upload_from_url_progress(progress_url)
+
+        status = "Uploaded: %.2f%%" % float(progress['percentageComplete'])
+        logger(status)
+        logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
+        msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
+        await tg_bot.edit_message(status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
+        if not delete_flag:
+            await event.reply('Done.')
+        await delete_message(event)
+        await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
+    except Exception as e:
+        logger(e)
+        await event.reply('Error: %s'%e)
+    raise events.StopPropagation
+
+
+@tg_bot.on(events.NewMessage(pattern="/links", incoming=True, from_users=tg_user_name))
 async def links(event):
     await check_in_group(event)
+    await check_login(event)
     try:
         cmd = cmd_parser(event)
         link = cmd[0]
@@ -282,12 +367,8 @@ async def links(event):
         link_body = '/'.join(link.split('/')[:-1])
         offsets = int(cmd[1])
         await delete_message(event)
-        try:
-            for offset in range(offsets):
-                await tg_client.send_message(event.chat_id, message='%s/%d'%(link_body, head_message_id + offset))
-        except:
-            await delete_message(event)
-            await res_not_login(event)
+        for offset in range(offsets):
+            await tg_client.send_message(event.chat_id, message='%s/%d'%(link_body, head_message_id + offset))
     except:
         await delete_message(event)
         await event.respond('''
@@ -298,36 +379,22 @@ Usage: `/links` message_link range
         raise events.StopPropagation
     raise events.StopPropagation
 
-@tg_bot.on(events.NewMessage(incoming=True))
+
+@tg_bot.on(events.NewMessage(incoming=True, from_users=tg_user_name))
 async def transfer(event):
-    clear_temp()
-    up_or_down = 'Downloaded'
+    await check_in_group(event)
+    await check_login(event)
+
     async def callback(current, total):
         current = current / (1024 * 1024)
         total = total / (1024 * 1024)
-        status = "%s %.2fMB out of %.2fMB: %.2f%%"% (up_or_down, current, total, current / total * 100)
+        status = "Uploaded %.2fMB out of %.2fMB: %.2f%%"% (current, total, current / total * 100)
         logger(status)
         msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
         await tg_bot.edit_message(status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
 
-    async def upload(local_path):
-        nonlocal up_or_down
-        up_or_down = "Uploaded"
-        remote_path = await onedrive.upload(local_path, upload_status=callback)
-        logger("File uploaded to %s"%remote_path)
-        clear_temp()
-        if not delete_flag:
-            await event.reply('Done.')
-        await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
-
-    await check_in_group(event)
-
     if event.media and not isinstance(event.media, types.MessageMediaWebPage):
-        try:
-            message = await tg_client.get_messages(event.message.peer_id, ids=event.message.id)
-        except:
-            await delete_message(event)
-            await res_not_login(event)
+        message = await tg_client.get_messages(event.message.peer_id, ids=event.message.id)
         
         try:
             if "document" in event.media.to_dict().keys():
@@ -335,29 +402,24 @@ async def transfer(event):
                     if "document" in message.media.to_dict().keys():
                         if event.media.document.id == message.media.document.id:
                             name = "%d%s" % (event.media.document.id, event.file.ext)
-                            local_path = os.path.join(temp_dir, name)
-                            await multi_parts_downloader(
-                                tg_client,
-                                message.media.document,
-                                local_path,
-                                progress_callback=callback,
-                            )
-                            logger("File saved to %s"%local_path)
-                            await upload(local_path)
+                            await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
+                            logger("File uploaded to %s" % os.path.join(remote_root_path, name))
                             await delete_message(message)
+                            await tg_bot.edit_message(status_bar, "Status:\n\nNo job yet.")
 
             if "photo" in event.media.to_dict().keys():
                 if message.media:
                     if "photo" in message.media.to_dict().keys():
                         if event.media.photo.id == message.media.photo.id:
                             name = "%d%s" % (event.media.photo.id, event.file.ext)
-                            local_path = os.path.join(temp_dir, name)
-                            await message.download_media(file=local_path, progress_callback=callback)
-                            logger("File saved to %s"%local_path)
-                            await upload(local_path)
+                            buffer = await message.download_media(file=bytes, progress_callback=callback)
+                            onedrive.stream_upload(buffer, name)
+                            logger("File uploaded to %s" % os.path.join(remote_root_path, name))
                             await delete_message(message)
+                            await tg_bot.edit_message(status_bar, "Status:\n\nNo job yet.")
         except Exception as e:
             logger(e)
+            await event.reply('Error: %s'%e)
     
     else:
         msg_link = get_link(event.text)
@@ -371,37 +433,33 @@ async def transfer(event):
                     chat = str(msg_link.split("/")[-2])
                 else:
                     chat = int('-100' + str(msg_link.split("/")[-2]))
-            try:
-                message = await tg_client.get_messages(chat, ids=msg_id)
-            except:
-                await delete_message(event)
-                await res_not_login(event)
+
+            message = await tg_client.get_messages(chat, ids=msg_id)
+
             if message:
                 try:
                     if "document" in message.media.to_dict().keys():
                         name = "%d%s" % (message.media.document.id, message.file.ext)
-                        local_path = os.path.join(temp_dir, name)
-                        await multi_parts_downloader(
-                            tg_client,
-                            message.media.document,
-                            local_path,
-                            progress_callback=callback,
-                        )
-                        logger("File saved to %s"%local_path)
-                        await upload(local_path)
+                        await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
+                        logger("File uploaded to %s" % os.path.join(remote_root_path, name))
                         await delete_message(event)
+                        await tg_bot.edit_message(status_bar, "Status:\n\nNo job yet.")
+
                     if "photo" in message.media.to_dict().keys():
                         name = "%d%s" % (message.media.photo.id, message.file.ext)
-                        local_path = os.path.join(temp_dir, name)
-                        await message.download_media(file=local_path, progress_callback=callback)
-                        logger("File saved to %s"%local_path)
-                        await upload(local_path)
+                        buffer = await message.download_media(file=bytes, progress_callback=callback)
+                        onedrive.stream_upload(buffer, name)
+                        logger("File uploaded to %s" % os.path.join(remote_root_path, name))
                         await delete_message(event)
+                        await tg_bot.edit_message(status_bar, "Status:\n\nNo job yet.")
+
                 except Exception as e:
                     logger(e)
+                    await event.reply('Error: %s'%e)
             else:
                 await event.reply("Message not found.")
     raise events.StopPropagation
+
 
 def main():
     tg_bot.run_until_disconnected()

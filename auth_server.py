@@ -10,10 +10,8 @@ import os
 
 app = Flask(__name__)
 
-temp_dir = "temp"
-
-if not os.path.exists(temp_dir):
-    os.mkdir(temp_dir)
+code_tg = ''
+code_od = ''
 
 
 @app.route("/")
@@ -23,40 +21,28 @@ def telegram_code_index():
 
 @app.route("/tg", methods=["GET", "POST"])
 def telegram_code():
-    code_path = os.path.join(temp_dir, "tg_code")
+    global code_tg
     if request.method == "POST":
-        code = request.json["code"]
-        with open(code_path, "w") as file:
-            file.write(code)
+        code_tg = request.json["code"]
         return jsonify({"success": True})
     if request.method == "GET":
-        if not os.path.exists(code_path):
+        if not code_tg:
             return jsonify({"success": False})
         else:
-            code = ""
-            with open(code_path, "r") as file:
-                code = file.read()
-            os.remove(code_path)
-            return jsonify({"success": True, "code": code})
+            return jsonify({"success": True, "code": code_tg})
 
 
 @app.route("/auth")
 def onedrive_code():
-    code_path = os.path.join(temp_dir, "od_code")
+    global code_od
     if not request.args.get("get"):
-        code = request.args.get("code")
-        with open(code_path, "w") as file:
-            file.write(code)
+        code_od = request.args.get("code")
         return "Authorization Successful!"
     else:
-        if not os.path.exists(code_path):
+        if not code_od:
             return jsonify({"success": False})
         else:
-            code = ""
-            with open(code_path, "r") as file:
-                code = file.read()
-            os.remove(code_path)
-            return jsonify({"success": True, "code": code})
+            return jsonify({"success": True, "code": code_od})
 
 
 if __name__ == "__main__":
