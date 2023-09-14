@@ -51,14 +51,14 @@ Example:
 2. `server_uri` is your domain. You need to specify a port, like `https://example.com:8080`, or `https://127.0.0.1:8080` if you don't have a web server. Protocol must be "https", not "http".
     -  The self-signed ssl keys may be expired, you can remind me for an update.
     - If you want to specify your own ssl keys, especially if you have your own site, or the self-signed ssl keys have expired, you can import your ssl keys like this:
-    - In your `/path/to/ssl`, rename or duplicate `*.crt` to `server.crt`, `*.key` to `server.key`
-    - Create a volume for ssl in `docker-compose.yml`:
+    - Create volumes for ssl keys in `docker-compose.yml`:
         ```docker-compose
         services:
         telegram-onedrive:
             ...
             volumes:
-            - /path/to/ssl:/telegram-onedrive/ssl
+            - /path/to/*.crt:/telegram-onedrive/ssl/server.crt
+            - /path/to/*.key:/telegram-onedrive/ssl/server.key
             ...
         ```
 3. Create a Telegram bot through [BotFather](https://t.me/BotFather). Record `token` as `tg_bot_token`.
