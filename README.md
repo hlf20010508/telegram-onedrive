@@ -44,7 +44,7 @@ Example:
 - In the group or channel, forward or upload files(or videos, photos).
 - If you want to transfer restricted content from a group or channel, right click the content, copy the message link, and send the link.
 - Wait until the transfer completes. You can check status on pinned status message.
-- Use `/help` for more information about other commands.
+- Use `/help` for more information about other command.
 
 ## Preparation
 1. Open `docker-compose.yml` and edit the environment config.

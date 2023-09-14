@@ -321,12 +321,15 @@ async def url(event):
         _url = cmd[0]
         name = _url.split('/')[-1]
     except:
-        await delete_message(event)
-        await event.respond('''
+        await event.reply('''
 Command `/url` format wrong.
 
 Usage: `/url` file_url
     ''')
+        raise events.StopPropagation
+
+    if not get_link(_url):
+        await event.reply(logger("Please offer an HTTP url."))
         raise events.StopPropagation
 
     try:
@@ -343,16 +346,30 @@ Usage: `/url` file_url
 
         status = "Uploaded: %.2f%%" % float(progress['percentageComplete'])
         logger(status)
-        logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
-        msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
-        await tg_bot.edit_message(status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
-        if not delete_flag:
-            await event.reply('Done.')
-        await delete_message(event)
-        await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
+        if 'fail' not in str(progress) and 'error' not in str(progress):
+            logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
+            msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
+            await tg_bot.edit_message(status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
+            if not delete_flag:
+                await event.reply('Done.')
+            await delete_message(event)
+            await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
+        else:
+            await event.reply(logger('Error: something is wrong\n\nResponse: %s' % progress))
+            await event.reply(logger("Analysis: try again later, or offer a proper url"))
+
     except Exception as e:
-        logger(e)
-        await event.reply('Error: %s'%e)
+        await event.reply('Error: %s\nResponse: %s' % (logger(e), logger(progress)))
+        try:
+            if progress['errorCode'] == 'ParameterIsTooLong':
+                await event.reply(logger("Analysis: url too long.OneDrive API doesn't support long url."))
+            elif progress['errorCode'] == 'Forbidden':
+                await event.reply(logger("Analysis: url protocol is not HTTP, or the url has been forbidden."))
+            elif progress['errorCode'] == 'NotFound':
+                await event.reply(logger("Analysis: content not found."))
+        except Exception as e:
+            logger(e)
+
     raise events.StopPropagation
 
 
@@ -370,8 +387,7 @@ async def links(event):
         for offset in range(offsets):
             await tg_client.send_message(event.chat_id, message='%s/%d'%(link_body, head_message_id + offset))
     except:
-        await delete_message(event)
-        await event.respond('''
+        await event.reply('''
 Command `/links` format wrong.
 
 Usage: `/links` message_link range
@@ -418,8 +434,7 @@ async def transfer(event):
                             await delete_message(message)
                             await tg_bot.edit_message(status_bar, "Status:\n\nNo job yet.")
         except Exception as e:
-            logger(e)
-            await event.reply('Error: %s'%e)
+            await event.reply('Error: %s' % logger(e))
     
     else:
         msg_link = get_link(event.text)
@@ -454,10 +469,12 @@ async def transfer(event):
                         await tg_bot.edit_message(status_bar, "Status:\n\nNo job yet.")
 
                 except Exception as e:
-                    logger(e)
-                    await event.reply('Error: %s'%e)
+                    await event.reply('Error: %s' % logger(e))
             else:
-                await event.reply("Message not found.")
+                await event.reply(logger("Message not found."))
+        else:
+            if event.text != '/auth':
+                await event.reply("Use /help for available command.")
     raise events.StopPropagation
 
 
