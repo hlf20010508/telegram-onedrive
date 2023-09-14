@@ -5,15 +5,17 @@ services:
     image: hlf01/telegram-onedrive
     restart: always
     network_mode: host
+    # volumes:
+    #   - /path/to/ssl:/telegram-onedrive/ssl
     environment:
       - server_uri=$server_uri
       - tg_bot_token=$tg_bot_token
       - tg_api_id=$tg_api_id
       - tg_api_hash=$tg_api_hash
       - tg_user_phone=$tg_user_phone
-      - tg_user_name=$tg_user_name
+      - tg_user_name=$tg_user_name(optional)
       - od_client_id=$od_client_id
       - od_client_secret=$od_client_secret
       - remote_root_path=$remote_root_path
-      - delete_flag=$delete_flag
+      - delete_flag=$delete_flag(optional)
     command: python bot.py

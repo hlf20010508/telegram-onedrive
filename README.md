@@ -29,8 +29,8 @@ That's why you need to prepare a lot of things to use this bot.
 - `/help` for help.
 
 Example:  
-`/links https://t.me/c/xxxxxxx/100 2` will transfer `https://t.me/c/xxxxxxx/100` and `https://t.me/c/xxxxxxx/101`.
-`/url https://example.com/file.txt` will upload `file.txt` to Onedrive. It calls Onedrive's API, which means Onedrive's server will visit the url and download the file for you.
+- `/links https://t.me/c/xxxxxxx/100 2` will transfer `https://t.me/c/xxxxxxx/100` and `https://t.me/c/xxxxxxx/101`.
+- `/url https://example.com/file.txt` will upload `file.txt` to Onedrive. It calls Onedrive's API, which means Onedrive's server will visit the url and download the file for you.
 
 ## Authorization Steps
 - Send `/auth`.
@@ -47,23 +47,35 @@ Example:
 - Use `/help` for more information about other commands.
 
 ## Preparation
-- Open `docker-compose.yml` and edit the environment config.
-- `server_uri` is your domain. You need to specify a port, like `https://example.com:8080`, or `https://127.0.0.1:8080` if you don't have a web server. Protocol must be "https", not "http". The self-signed ssl files may be expired, if so you can generate it on your own, or wait for my update.
-- Create a Telegram bot through [BotFather](https://t.me/BotFather). Record `token` as `tg_bot_token`.
-- Create a Telegram application on [my.telegram.org](https://my.telegram.org). See [details](https://docs.telethon.dev/en/stable/basic/signing-in.html). Record `api_id` as `tg_api_id`, `api_hash` as `tg_api_hash`.
-- `tg_user_phone` is the phone number you just used to login to my.telegram.org.
-- `tg_user_name` is your telegram user name. Check your profile, find your user name, it should be like `@user`, then record `user` as `tg_user_name`. Optional, default to void. If you don't set this parameter, every one can control your bot.
-- Create a OneDrive application on [portal.azure.com](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) App registrations.
+1. Open `docker-compose.yml` and edit the environment config.
+2. `server_uri` is your domain. You need to specify a port, like `https://example.com:8080`, or `https://127.0.0.1:8080` if you don't have a web server. Protocol must be "https", not "http".
+    -  The self-signed ssl keys may be expired, you can remind me for an update.
+    - If you want to specify your own ssl keys, especially if you have your own site, or the self-signed ssl keys have expired, you can import your ssl keys like this:
+    - In your `/path/to/ssl`, rename or duplicate `*.crt` to `server.crt`, `*.key` to `server.key`
+    - Create a volume for ssl in `docker-compose.yml`:
+        ```docker-compose
+        services:
+        telegram-onedrive:
+            ...
+            volumes:
+            - /path/to/ssl:/telegram-onedrive/ssl
+            ...
+        ```
+3. Create a Telegram bot through [BotFather](https://t.me/BotFather). Record `token` as `tg_bot_token`.
+4. Create a Telegram application on [my.telegram.org](https://my.telegram.org). See [details](https://docs.telethon.dev/en/stable/basic/signing-in.html). Record `api_id` as `tg_api_id`, `api_hash` as `tg_api_hash`.
+5. `tg_user_phone` is the phone number you just used to login to my.telegram.org.
+6. `tg_user_name` is your telegram user name. Check your profile, find your user name, it should be like `@user`, then record `user` as `tg_user_name`. Optional, default to void. If you don't set this parameter, every one can control your bot.
+7. Create a OneDrive application on [portal.azure.com](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) App registrations.
     - Press `New registrations`.
     - Fill `Name`.
     - In `Supported account types` choose `Personal Microsoft accounts only`.
-    - In `Redirect URI"`, `platform` select `Web`, uri domain should be the same with `server_uri`, route must be `/auth`.
+    - In `Redirect URI`, `platform` select `Web`, uri domain should be the same with `server_uri`, route must be `/auth`.
         - Explain: The authorization code will be sent through the uri you offer, like `https://example.com:8080/auth?code=xxxxxxx`. So in this project, it use flask as a server to handle this request.
     - Press `Register`.
     - In application's `Overview`, record `Application (client) ID` as `od_client_id`.
     - Go to application's `Certificates & secrets`, press `Client secrets`, and press `New client secret`. Then fill `Description`, and choose an `Expires`. Finnaly, press `Add`. Record `Value` as `od_client_secret`.
-- `remote_root_path` is a directory on OneDrive. Like `/MyFiles/Telegram`. Default to `/`.
-- `delete_flag` decides whether bot can auto delete message. Pass `true` or `false`. Optional, default to `false`.
+8. `remote_root_path` is a directory on OneDrive. Like `/MyFiles/Telegram`. Default to `/`.
+9. `delete_flag` decides whether bot can auto delete message. Pass `true` or `false`. Optional, default to `false`.
 
 ## Launch Through Docker
 ```sh
