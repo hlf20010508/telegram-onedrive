@@ -439,17 +439,22 @@ async def transfer(event):
     else:
         msg_link = get_link(event.text)
         if msg_link:
-            chat = ""
-            if "?single" in msg_link:
-                msg_link = msg_link.split("?single")[0]
-            msg_id = int(msg_link.split("/")[-1])
-            if 't.me/c/' in msg_link:
-                if 't.me/b/' in msg_link:
-                    chat = str(msg_link.split("/")[-2])
-                else:
-                    chat = int('-100' + str(msg_link.split("/")[-2]))
+            try:
+                chat = ""
+                if "?single" in msg_link:
+                    msg_link = msg_link.split("?single")[0]
+                msg_id = int(msg_link.split("/")[-1])
+                if 't.me/c/' in msg_link:
+                    if 't.me/b/' in msg_link:
+                        chat = str(msg_link.split("/")[-2])
+                    else:
+                        chat = int('-100' + str(msg_link.split("/")[-2]))
 
-            message = await tg_client.get_messages(chat, ids=msg_id)
+                message = await tg_client.get_messages(chat, ids=msg_id)
+            except:
+                logger('Not message link.')
+                await event.reply("Please offer a message link.\n\nUse /help for available command.")
+                raise events.StopPropagation
 
             if message:
                 try:
@@ -474,6 +479,7 @@ async def transfer(event):
                 await event.reply(logger("Message not found."))
         else:
             if event.text != '/auth':
+                logger('Unknown command.')
                 await event.reply("Use /help for available command.")
     raise events.StopPropagation
 
