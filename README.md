@@ -41,7 +41,7 @@ Example:
 
 ## Usage
 - Add this bot to a group or channel.
-- In the group or channel, forward or upload files(or videos, photos).
+- In the group or channel, forward or upload files(or videos, photos, gifs, stickers, voices).
 - If you want to transfer restricted content from a group or channel, right click the content, copy the message link, and send the link.
 - Wait until the transfer completes. You can check status on pinned status message.
 - Use `/help` for more information about other command.
@@ -49,7 +49,8 @@ Example:
 ## Preparation
 1. Open `docker-compose.yml` and edit the environment config.
 2. `server_uri` is your domain. You need to specify a port, like `https://example.com:8080`, or `https://127.0.0.1:8080` if you don't have a web server. Protocol must be "https", not "http".
-    -  The self-signed ssl keys may be expired, you can remind me for an update.
+    - The self-signed ssl keys may be expired, you can remind me for an update.
+    - Some web browser may prevent you from visiting this url because of ssl mismatch. Try using [Chromium](https://download-chromium.appspot.com).
     - If you want to specify your own ssl keys, especially if you have your own site, or the self-signed ssl keys have expired, you can import your ssl keys like this:
     - Create volumes for ssl keys in `docker-compose.yml`:
         ```docker-compose
