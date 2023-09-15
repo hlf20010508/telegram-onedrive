@@ -52,7 +52,6 @@ Example:
     - The self-signed ssl keys may be expired, you can remind me for an update.
     - Some web browser may prevent you from visiting this url because of ssl mismatch. Try using [Chromium](https://download-chromium.appspot.com).
     - If you want to specify your own ssl keys, especially if you have your own site, or the self-signed ssl keys have expired, you can import your ssl keys like this:
-    - Create volumes for ssl keys in `docker-compose.yml`:
         ```docker-compose.yml
         services:
         telegram-onedrive:
