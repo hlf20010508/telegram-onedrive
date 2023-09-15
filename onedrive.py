@@ -48,6 +48,7 @@ class Onedrive:
             auth_server_url=auth_server_url
         )
 
+        self.session_path = 'session/onedrive.session'
         self.remote_root_path = remote_root_path
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
@@ -69,10 +70,10 @@ class Onedrive:
         self.save_session()
     
     def save_session(self):
-        self.client.auth_provider.save_session(path='onedrive.session')
+        self.client.auth_provider.save_session(path=self.session_path)
 
     def load_session(self):
-        self.client.auth_provider.load_session(path='onedrive.session')
+        self.client.auth_provider.load_session(path=self.session_path)
 
     def stream_upload(self, buffer, name):
         request = self.client.item(path=self.remote_root_path).children[name].content.request()

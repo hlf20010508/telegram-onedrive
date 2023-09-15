@@ -6,7 +6,9 @@ services:
     restart: always
     network_mode: host
     # volumes:
-    #   - /path/to/ssl:/telegram-onedrive/ssl
+      # - /path/to/*.crt:/telegram-onedrive/ssl/server.crt
+      # - /path/to/*.key:/telegram-onedrive/ssl/server.key
+      # - telegram-onedrive-session:/telegram-onedrive/session
     environment:
       - server_uri=$server_uri
       - tg_bot_token=$tg_bot_token
@@ -19,3 +21,5 @@ services:
       - remote_root_path=$remote_root_path
       - delete_flag=$delete_flag(optional)
     command: python bot.py
+# volumes:
+#   telegram-onedrive-session:

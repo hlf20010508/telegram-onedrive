@@ -19,6 +19,9 @@ import requests
 from onedrive import Onedrive
 from log import logger
 
+if not os.path.exists('session'):
+    os.mkdir('session')
+
 urllib3.disable_warnings()
 
 status_bar = None
@@ -50,11 +53,11 @@ remote_root_path = os.environ.get("remote_root_path", "/")
 delete_flag = True if os.environ.get("delete_flag", "false") == 'true' else False
 
 # clients
-tg_bot = TelegramClient("bot", tg_api_id, tg_api_hash, sequential_updates=True).start(
+tg_bot = TelegramClient("session/bot", tg_api_id, tg_api_hash, sequential_updates=True).start(
     bot_token=tg_bot_token
 )
 
-tg_client = TelegramClient("user", tg_api_id, tg_api_hash, sequential_updates=True)
+tg_client = TelegramClient("session/user", tg_api_id, tg_api_hash, sequential_updates=True)
 
 onedrive = Onedrive(
     client_id=od_client_id,

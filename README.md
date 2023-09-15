@@ -53,14 +53,14 @@ Example:
     - Some web browser may prevent you from visiting this url because of ssl mismatch. Try using [Chromium](https://download-chromium.appspot.com).
     - If you want to specify your own ssl keys, especially if you have your own site, or the self-signed ssl keys have expired, you can import your ssl keys like this:
     - Create volumes for ssl keys in `docker-compose.yml`:
-        ```docker-compose
+        ```docker-compose.yml
         services:
         telegram-onedrive:
-            ...
-            volumes:
+          ...
+          volumes:
             - /path/to/*.crt:/telegram-onedrive/ssl/server.crt
             - /path/to/*.key:/telegram-onedrive/ssl/server.key
-            ...
+          ...
         ```
 3. Create a Telegram bot through [BotFather](https://t.me/BotFather). Record `token` as `tg_bot_token`.
 4. Create a Telegram application on [my.telegram.org](https://my.telegram.org). See [details](https://docs.telethon.dev/en/stable/basic/signing-in.html). Record `api_id` as `tg_api_id`, `api_hash` as `tg_api_hash`.
@@ -77,6 +77,17 @@ Example:
     - Go to application's `Certificates & secrets`, press `Client secrets`, and press `New client secret`. Then fill `Description`, and choose an `Expires`. Finnaly, press `Add`. Record `Value` as `od_client_secret`.
 8. `remote_root_path` is a directory on OneDrive. Like `/MyFiles/Telegram`. Default to `/`.
 9. `delete_flag` decides whether bot can auto delete message. Pass `true` or `false`. Optional, default to `false`.
+10. Optional, to keep sessions after recreating docker container, create a volume to store it in docker-compose.yml:
+    ```docker-compose.yml
+    services:
+    telegram-onedrive:
+      ...
+      volumes:
+        - telegram-onedrive-session:/telegram-onedrive/session
+      ...
+    volumes:
+      telegram-onedrive-session:
+    ```
 
 ## Launch Through Docker
 ```sh
