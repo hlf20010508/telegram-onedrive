@@ -84,6 +84,14 @@ async def delete_message(message):
         await message.delete()
 
 
+# if message is not edited, it will raise MessageNotModifiedError
+async def edit_message(bot, event, message):
+    try:
+        await bot.edit_message(event, message)
+    except:
+        pass
+
+
 async def check_in_group(event):
     if isinstance(event.message.peer_id, types.PeerUser):
         await event.respond('''
@@ -110,7 +118,7 @@ async def res_not_login(event):
     await event.respond('''
 You haven't logined to Telegram.
     ''')
-    await auth(event)
+    await auth(event, propagate=True)
 
 
 async def download_part(client, input_location, offset, part_size):
@@ -182,7 +190,7 @@ def get_link(string):
             return link
         else:
             return False
-    except Exception:
+    except:
         return False
 
 
@@ -214,7 +222,7 @@ async def help(event):
 
 
 @tg_bot.on(events.NewMessage(pattern="/auth", incoming=True, from_users=tg_user_name))
-async def auth(event):
+async def auth(event, propagate=False):
     await check_in_group(event)
     auth_server = subprocess.Popen(('python', 'auth_server.py'))
     async with tg_bot.conversation(event.chat_id) as conv:
@@ -268,6 +276,8 @@ async def auth(event):
         status_bar = await conv.send_message("Status:\n\nNo job yet.")
         await tg_bot.pin_message(event.chat_id, status_bar)
     auth_server.kill()
+    if not propagate:
+        raise events.StopPropagation
 
 
 @tg_bot.on(events.NewMessage(pattern="/autoDelete", incoming=True, from_users=tg_user_name))
@@ -322,6 +332,8 @@ async def url(event):
     try:
         cmd = cmd_parser(event)
         _url = cmd[0]
+        # lest the url is bold
+        _url = _url.strip().strip('*')
         name = _url.split('/')[-1]
     except:
         await event.reply('''
@@ -336,33 +348,40 @@ Usage: `/url` file_url
         raise events.StopPropagation
 
     try:
+        logger('upload url: %s' % _url)
         progress_url = onedrive.upload_from_url(_url)
-        print(progress_url)
-        progress = onedrive.upload_from_url_progress(progress_url)
+        logger('progress url: %s' % progress_url)
+    except Exception as e:
+        await event.reply(logger(e))
+
+    try:
+        response = onedrive.upload_from_url_progress(progress_url)
+        progress = response.content
         while progress['status'] in ['notStarted', 'inProgress']:
             status = "Uploaded: %.2f%%" % float(progress['percentageComplete'])
             logger(status)
             msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
-            await tg_bot.edit_message(status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
+            await edit_message(tg_bot, status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
             await asyncio.sleep(5)
-            progress = onedrive.upload_from_url_progress(progress_url)
+            response = onedrive.upload_from_url_progress(progress_url)
+            progress = response.content
 
         status = "Uploaded: %.2f%%" % float(progress['percentageComplete'])
         logger(status)
-        if 'fail' not in str(progress) and 'error' not in str(progress):
+        if 'fail' not in str(progress) and 'error' not in str(progress) and 'Error' not in str(progress) and 'Fail' not in str(progress):
             logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
             msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
-            await tg_bot.edit_message(status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
+            await edit_message(tg_bot, status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
             if not delete_flag:
                 await event.reply('Done.')
             await delete_message(event)
-            await tg_bot.edit_message(status_bar, 'Status:\n\nNo job yet.')
+            await edit_message(tg_bot, status_bar, 'Status:\n\nNo job yet.')
         else:
-            await event.reply(logger('Error: something is wrong\n\nResponse: %s' % progress))
+            await event.reply(logger('Error: something is wrong\n\nUpload url: %s\nProgress url: %s\n\nResponse: %s' % (_url, progress_url, progress)))
             await event.reply(logger("Analysis: try again later, or offer a proper url"))
 
     except Exception as e:
-        await event.reply('Error: %s\nResponse: %s' % (logger(e), logger(progress)))
+        await event.reply('Error: %s\nUpload url: %s\nProgress url: %s\n\nResponse: %s' % (logger(e), _url, progress_url, logger(progress)))
         try:
             if progress['errorCode'] == 'ParameterIsTooLong':
                 await event.reply(logger("Analysis: url too long.OneDrive API doesn't support long url."))
@@ -410,7 +429,7 @@ async def transfer(event):
         status = "Uploaded %.2fMB out of %.2fMB: %.2f%%"% (current, total, current / total * 100)
         logger(status)
         msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
-        await tg_bot.edit_message(status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
+        await edit_message(tg_bot, status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
 
     if event.media and not isinstance(event.media, types.MessageMediaWebPage):
         message = await tg_client.get_messages(event.message.peer_id, ids=event.message.id)
@@ -424,7 +443,7 @@ async def transfer(event):
                             await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
                             logger("File uploaded to %s" % os.path.join(remote_root_path, name))
                             await delete_message(message)
-                            await tg_bot.edit_message(status_bar, "Status:\n\nNo job yet.")
+                            await edit_message(tg_bot, status_bar, "Status:\n\nNo job yet.")
 
             if "photo" in event.media.to_dict().keys():
                 if message.media:
@@ -435,7 +454,7 @@ async def transfer(event):
                             onedrive.stream_upload(buffer, name)
                             logger("File uploaded to %s" % os.path.join(remote_root_path, name))
                             await delete_message(message)
-                            await tg_bot.edit_message(status_bar, "Status:\n\nNo job yet.")
+                            await edit_message(tg_bot, status_bar, "Status:\n\nNo job yet.")
         except Exception as e:
             await event.reply('Error: %s' % logger(e))
     
@@ -466,7 +485,7 @@ async def transfer(event):
                         await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
                         logger("File uploaded to %s" % os.path.join(remote_root_path, name))
                         await delete_message(event)
-                        await tg_bot.edit_message(status_bar, "Status:\n\nNo job yet.")
+                        await edit_message(tg_bot, status_bar, "Status:\n\nNo job yet.")
 
                     if "photo" in message.media.to_dict().keys():
                         name = "%d%s" % (message.media.photo.id, message.file.ext)
@@ -474,7 +493,7 @@ async def transfer(event):
                         onedrive.stream_upload(buffer, name)
                         logger("File uploaded to %s" % os.path.join(remote_root_path, name))
                         await delete_message(event)
-                        await tg_bot.edit_message(status_bar, "Status:\n\nNo job yet.")
+                        await edit_message(tg_bot, status_bar, "Status:\n\nNo job yet.")
 
                 except Exception as e:
                     await event.reply('Error: %s' % logger(e))

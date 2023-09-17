@@ -7,15 +7,17 @@
 
 from onedrivesdk import HttpProvider, AuthProvider, OneDriveClient
 from onedrivesdk.options import HeaderOption
-from onedrivesdk.error import OneDriveError
+from onedrivesdk.error import OneDriveError, ErrorCode
 from onedrivesdk.model.upload_session import UploadSession
 from onedrivesdk.model.item import Item
 from onedrivesdk.request.item_create_session import ItemCreateSessionRequestBuilder
 from onedrivesdk.request.item_request_builder import ItemRequestBuilder
 from onedrivesdk.request_builder_base import RequestBuilderBase
 from onedrivesdk.request_base import RequestBase
+from onedrivesdk.http_response import HttpResponse
 import json
 import asyncio
+import time
 
 def authenticate_request(self, request):
     if self._session is None:
@@ -32,6 +34,11 @@ def authenticate_request(self, request):
 
 def create_session(self, item=None):
     return ItemCreateSessionRequestBuilder(self.append_to_request_url("createUploadSession"), self._client, item=item)
+
+def http_response_init(self, status, headers, content):
+    self._status = status
+    self._headers = headers
+    self._content = content
 
 class Onedrive:
     def __init__(self, client_id, client_secret, redirect_uri, remote_root_path):
@@ -139,13 +146,29 @@ class Onedrive:
             }
             raise OneDriveError(response_dict, response.status)
     
-    def upload_from_url_progress(self, url):
-        response = self.client.http_provider.send(
-            method="GET",
-            headers={},
-            url=url
-        )
-        response = json.loads(response.content)
+    def upload_from_url_progress(self, url):        
+        tries = 0
+        while tries < 5:
+            response = self.client.http_provider.send(
+                method="GET",
+                headers={},
+                url=url
+            )
+            if response.status >= 200 and response.status < 300:
+                break
+            else:
+                tries += 1
+                time.sleep(0.1)
+                continue
+        try:
+            response._content = json.loads(response.content)
+        except:
+            response._content = {
+                "error": {
+                    "code": ErrorCode.Malformed,
+                    "message": "The following invalid JSON was returned:\n%s" % response.content
+                }
+            }
         return response
 
 
@@ -221,3 +244,4 @@ class ItemUploadFragmentBuilder(RequestBuilderBase):
 # Overwrite the standard upload operation to use this one
 AuthProvider.authenticate_request = authenticate_request
 ItemRequestBuilder.create_session = create_session
+HttpResponse.__init__ = http_response_init
