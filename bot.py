@@ -353,6 +353,7 @@ Usage: `/url` file_url
         logger('progress url: %s' % progress_url)
     except Exception as e:
         await event.reply(logger(e))
+        raise events.StopPropagation 
 
     try:
         response = onedrive.upload_from_url_progress(progress_url)

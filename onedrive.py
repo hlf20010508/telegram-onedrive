@@ -133,18 +133,24 @@ class Onedrive:
             "name": name,
             "file": {}
         }
-        response = request.send(content=data)
-        
-        if response.status == 202:
-            progress_url = response.headers['Location']
-            return progress_url
-        else:
-            response_dict = {
-                'Status': response.status,
-                'Headers': response.headers,
-                'Content': response.content
-            }
-            raise OneDriveError(response_dict, response.status)
+
+        tries = 0
+        while tries < 5:
+            response = request.send(content=data)
+            if response.status == 202:
+                progress_url = response.headers['Location']
+                return progress_url
+            else:
+                tries += 1
+                time.sleep(0.1)
+                continue
+
+        response_dict = {
+            'Status': response.status,
+            'Headers': response.headers,
+            'Content': response.content
+        }
+        raise OneDriveError(response_dict, response.status)
     
     def upload_from_url_progress(self, url):        
         tries = 0
