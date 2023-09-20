@@ -48,4 +48,4 @@ def onedrive_code():
 if __name__ == "__main__":
     server_uri = os.environ["server_uri"]
     port = int(server_uri.split(':')[-1].split('/')[0])
-    app.run(host="0.0.0.0", port=port, ssl_context=("ssl/server.crt", "ssl/server.key"))
+    app.run(host="0.0.0.0", port=port, ssl_context=("server/ssl/server.crt", "server/ssl/server.key"))

@@ -20,6 +20,7 @@ import asyncio
 import time
 from urllib.parse import unquote
 
+
 def authenticate_request(self, request):
     if self._session is None:
         raise RuntimeError("""Session must be authenticated 
@@ -27,19 +28,22 @@ def authenticate_request(self, request):
 
     if self._session.is_expired() and 'offline_access' in self.scopes:
         self.refresh_token()
-        self.save_session(path='onedrive.session')
+        self.save_session(path='session/onedrive.session')
 
     request.append_option(
         HeaderOption("Authorization",
                         "bearer {}".format(self._session.access_token)))
 
+
 def create_session(self, item=None):
     return ItemCreateSessionRequestBuilder(self.append_to_request_url("createUploadSession"), self._client, item=item)
+
 
 def http_response_init(self, status, headers, content):
     self._status = status
     self._headers = headers
     self._content = content
+
 
 class Onedrive:
     def __init__(self, client_id, client_secret, redirect_uri, remote_root_path):
@@ -247,6 +251,7 @@ class ItemUploadFragmentBuilder(RequestBuilderBase):
             The resulting UploadSession from the operation
         """
         return self.request(begin, length, buffer, options).post()
+
 
 # Overwrite the standard upload operation to use this one
 AuthProvider.authenticate_request = authenticate_request

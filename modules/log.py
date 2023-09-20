@@ -1,3 +1,10 @@
+"""
+:project: telegram-onedrive
+:author: L-ING
+:copyright: (C) 2023 L-ING <hlf01@icloud.com>
+:license: MIT, see LICENSE for more details.
+"""
+
 from datetime import datetime
 from traceback import print_exc
 from io import StringIO

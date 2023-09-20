@@ -21,7 +21,6 @@ That's why you need to prepare a lot of things to use this bot.
 ## Bot Command
 - `/start` to start with bot.
 - `/auth` to authorize telegram and onedrive.
-- `/status` to show pinned status message.
 - `/clear` to clear all history except status message.
 - `/links message_link range` to transfer sequential restricted content.
 - `/url file_url` to upload file through url.
@@ -43,7 +42,7 @@ Example:
 - Add this bot to a group or channel.
 - In the group or channel, forward or upload files(or videos, photos, gifs, stickers, voices).
 - If you want to transfer restricted content from a group or channel, right click the content, copy the message link, and send the link.
-- Wait until the transfer completes. You can check status on pinned status message.
+- Wait until the transfer completes. You can check status on replied message.
 - Use `/help` for more information about other command.
 
 ## Preparation
@@ -57,8 +56,8 @@ Example:
         telegram-onedrive:
           ...
           volumes:
-            - /path/to/*.crt:/telegram-onedrive/ssl/server.crt
-            - /path/to/*.key:/telegram-onedrive/ssl/server.key
+            - /path/to/*.crt:/telegram-onedrive/server/ssl/server.crt
+            - /path/to/*.key:/telegram-onedrive/server/ssl/server.key
           ...
         ```
 3. Create a Telegram bot through [BotFather](https://t.me/BotFather). Record `token` as `tg_bot_token`.

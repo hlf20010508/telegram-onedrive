@@ -1,7 +1,4 @@
 *
-!bot.py
-!onedrive.py
-!auth_server.py
-!ssl
-!templates
-!log.py
+!main.py
+!modules
+!server
