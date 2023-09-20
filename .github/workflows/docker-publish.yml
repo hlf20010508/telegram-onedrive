@@ -42,7 +42,7 @@ jobs:
         context: .
         platforms: linux/amd64,linux/arm64
         push: true
-        tags: ${{ env.REPO }}:${{ github.event.release.name }},${{ env.REPO }}:latest
+        tags: ${{ env.REPO }}:${{ github.event.release.name }},${{ env.REPO }}:latest,${{ env.REPO }}:dev
       if: github.event_name == 'release' && github.event.action == 'published'
 
     - name: Build and push image dev
