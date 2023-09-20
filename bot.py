@@ -18,6 +18,9 @@ from telethon.tl import types
 import requests
 from onedrive import Onedrive
 from log import logger
+from urllib.parse import unquote
+import time
+import mimetypes
 
 if not os.path.exists('session'):
     os.mkdir('session')
@@ -35,6 +38,8 @@ cmd_helper = '''- /auth: Authorize for Telegram and OneDrive.
 - `/autoDelete true` to auto delete message.
 - `/autoDelete false` to not auto delete message.
 '''
+
+part_size = 2 * 1024 * 1024
 
 # auth server
 server_uri = os.environ["server_uri"]
@@ -144,7 +149,6 @@ async def multi_parts_uploader(
     uploader = onedrive.multipart_uploader(upload_session, document.size)
 
     task_list = []
-    part_size = 2 * 1024 * 1024
     total_part_num = (
         1 if part_size >= document.size else math.ceil(document.size / part_size)
     )
@@ -179,6 +183,67 @@ async def multi_parts_uploader(
                 if inspect.isawaitable(cor):
                     await cor
     buffer.close()
+
+
+def get_filename_from_cd(cd):
+    """
+    Get filename from Content-Disposition
+    """
+    if not cd:
+        return None
+    fname = re.findall('filename=(.+)', cd)
+    if len(fname) == 0:
+        return None
+    return unquote(fname[0].strip().strip("'").strip('"'))
+
+
+def get_filename_from_url(url):
+    name = unquote(url.split('/')[-1].split('?')[0].strip().strip("'").strip('"'))
+    if len(name) > 0:
+        return name
+    else:
+        return None
+
+
+def get_ext(content_type):
+    return mimetypes.guess_extension(content_type)
+
+
+async def multi_parts_uploader_from_url(url, progress_callback=None):
+    response = requests.get(url, stream=True)
+    if response.status_code == 200:
+        total_length = int(response.headers['Content-Length'])
+        name = get_filename_from_cd(response.headers.get('Content-Disposition'))
+        if not name:
+            name = get_filename_from_url(url)
+            if name:
+                ext = get_ext(response.headers['Content-Type'])
+                if ext != name.split('.')[-1]:
+                    name = name.split('.')[0] + ext
+            else:
+                name = str(int(time.time())) + ext
+
+        upload_session = onedrive.multipart_upload_session_builder(name)
+        uploader = onedrive.multipart_uploader(upload_session, total_length)
+
+        offset = 0
+        if progress_callback:
+            cor = progress_callback(offset, total_length)
+            if inspect.isawaitable(cor):
+                await cor
+        for chunk in response.iter_content(chunk_size=part_size):
+            buffer = BytesIO()
+            buffer.write(chunk)
+            buffer.seek(0)
+            await onedrive.multipart_upload(uploader, buffer, offset, buffer.getbuffer().nbytes)
+            offset += buffer.getbuffer().nbytes
+            if progress_callback:
+                cor = progress_callback(offset, total_length)
+                if inspect.isawaitable(cor):
+                    await cor
+        return name
+    else:
+        raise Exception("File from url not found")
 
 
 def get_link(string):
@@ -216,8 +281,8 @@ async def help(event):
 
 - To transfer files, forward or upload to me.
 - To transfer restricted content, right click the content, copy the message link, and send to me.
-- Uploading through url will call Onedrive's API, which means Onedrive's server will visit the url and download the file for you.
-    '''%cmd_helper)
+- Uploading through url will call Onedrive's API, which means Onedrive's server will visit the url and download the file for you. If the url is invalid to OneDrive, the bot will try using bot's uploader to transfer.
+'''%cmd_helper)
     raise events.StopPropagation
 
 
@@ -329,12 +394,20 @@ async def url(event):
     await check_in_group(event)
     await check_login(event)
 
+    async def callback(current, total):
+        current = current / (1024 * 1024)
+        total = total / (1024 * 1024)
+        status = "Uploaded %.2fMB out of %.2fMB: %.2f%%"% (current, total, current / total * 100)
+        logger(status)
+        msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
+        await edit_message(tg_bot, status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
+
     try:
         cmd = cmd_parser(event)
         _url = cmd[0]
         # lest the url is bold
         _url = _url.strip().strip('*')
-        name = _url.split('/')[-1]
+        name = unquote(_url.split('/')[-1])
     except:
         await event.reply('''
 Command `/url` format wrong.
@@ -366,10 +439,9 @@ Usage: `/url` file_url
             await asyncio.sleep(5)
             response = onedrive.upload_from_url_progress(progress_url)
             progress = response.content
-
         status = "Uploaded: %.2f%%" % float(progress['percentageComplete'])
         logger(status)
-        if 'fail' not in str(progress) and 'error' not in str(progress) and 'Error' not in str(progress) and 'Fail' not in str(progress):
+        if progress['status'] == 'completed':
             logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
             msg_link = 'https://t.me/c/%d/%d'%(event.message.peer_id.channel_id, event.message.id)
             await edit_message(tg_bot, status_bar, 'Status:\n\n%s\n\n%s'%(msg_link, status))
@@ -378,20 +450,36 @@ Usage: `/url` file_url
             await delete_message(event)
             await edit_message(tg_bot, status_bar, 'Status:\n\nNo job yet.')
         else:
-            await event.reply(logger('Error: something is wrong\n\nUpload url: %s\nProgress url: %s\n\nResponse: %s' % (_url, progress_url, progress)))
-            await event.reply(logger("Analysis: try again later, or offer a proper url"))
+            logger('use local uploader to upload from url')
+            name = await multi_parts_uploader_from_url(_url, callback)
+            logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
+            if not delete_flag:
+                await event.reply('Done.')
+            await delete_message(event)
+            await edit_message(tg_bot, status_bar, 'Status:\n\nNo job yet.')
 
     except Exception as e:
-        await event.reply('Error: %s\nUpload url: %s\nProgress url: %s\n\nResponse: %s' % (logger(e), _url, progress_url, logger(progress)))
-        try:
-            if progress['errorCode'] == 'ParameterIsTooLong':
-                await event.reply(logger("Analysis: url too long.OneDrive API doesn't support long url."))
-            elif progress['errorCode'] == 'Forbidden':
-                await event.reply(logger("Analysis: url protocol is not HTTP, or the url has been forbidden."))
-            elif progress['errorCode'] == 'NotFound':
-                await event.reply(logger("Analysis: content not found."))
-        except Exception as e:
-            logger(e)
+        if 'errorCode' in progress.keys():
+            if progress['errorCode'] == 'ParameterIsTooLong' or progress['errorCode'] == 'NameContainsInvalidCharacters':
+                # await event.reply(logger("Analysis: url too long.OneDrive API doesn't support long url."))
+                try:
+                    logger('use local uploader to upload from url')
+                    name = await multi_parts_uploader_from_url(_url, callback)
+                    logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
+                    if not delete_flag:
+                        await event.reply('Done.')
+                    await delete_message(event)
+                    await edit_message(tg_bot, status_bar, 'Status:\n\nNo job yet.')
+                except Exception as e1:
+                    await event.reply('Error: %s\nUpload url: %s\nProgress url: %s\n\nResponse: %s' % (logger(e1), _url, progress_url, logger(progress)))
+            else:
+                await event.reply('Error: %s\nUpload url: %s\nProgress url: %s\n\nResponse: %s' % (logger(e), _url, progress_url, logger(progress)))
+                if progress['errorCode'] == 'Forbidden':
+                    await event.reply(logger("Analysis: url protocol is not HTTP, or the url has been forbidden because of too many failed requests."))
+                elif progress['errorCode'] == 'NotFound' or progress['errorCode'] == 'operationNotFound':
+                    await event.reply(logger("Analysis: content not found."))
+        else:
+            await event.reply('Error: %s\nUpload url: %s\nProgress url: %s\n\nResponse: %s' % (logger(e), _url, progress_url, logger(progress)))
 
     raise events.StopPropagation
 

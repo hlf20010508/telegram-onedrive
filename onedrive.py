@@ -18,6 +18,7 @@ from onedrivesdk.http_response import HttpResponse
 import json
 import asyncio
 import time
+from urllib.parse import unquote
 
 def authenticate_request(self, request):
     if self._session is None:
@@ -119,7 +120,7 @@ class Onedrive:
             break  # while True
     
     def upload_from_url(self, url):
-        name = url.split("/")[-1]
+        name = unquote(url.split("/")[-1])
         opts = [
             HeaderOption('Prefer', 'respond-async'),
         ]
@@ -150,7 +151,7 @@ class Onedrive:
             'Headers': response.headers,
             'Content': response.content
         }
-        raise OneDriveError(response_dict, response.status)
+        raise Exception('upload from url response error: ' + str(response_dict))
     
     def upload_from_url_progress(self, url):        
         tries = 0
