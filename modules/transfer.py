@@ -77,7 +77,8 @@ async def multi_parts_uploader(
 
 
 async def multi_parts_uploader_from_url(url, progress_callback=None):
-    name = get_filename(url)
+    name, response = get_filename(url)
+    total_length = int(response.headers['Content-Length'])
 
     upload_session = onedrive.multipart_upload_session_builder(name)
     uploader = onedrive.multipart_uploader(upload_session, total_length)
@@ -97,4 +98,3 @@ async def multi_parts_uploader_from_url(url, progress_callback=None):
             cor = progress_callback(offset, total_length)
             if inspect.isawaitable(cor):
                 await cor
-    return name

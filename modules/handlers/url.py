@@ -26,7 +26,6 @@ async def url_handler(event):
         url = cmd[0]
         # lest the url is bold
         url = url.strip().strip('*')
-        name = get_filename(url)
     except:
         await event.reply(url_res)
         raise events.StopPropagation
@@ -36,8 +35,14 @@ async def url_handler(event):
         raise events.StopPropagation
 
     status_message = await Status_Message.create(event)
-    origin_template = status_message.template
-    status_message.template = "Uploaded: %.2f%%"
+
+    try:
+        name, local_response = get_filename(url)
+        total_length = int(local_response.headers['Content-Length']) / (1024 * 1024)
+    except Exception as e:
+        logger(e)
+        await event.reply(logger('Error:\n%s'%analysis_content_not_found))
+        raise events.StopPropagation
 
     try:
         logger('upload url: %s' % url)
@@ -52,7 +57,8 @@ async def url_handler(event):
             response = onedrive.upload_from_url_progress(progress_url)
             progress = response.content
             if progress['status'] in ['notStarted', 'inProgress', 'completed']:
-                status_message.status = status_message.template % float(progress['percentageComplete'])
+                percentage = float(progress['percentageComplete'])
+                status_message.status = status_message.template % (total_length * percentage / 100, total_length, percentage)
                 logger(status_message.status)
                 await status_message.update()
 
@@ -67,12 +73,11 @@ async def url_handler(event):
 
     except Exception as e:
         if 'status' in progress.keys():
-            status_message.template = origin_template
             if progress['status'] == 'waiting':
                 try:
                     logger('use local uploader to upload from url')
                     callback = Callback(event, status_message)
-                    name = await multi_parts_uploader_from_url(url, callback)
+                    await multi_parts_uploader_from_url(url, callback)
                     logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
                     await status_message.finish()
                 except Exception as sub_e:
@@ -83,7 +88,7 @@ async def url_handler(event):
                         try:
                             logger('use local uploader to upload from url')
                             callback = Callback(event, status_message)
-                            name = await multi_parts_uploader_from_url(url, callback)
+                            await multi_parts_uploader_from_url(url, callback)
                             logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
                             await status_message.finish()
                         except Exception as sub_e:

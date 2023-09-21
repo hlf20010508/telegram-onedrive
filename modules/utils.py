@@ -145,21 +145,34 @@ def get_filename(url):
             name = get_filename_from_url(url)
             if name:
                 ext = get_ext(response.headers['Content-Type'])
-                if ext != name.split('.')[-1]:
-                    name = name.split('.')[0] + ext
+                if ext:
+                    if ext != name.split('.')[-1]:
+                        name = name.split('.')[0] + ext
+                else:
+                    raise Exception("Url refer to none-file")
             else:
                 name = str(int(time.time())) + ext
         elif len(name) > 100:
             ext = get_ext(response.headers['Content-Type'])
-            name = str(int(time.time())) + ext
-        return name
+            if ext:
+                name = str(int(time.time())) + ext
+            else:
+                raise Exception("Url refer to none-file")
+        return name, response
     else:
         raise Exception("File from url not found")
 
 
 
 def get_ext(content_type):
-    return mimetypes.guess_extension(content_type)
+    ext = mimetypes.guess_extension(content_type)
+    if ext:
+        return ext
+    else:
+        content_type = re.findall('([^;]+);', content_type)
+        if len(content_type) == 0:
+            return None
+        return mimetypes.guess_extension(content_type[0])
 
 
 def get_link(string):
