@@ -11,7 +11,7 @@ import asyncio
 import os
 from modules.client import tg_bot, onedrive
 from modules.env import tg_user_name
-from modules.utils import Callback, Status_Message, check_in_group, check_login, cmd_parser, get_link
+from modules.utils import Callback, Status_Message, check_in_group, check_login, cmd_parser, get_link, get_filename
 from modules.log import logger
 from modules.transfer import multi_parts_uploader_from_url
 from modules.global_var import url_res, analysis_content_not_found, analysis_not_http_or_forbidden, analysis_work_canncelled
@@ -26,7 +26,7 @@ async def url_handler(event):
         url = cmd[0]
         # lest the url is bold
         url = url.strip().strip('*')
-        name = unquote(url.split('/')[-1])
+        name = get_filename(url)
     except:
         await event.reply(url_res)
         raise events.StopPropagation
@@ -36,11 +36,12 @@ async def url_handler(event):
         raise events.StopPropagation
 
     status_message = await Status_Message.create(event)
+    origin_template = status_message.template
     status_message.template = "Uploaded: %.2f%%"
 
     try:
         logger('upload url: %s' % url)
-        progress_url = onedrive.upload_from_url(url)
+        progress_url = onedrive.upload_from_url(url, name)
         logger('progress url: %s' % progress_url)
     except Exception as e:
         await event.reply(logger(e))
@@ -66,6 +67,7 @@ async def url_handler(event):
 
     except Exception as e:
         if 'status' in progress.keys():
+            status_message.template = origin_template
             if progress['status'] == 'waiting':
                 try:
                     logger('use local uploader to upload from url')

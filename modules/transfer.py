@@ -14,7 +14,7 @@ import requests
 import time
 from modules.client import onedrive
 from modules.global_var import PART_SIZE
-from modules.utils import get_filename_from_cd, get_filename_from_url, get_ext
+from modules.utils import get_filename_from_cd, get_filename_from_url, get_ext, get_filename
 
 
 async def download_part(client, input_location, offset):
@@ -77,37 +77,24 @@ async def multi_parts_uploader(
 
 
 async def multi_parts_uploader_from_url(url, progress_callback=None):
-    response = requests.get(url, stream=True)
-    if response.status_code == 200:
-        total_length = int(response.headers['Content-Length'])
-        name = get_filename_from_cd(response.headers.get('Content-Disposition'))
-        if not name:
-            name = get_filename_from_url(url)
-            if name:
-                ext = get_ext(response.headers['Content-Type'])
-                if ext != name.split('.')[-1]:
-                    name = name.split('.')[0] + ext
-            else:
-                name = str(int(time.time())) + ext
+    name = get_filename(url)
 
-        upload_session = onedrive.multipart_upload_session_builder(name)
-        uploader = onedrive.multipart_uploader(upload_session, total_length)
+    upload_session = onedrive.multipart_upload_session_builder(name)
+    uploader = onedrive.multipart_uploader(upload_session, total_length)
 
-        offset = 0
+    offset = 0
+    if progress_callback:
+        cor = progress_callback(offset, total_length)
+        if inspect.isawaitable(cor):
+            await cor
+    for chunk in response.iter_content(chunk_size=PART_SIZE):
+        buffer = BytesIO()
+        buffer.write(chunk)
+        buffer.seek(0)
+        await onedrive.multipart_upload(uploader, buffer, offset, buffer.getbuffer().nbytes)
+        offset += buffer.getbuffer().nbytes
         if progress_callback:
             cor = progress_callback(offset, total_length)
             if inspect.isawaitable(cor):
                 await cor
-        for chunk in response.iter_content(chunk_size=PART_SIZE):
-            buffer = BytesIO()
-            buffer.write(chunk)
-            buffer.seek(0)
-            await onedrive.multipart_upload(uploader, buffer, offset, buffer.getbuffer().nbytes)
-            offset += buffer.getbuffer().nbytes
-            if progress_callback:
-                cor = progress_callback(offset, total_length)
-                if inspect.isawaitable(cor):
-                    await cor
-        return name
-    else:
-        raise Exception("File from url not found")
+    return name

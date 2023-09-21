@@ -8,8 +8,10 @@
 from telethon import events
 from telethon.tl import types
 import re
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse, parse_qs
 import mimetypes
+import requests
+import time
 from modules.client import tg_bot, tg_client
 from modules.log import logger
 from modules.global_var import check_in_group_res, not_login_res
@@ -121,11 +123,39 @@ def get_filename_from_cd(cd):
 
 
 def get_filename_from_url(url):
-    name = unquote(url.split('/')[-1].split('?')[0].strip().strip("'").strip('"'))
+    parsed_url = urlparse(url)
+    captured_value_dict = parse_qs(parsed_url.query)
+    for item_name in ['name', 'filename', 'file_name', 'fileName', 'title']:
+        if item_name in captured_value_dict.keys():
+            name = captured_value_dict[item_name]
+            break
+        else:
+            name = unquote(url.split('/')[-1].split('?')[0].strip().strip("'").strip('"'))
     if len(name) > 0:
         return name
     else:
         return None
+
+
+def get_filename(url):
+    response = requests.get(url, stream=True)
+    if response.status_code == 200:
+        name = get_filename_from_cd(response.headers.get('Content-Disposition'))
+        if not name:
+            name = get_filename_from_url(url)
+            if name:
+                ext = get_ext(response.headers['Content-Type'])
+                if ext != name.split('.')[-1]:
+                    name = name.split('.')[0] + ext
+            else:
+                name = str(int(time.time())) + ext
+        elif len(name) > 100:
+            ext = get_ext(response.headers['Content-Type'])
+            name = str(int(time.time())) + ext
+        return name
+    else:
+        raise Exception("File from url not found")
+
 
 
 def get_ext(content_type):
