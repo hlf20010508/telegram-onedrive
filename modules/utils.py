@@ -25,7 +25,7 @@ class Status_Message:
         self.msg_link = '[Status:](https://t.me/c/%d/%d)' % (self.event.message.peer_id.channel_id, self.event.message.id)
         self.status = 'In progress...'
         self.template = "Uploaded %.2fMB out of %.2fMB: %.2f%%"
-        self.error_template = 'Error:\n%s\nUpload url: %s\nProgress url: %s\n\nResponse: %s'
+        self.error_template = '- Error:\n%s\n- Upload url:\n%s\n\n- Progress url:\n%s\n\n- Response:\n%s'
         self.error_template_full = '- Error:\n%s\n- Upload url:\n%s\n\n- Progress url:\n%s\n\n- Response:\n%s\n\n-Analysis:\n%s'
         self.message = await self.event.respond(self.response)
         return self
