@@ -6,7 +6,6 @@
 """
 
 from telethon import events
-from urllib.parse import unquote
 import asyncio
 import os
 from modules.client import tg_bot, onedrive
@@ -77,7 +76,7 @@ async def url_handler(event):
                 try:
                     logger('use local uploader to upload from url')
                     callback = Callback(event, status_message)
-                    await multi_parts_uploader_from_url(url, callback)
+                    await multi_parts_uploader_from_url(name, local_response, callback)
                     logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
                     await status_message.finish()
                 except Exception as sub_e:
@@ -88,7 +87,7 @@ async def url_handler(event):
                         try:
                             logger('use local uploader to upload from url')
                             callback = Callback(event, status_message)
-                            await multi_parts_uploader_from_url(url, callback)
+                            await multi_parts_uploader_from_url(name, local_response, callback)
                             logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
                             await status_message.finish()
                         except Exception as sub_e:

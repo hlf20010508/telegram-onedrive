@@ -10,11 +10,8 @@ import math
 import inspect
 from io import BytesIO
 import asyncio
-import requests
-import time
 from modules.client import onedrive
 from modules.global_var import PART_SIZE
-from modules.utils import get_filename_from_cd, get_filename_from_url, get_ext, get_filename
 
 
 async def download_part(client, input_location, offset):
@@ -76,8 +73,7 @@ async def multi_parts_uploader(
     buffer.close()
 
 
-async def multi_parts_uploader_from_url(url, progress_callback=None):
-    name, response = get_filename(url)
+async def multi_parts_uploader_from_url(name, response, progress_callback=None):
     total_length = int(response.headers['Content-Length'])
 
     upload_session = onedrive.multipart_upload_session_builder(name)

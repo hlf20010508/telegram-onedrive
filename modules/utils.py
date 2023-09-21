@@ -9,12 +9,12 @@ from telethon import events
 from telethon.tl import types
 import re
 from urllib.parse import unquote, urlparse, parse_qs
-import mimetypes
 import requests
 import time
 from modules.client import tg_bot, tg_client
 from modules.log import logger
-from modules.global_var import check_in_group_res, not_login_res
+from modules.global_var import check_in_group_res, not_login_res, file_param_name_list
+from modules.mime import mime_dict
 
 
 class Status_Message:
@@ -123,15 +123,16 @@ def get_filename_from_cd(cd):
 
 
 def get_filename_from_url(url):
+    name = None
     parsed_url = urlparse(url)
     captured_value_dict = parse_qs(parsed_url.query)
-    for item_name in ['name', 'filename', 'file_name', 'fileName', 'title']:
-        if item_name in captured_value_dict.keys():
+    for item_name in captured_value_dict.keys():
+        if item_name.lower() in file_param_name_list:
             name = captured_value_dict[item_name]
             break
-        else:
-            name = unquote(url.split('/')[-1].split('?')[0].strip().strip("'").strip('"'))
-    if len(name) > 0:
+    if not name:
+        name = unquote(url.split('/')[-1].split('?')[0].strip().strip("'").strip('"'))
+    if name:
         return name
     else:
         return None
@@ -140,40 +141,45 @@ def get_filename_from_url(url):
 def get_filename(url):
     response = requests.get(url, stream=True)
     if response.status_code == 200:
-        name = get_filename_from_cd(response.headers.get('Content-Disposition'))
-        if not name:
-            name = get_filename_from_url(url)
-            if name:
-                ext = get_ext(response.headers['Content-Type'])
-                if ext:
-                    if ext != name.split('.')[-1]:
-                        name = name.split('.')[0] + ext
-                else:
-                    raise Exception("Url refer to none-file")
-            else:
-                name = str(int(time.time())) + ext
-        elif len(name) > 100:
+        if 'Content-Length' in response.headers.keys():
+            name = get_filename_from_cd(response.headers.get('Content-Disposition'))
             ext = get_ext(response.headers['Content-Type'])
-            if ext:
-                name = str(int(time.time())) + ext
+            if name:
+                if len(name) > 100:
+                    if ext:
+                        name = str(int(time.time())) + ext[0]
+                    else:
+                        name = str(int(time.time()))
             else:
-                raise Exception("Url refer to none-file")
-        return name, response
-    else:
-        raise Exception("File from url not found")
-
+                name = get_filename_from_url(url)
+                if name:
+                    if ext:
+                        if '.' + name.split('.')[-1].lower() not in ext:
+                            name = name + ext[0]
+                else:
+                    if ext:
+                        name = str(int(time.time())) + ext[0]
+                    else:
+                        raise Exception('Url refer to none-file')
+            return name, response
+    raise Exception("File from url not found")
 
 
 def get_ext(content_type):
-    ext = mimetypes.guess_extension(content_type)
-    if ext:
+    try:
+        ext = mime_dict[content_type]
         return ext
-    else:
-        content_type = re.findall('([^;]+);', content_type)
-        if len(content_type) == 0:
+    except:
+        content_type_list = re.findall('([^;]+);', content_type)
+        if content_type_list:
+            try:
+                ext = mime_dict[content_type_list[0]]
+                return ext
+            except:
+                return None
+        else:
             return None
-        return mimetypes.guess_extension(content_type[0])
-
+        
 
 def get_link(string):
     regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"

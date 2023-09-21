@@ -8,6 +8,9 @@
 PART_SIZE = 2 * 1024 * 1024
 
 
+file_param_name_list = ['name', 'filename', 'file_name', 'title', 'file']
+
+
 cmd_helper = '''
 - /auth: Authorize for Telegram and OneDrive.
 - /clear: Clear all history except status message.
