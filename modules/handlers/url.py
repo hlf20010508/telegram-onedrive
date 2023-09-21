@@ -11,89 +11,93 @@ import asyncio
 import os
 from modules.client import tg_bot, onedrive
 from modules.env import tg_user_name
-from modules.utils import Callback, check_in_group, check_login, edit_message, cmd_parser, get_link, delete_message
+from modules.utils import Callback, Status_Message, check_in_group, check_login, cmd_parser, get_link
 from modules.log import logger
 from modules.transfer import multi_parts_uploader_from_url
-from modules.global_var import url_res
+from modules.global_var import url_res, analysis_content_not_found, analysis_not_http_or_forbidden, analysis_work_canncelled
 
 
 @tg_bot.on(events.NewMessage(pattern="/url", incoming=True, from_users=tg_user_name))
+@check_in_group
+@check_login
 async def url_handler(event):
-    await check_in_group(event)
-    await check_login(event)
-
     try:
         cmd = cmd_parser(event)
-        _url = cmd[0]
+        url = cmd[0]
         # lest the url is bold
-        _url = _url.strip().strip('*')
-        name = unquote(_url.split('/')[-1])
+        url = url.strip().strip('*')
+        name = unquote(url.split('/')[-1])
     except:
         await event.reply(url_res)
         raise events.StopPropagation
 
-    if not get_link(_url):
+    if not get_link(url):
         await event.reply(logger("Please offer an HTTP url."))
         raise events.StopPropagation
 
-    status_message = await event.reply('In progress...', silent=True)
+    status_message = await Status_Message.create(event)
+    status_message.template = "Uploaded: %.2f%%"
 
     try:
-        logger('upload url: %s' % _url)
-        progress_url = onedrive.upload_from_url(_url)
+        logger('upload url: %s' % url)
+        progress_url = onedrive.upload_from_url(url)
         logger('progress url: %s' % progress_url)
     except Exception as e:
         await event.reply(logger(e))
         raise events.StopPropagation 
 
     try:
-        response = onedrive.upload_from_url_progress(progress_url)
-        progress = response.content
-        while progress['status'] in ['notStarted', 'inProgress']:
-            status = "Uploaded: %.2f%%" % float(progress['percentageComplete'])
-            logger(status)
-            await edit_message(tg_bot, status_message, 'Status:\n%s' % status)
-            await asyncio.sleep(5)
+        while True:
             response = onedrive.upload_from_url_progress(progress_url)
             progress = response.content
-        status = "Uploaded: %.2f%%" % float(progress['percentageComplete'])
-        logger(status)
-        await edit_message(tg_bot, status_message, 'Status:\n%s' % status)
-        if progress['status'] == 'completed':
-            logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
-            await edit_message(tg_bot, status_message, 'Done.')
-            await delete_message(event)
-            await delete_message(status_message)
-        else:
-            logger('use local uploader to upload from url')
-            callback = Callback(event, status_message)
-            name = await multi_parts_uploader_from_url(_url, callback.run)
-            logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
-            await edit_message(tg_bot, status_message, 'Done.')
-            await delete_message(event)
-            await delete_message(status_message)
+            if progress['status'] in ['notStarted', 'inProgress', 'completed']:
+                status_message.status = status_message.template % float(progress['percentageComplete'])
+                logger(status_message.status)
+                await status_message.update()
+
+                if progress['status'] == 'completed':
+                    logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
+                    await status_message.finish()
+                    break
+
+                await asyncio.sleep(5)
+            else:
+                raise Exception('status error')
 
     except Exception as e:
-        if 'errorCode' in progress.keys():
-            if progress['errorCode'] == 'ParameterIsTooLong' or progress['errorCode'] == 'NameContainsInvalidCharacters':
-                # await event.reply(logger("Analysis: url too long.OneDrive API doesn't support long url."))
+        if 'status' in progress.keys():
+            if progress['status'] == 'waiting':
                 try:
                     logger('use local uploader to upload from url')
                     callback = Callback(event, status_message)
-                    name = await multi_parts_uploader_from_url(_url, callback.run)
+                    name = await multi_parts_uploader_from_url(url, callback)
                     logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
-                    await edit_message(tg_bot, status_message, 'Done.')
-                    await delete_message(event)
-                    await delete_message(status_message)
-                except Exception as e1:
-                    await event.reply('Error: %s\nUpload url: %s\nProgress url: %s\n\nResponse: %s' % (logger(e1), _url, progress_url, logger(progress)))
+                    await status_message.finish()
+                except Exception as sub_e:
+                    await status_message.report_error(sub_e, url, progress_url, progress)
+            elif progress['status'] == 'failed':
+                if 'errorCode' in progress.keys():
+                    if progress['errorCode'] == 'ParameterIsTooLong' or progress['errorCode'] == 'NameContainsInvalidCharacters':
+                        try:
+                            logger('use local uploader to upload from url')
+                            callback = Callback(event, status_message)
+                            name = await multi_parts_uploader_from_url(url, callback)
+                            logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
+                            await status_message.finish()
+                        except Exception as sub_e:
+                            await status_message.report_error(sub_e, url, progress_url, progress)
+                    else:
+                        if progress['errorCode'] == 'Forbidden':
+                            await status_message.report_error(e, url, progress_url, progress, analysis_not_http_or_forbidden)
+                        elif progress['errorCode'] == 'NotFound' or progress['errorCode'] == 'operationNotFound':
+                            await status_message.report_error(e, url, progress_url, progress, analysis_content_not_found)
+                        else:
+                            await status_message.report_error(e, url, progress_url, progress)
+                else:
+                    await status_message.report_error(e, url, progress_url, progress)
             else:
-                await event.reply('Error: %s\nUpload url: %s\nProgress url: %s\n\nResponse: %s' % (logger(e), _url, progress_url, logger(progress)))
-                if progress['errorCode'] == 'Forbidden':
-                    await event.reply(logger("Analysis: url protocol is not HTTP, or the url has been forbidden because of too many failed requests."))
-                elif progress['errorCode'] == 'NotFound' or progress['errorCode'] == 'operationNotFound':
-                    await event.reply(logger("Analysis: content not found."))
+                await status_message.report_error(e, url, progress_url, progress, analysis_work_canncelled)
         else:
-            await event.reply('Error: %s\nUpload url: %s\nProgress url: %s\n\nResponse: %s' % (logger(e), _url, progress_url, logger(progress)))
+            await status_message.report_error(e, url, progress_url, progress, analysis_content_not_found)
 
     raise events.StopPropagation

@@ -18,7 +18,7 @@ def logger(message):
             message = StringIO()
             print_exc(file=message)
             message = message.getvalue()
-        message = '%s\n%s\n' % (time, message)
-        print(message, end='')
-        log_file.write(message)
+        template = '%s\n%s\n'
+        print(template % (time, message), end='')
+        log_file.write(template % (time, message))
     return message

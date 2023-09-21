@@ -271,13 +271,6 @@
             "markers": "python_version >= '3.7'",
             "version": "==2.1.3"
         },
-        "onedrivesdk": {
-            "hashes": [
-                "sha256:922037d226dd374ab5a28379c45322cbc15f4d77f5117e9904599fdba05f6054"
-            ],
-            "index": "pypi",
-            "version": "==1.1.8"
-        },
         "pyaes": {
             "hashes": [
                 "sha256:02c1b1405c38d3c370b085fb952dd8bea3fadcee6411ad99f312cc129c536d8f"

@@ -14,28 +14,58 @@ from modules.client import tg_bot, tg_client
 from modules.log import logger
 from modules.global_var import check_in_group_res, not_login_res
 
+
+class Status_Message:
+    @classmethod
+    async def create(cls, event):
+        self = Status_Message()
+        self.event = event
+        self.msg_link = '[Status:](https://t.me/c/%d/%d)' % (self.event.message.peer_id.channel_id, self.event.message.id)
+        self.status = 'In progress...'
+        self.template = "Uploaded %.2fMB out of %.2fMB: %.2f%%"
+        self.error_template = 'Error:\n%s\nUpload url: %s\nProgress url: %s\n\nResponse: %s'
+        self.error_template_full = '- Error:\n%s\n- Upload url:\n%s\n\n- Progress url:\n%s\n\n- Response:\n%s\n\n-Analysis:\n%s'
+        self.message = await self.event.respond(self.response)
+        return self
+    
+    def __call__(self):
+        return self.message
+    
+    @property
+    def response(self):
+        return '%s\n%s' % (self.msg_link, self.status)
+    
+    async def update(self):
+        await edit_message(tg_bot, self.message, self.response)
+
+    async def report_error(self, exception, file_url, progress_url, response, analysis=None):
+        if analysis:
+            await self.event.reply(self.error_template_full % (logger(exception), file_url, progress_url, logger(response), analysis))
+        else:
+            await self.event.reply(self.error_template % (logger(exception), file_url, progress_url, logger(response)))
+    
+    async def finish(self):
+        self.status = 'Done.'
+        await edit_message(tg_bot, self.message, self.response)
+        await delete_message(self.event)
+        await delete_message(self.message)
+
+
 class Callback:
     def __init__(self, event, status_message):
         self.event = event
         self.status_message = status_message
     
-    async def run(self, current, total):
+    async def __call__(self, current, total):
         current = current / (1024 * 1024)
         total = total / (1024 * 1024)
-        status = "Uploaded %.2fMB out of %.2fMB: %.2f%%"% (current, total, current / total * 100)
-        logger(status)
-        await edit_message(tg_bot, self.status_message, 'Status:\n%s' % status)
+        self.status_message.status = self.status_message.template % (current, total, current / total * 100)
+        logger(self.status_message.status)
+        await self.status_message.update()
 
 
 def cmd_parser(event):
     return event.text.split()[1:]
-
-
-async def clear_history(event):
-    ids = []
-    async for message in tg_client.iter_messages(event.chat_id):
-        ids.append(message.id)
-    await tg_client.delete_messages(event.chat_id, ids)
 
 
 async def delete_message(message):
@@ -52,22 +82,24 @@ async def edit_message(bot, event, message):
         pass
 
 
-async def check_in_group(event):
-    if isinstance(event.message.peer_id, types.PeerUser):
-        await event.respond(check_in_group_res)
-        raise events.StopPropagation
+def check_in_group(func):
+    async def wrapper(event, *args, **kwargs):
+        if isinstance(event.message.peer_id, types.PeerUser):
+            await event.respond(check_in_group_res)
+            raise events.StopPropagation
+        return await func(event, *args, **kwargs)
+    return wrapper
 
 
-async def check_login(event):
-    try:
-        if await tg_client.get_me():
-            return True
-        else:
+def check_login(func):
+    async def wrapper(event, *args, **kwargs):
+        try:
+            if not await tg_client.get_me():
+                await res_not_login(event)
+        except:
             await res_not_login(event)
-            return False
-    except:
-        await res_not_login(event)
-        return False
+        return await func(event, *args, **kwargs)
+    return wrapper
 
 
 async def res_not_login(event):

@@ -10,16 +10,15 @@ from telethon.tl import types
 import os
 from modules.client import tg_bot, tg_client, onedrive
 from modules.env import tg_user_name, remote_root_path
-from modules.utils import Callback, check_in_group, check_login, edit_message, delete_message, get_link
+from modules.utils import Callback, Status_Message, check_in_group, check_login, get_link
 from modules.log import logger
 from modules.transfer import multi_parts_uploader
 
 
 @tg_bot.on(events.NewMessage(incoming=True, from_users=tg_user_name))
+@check_in_group
+@check_login
 async def transfer_handler(event):
-    await check_in_group(event)
-    await check_login(event)
-
     if event.media and not isinstance(event.media, types.MessageMediaWebPage):
         message = await tg_client.get_messages(event.message.peer_id, ids=event.message.id)
         
@@ -29,27 +28,23 @@ async def transfer_handler(event):
                     if "document" in message.media.to_dict().keys():
                         if event.media.document.id == message.media.document.id:
                             name = "%d%s" % (event.media.document.id, event.file.ext)
-                            status_message = await event.reply('In progress...', silent=True)
+                            status_message = await Status_Message.create(event)
                             callback = Callback(event, status_message)
-                            await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback.run)
+                            await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
                             logger("File uploaded to %s" % os.path.join(remote_root_path, name))
-                            await edit_message(tg_bot, status_message, 'Done.')
-                            await delete_message(message)
-                            await delete_message(status_message)
+                            await status_message.finish()
 
             if "photo" in event.media.to_dict().keys():
                 if message.media:
                     if "photo" in message.media.to_dict().keys():
                         if event.media.photo.id == message.media.photo.id:
                             name = "%d%s" % (event.media.photo.id, event.file.ext)
-                            status_message = await event.reply('In progress...', silent=True)
+                            status_message = await Status_Message.create(event)
                             callback = Callback(event, status_message)
-                            buffer = await message.download_media(file=bytes, progress_callback=callback.run)
+                            buffer = await message.download_media(file=bytes, progress_callback=callback)
                             onedrive.stream_upload(buffer, name)
                             logger("File uploaded to %s" % os.path.join(remote_root_path, name))
-                            await edit_message(tg_bot, status_message, 'Done.')
-                            await delete_message(message)
-                            await delete_message(status_message)
+                            await status_message.finish()
         except Exception as e:
             await event.reply('Error: %s' % logger(e))
     
@@ -77,31 +72,26 @@ async def transfer_handler(event):
                 try:
                     if "document" in message.media.to_dict().keys():
                         name = "%d%s" % (message.media.document.id, message.file.ext)
-                        status_message = await event.reply('In progress...', silent=True)
+                        status_message = await Status_Message.create(event)
                         callback = Callback(event, status_message)
-                        await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback.run)
+                        await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
                         logger("File uploaded to %s" % os.path.join(remote_root_path, name))
-                        await edit_message(tg_bot, status_message, 'Done.')
-                        await delete_message(event)
-                        await delete_message(status_message)
+                        await status_message.finish()
 
                     if "photo" in message.media.to_dict().keys():
                         name = "%d%s" % (message.media.photo.id, message.file.ext)
-                        status_message = await event.reply('In progress...', silent=True)
+                        status_message = await Status_Message.create(event)
                         callback = Callback(event, status_message)
-                        buffer = await message.download_media(file=bytes, progress_callback=callback.run)
+                        buffer = await message.download_media(file=bytes, progress_callback=callback)
                         onedrive.stream_upload(buffer, name)
                         logger("File uploaded to %s" % os.path.join(remote_root_path, name))
-                        await edit_message(tg_bot, status_message, 'Done.')
-                        await delete_message(event)
-                        await delete_message(status_message)
+                        await status_message.finish()
 
                 except Exception as e:
                     await event.reply('Error: %s' % logger(e))
             else:
                 await event.reply(logger("Message not found."))
         else:
-            if event.text != '/auth':
-                logger('Unknown command.')
-                await event.reply("Use /help for available command.")
+            logger('Unknown command.')
+            await event.reply("Use /help for available command.")
     raise events.StopPropagation

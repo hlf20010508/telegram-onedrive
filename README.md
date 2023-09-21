@@ -22,9 +22,9 @@ That's why you need to prepare a lot of things to use this bot.
 - `/start` to start with bot.
 - `/auth` to authorize telegram and onedrive.
 - `/clear` to clear all history except status message.
+- `/autoDelete` to toggle whether bot should auto delete message.
 - `/links message_link range` to transfer sequential restricted content.
 - `/url file_url` to upload file through url.
-- `/autoDelete true/false` decides whether bot can auto delete message.
 - `/help` for help.
 
 Example:  
@@ -42,7 +42,7 @@ Example:
 - Add this bot to a group or channel.
 - In the group or channel, forward or upload files(or videos, photos, gifs, stickers, voices).
 - If you want to transfer restricted content from a group or channel, right click the content, copy the message link, and send the link.
-- Wait until the transfer completes. You can check status on replied message.
+- Wait until the transfer completes. You can check status on replied message, tap `Status` to locate current job.
 - Use `/help` for more information about other command.
 
 ## Preparation

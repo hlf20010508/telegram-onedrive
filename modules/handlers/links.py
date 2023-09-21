@@ -13,9 +13,9 @@ from modules.global_var import links_res
 
 
 @tg_bot.on(events.NewMessage(pattern="/links", incoming=True, from_users=tg_user_name))
+@check_in_group
+@check_login
 async def links_handler(event):
-    await check_in_group(event)
-    await check_login(event)
     try:
         cmd = cmd_parser(event)
         link = cmd[0]

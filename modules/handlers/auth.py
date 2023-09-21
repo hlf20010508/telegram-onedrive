@@ -15,39 +15,63 @@ from modules.utils import check_in_group
 from modules.client import tg_bot, tg_client, onedrive
 
 
-@tg_bot.on(events.NewMessage(pattern="/auth", incoming=True, from_users=tg_user_name))
-async def auth_handler(event, propagate=False):
-    await check_in_group(event)
-    auth_server = subprocess.Popen(('python', 'server/auth_server.py'))
-    async with tg_bot.conversation(event.chat_id) as conv:
+class Code_Callback:
+    def __init__(self, conv, type):
+        self.conv = conv
+        self.type = type
 
-        async def tg_code_callback():
-            await conv.send_message(
-                "Please visit %s to input your code to login to Telegram." % server_uri
-            )
-            res = requests.get(url=os.path.join(server_uri, "tg"), verify=False).json()
-            while not res["success"]:
-                await asyncio.sleep(1)
-                res = requests.get(
-                    url=os.path.join(server_uri, "tg"), verify=False
-                ).json()
-            return res["code"]
-
-        async def od_code_callback():
+    @property
+    async def tg_code(self):
+        await self.conv.send_message(
+            "Please visit %s to input your code to login to Telegram." % server_uri
+        )
+        while True:
+            res = requests.get(
+                url=os.path.join(server_uri, "tg"),
+                verify=False
+            ).json()
+            if res["success"]:
+                break
+            await asyncio.sleep(1)
+        return res["code"]
+    
+    @property
+    async def od_code(self):
+        auth_url = onedrive.get_auth_url()
+        await self.conv.send_message(
+            "Here are the authorization url of OneDrive:\n\n%s" % auth_url
+        )
+        while True:
             res = requests.get(
                 url=os.path.join(server_uri, "auth"),
                 params={"get": True},
                 verify=False,
             ).json()
-            while not res["success"]:
-                await asyncio.sleep(1)
-                res = requests.get(
-                    url=os.path.join(server_uri, "auth"),
-                    params={"get": True},
-                    verify=False,
-                ).json()
-            return res["code"]
-            
+            if res["success"]:
+                break
+            await asyncio.sleep(1)
+        return res["code"]
+    
+    @property
+    async def code(self):
+        if self.type == "tg":
+            return await self.tg_code
+        elif self.type == "od":
+            return await self.od_code
+
+    async def __call__(self):
+        return await self.code
+
+
+@tg_bot.on(events.NewMessage(pattern="/auth", incoming=True, from_users=tg_user_name))
+@check_in_group
+async def auth_handler(event, propagate=False):
+    auth_server = subprocess.Popen(('python', 'server/auth_server.py'))
+
+    async with tg_bot.conversation(event.chat_id) as conv:
+        tg_code_callback = Code_Callback(conv, 'tg')
+        od_code_callback = Code_Callback(conv, 'od')
+
         await conv.send_message("Logining into Telegram...")
         global tg_client
         tg_client = await tg_client.start(tg_user_phone, code_callback=tg_code_callback)
@@ -56,14 +80,11 @@ async def auth_handler(event, propagate=False):
         try:
             onedrive.load_session()
         except:
-            auth_url = onedrive.get_auth_url()
-            await conv.send_message(
-                "Here are the authorization url of OneDrive:\n\n%s" % auth_url
-            )
             code = await od_code_callback()
             onedrive.auth(code)
         await conv.send_message("Onedrive authorization successful!")
 
     auth_server.kill()
+
     if not propagate:
         raise events.StopPropagation
