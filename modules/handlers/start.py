@@ -9,9 +9,11 @@ from telethon import events
 from modules.client import tg_bot
 from modules.env import tg_user_name
 from modules.global_var import start_res
+from modules.utils import check_in_group
 
 
 @tg_bot.on(events.NewMessage(pattern="/start", incoming=True, from_users=tg_user_name))
+@check_in_group
 async def start_handler(event):
     """Send a message when the command /start is issued."""
     await event.respond(start_res)
