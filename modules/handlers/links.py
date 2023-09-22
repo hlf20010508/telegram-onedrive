@@ -18,10 +18,10 @@ from modules.global_var import links_res
 async def links_handler(event):
     try:
         cmd = cmd_parser(event)
-        link = cmd[0]
+        link = cmd[1]
         head_message_id = int(link.split('/')[-1])
         link_body = '/'.join(link.split('/')[:-1])
-        offsets = int(cmd[1])
+        offsets = int(cmd[2])
         await delete_message(event)
         for offset in range(offsets):
             await tg_client.send_message(event.chat_id, message='%s/%d'%(link_body, head_message_id + offset))

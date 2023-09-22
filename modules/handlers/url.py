@@ -22,7 +22,7 @@ from modules.global_var import url_res, analysis_content_not_found, analysis_not
 async def url_handler(event):
     try:
         cmd = cmd_parser(event)
-        url = cmd[0]
+        url = cmd[1]
         # lest the url is bold
         url = url.strip().strip('*')
     except:

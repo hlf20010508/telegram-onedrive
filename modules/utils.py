@@ -67,7 +67,7 @@ class Callback:
 
 
 def cmd_parser(event):
-    return event.text.split()[1:]
+    return event.text.split()
 
 
 async def delete_message(message):
