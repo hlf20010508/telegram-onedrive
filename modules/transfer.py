@@ -80,6 +80,7 @@ async def multi_parts_uploader_from_url(name, response, progress_callback=None):
     uploader = onedrive.multipart_uploader(upload_session, total_length)
 
     offset = 0
+    part_num = 1
     if progress_callback:
         cor = progress_callback(offset, total_length)
         if inspect.isawaitable(cor):
@@ -90,7 +91,8 @@ async def multi_parts_uploader_from_url(name, response, progress_callback=None):
         buffer.seek(0)
         await onedrive.multipart_upload(uploader, buffer, offset, buffer.getbuffer().nbytes)
         offset += buffer.getbuffer().nbytes
-        if progress_callback:
+        part_num += 1
+        if progress_callback and (part_num % 5 ==0 or offset == total_length):
             cor = progress_callback(offset, total_length)
             if inspect.isawaitable(cor):
                 await cor
