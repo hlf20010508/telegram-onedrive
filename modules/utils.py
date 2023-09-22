@@ -126,7 +126,7 @@ def get_filename_from_url(url):
     name = None
     parsed_url = urlparse(url)
     captured_value_dict = parse_qs(parsed_url.query)
-    for item_name in captured_value_dict.keys():
+    for item_name in captured_value_dict:
         if item_name.lower() in file_param_name_list:
             name = captured_value_dict[item_name]
             break
@@ -141,7 +141,7 @@ def get_filename_from_url(url):
 def get_filename(url):
     response = requests.get(url, stream=True)
     if response.status_code == 200:
-        if 'Content-Length' in response.headers.keys():
+        if 'Content-Length' in response.headers:
             name = get_filename_from_cd(response.headers.get('Content-Disposition'))
             ext = get_ext(response.headers['Content-Type'])
             if name:

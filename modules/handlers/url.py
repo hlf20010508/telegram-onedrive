@@ -71,7 +71,7 @@ async def url_handler(event):
                 raise Exception('status error')
 
     except Exception as e:
-        if 'status' in progress.keys():
+        if 'status' in progress:
             if progress['status'] == 'waiting':
                 try:
                     logger('use local uploader to upload from url')
@@ -82,7 +82,7 @@ async def url_handler(event):
                 except Exception as sub_e:
                     await status_message.report_error(sub_e, url, progress_url, progress)
             elif progress['status'] == 'failed':
-                if 'errorCode' in progress.keys():
+                if 'errorCode' in progress:
                     if progress['errorCode'] == 'ParameterIsTooLong' or progress['errorCode'] == 'NameContainsInvalidCharacters':
                         try:
                             logger('use local uploader to upload from url')

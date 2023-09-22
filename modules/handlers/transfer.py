@@ -23,9 +23,9 @@ async def transfer_handler(event):
         message = await tg_client.get_messages(event.message.peer_id, ids=event.message.id)
         
         try:
-            if "document" in event.media.to_dict().keys():
+            if "document" in event.media.to_dict():
                 if message.media:
-                    if "document" in message.media.to_dict().keys():
+                    if "document" in message.media.to_dict():
                         if event.media.document.id == message.media.document.id:
                             name = "%d%s" % (event.media.document.id, event.file.ext)
                             status_message = await Status_Message.create(event)
@@ -34,9 +34,9 @@ async def transfer_handler(event):
                             logger("File uploaded to %s" % os.path.join(remote_root_path, name))
                             await status_message.finish()
 
-            if "photo" in event.media.to_dict().keys():
+            if "photo" in event.media.to_dict():
                 if message.media:
-                    if "photo" in message.media.to_dict().keys():
+                    if "photo" in message.media.to_dict():
                         if event.media.photo.id == message.media.photo.id:
                             name = "%d%s" % (event.media.photo.id, event.file.ext)
                             status_message = await Status_Message.create(event)
@@ -70,7 +70,7 @@ async def transfer_handler(event):
 
             if message:
                 try:
-                    if "document" in message.media.to_dict().keys():
+                    if "document" in message.media.to_dict():
                         name = "%d%s" % (message.media.document.id, message.file.ext)
                         status_message = await Status_Message.create(event)
                         callback = Callback(event, status_message)
@@ -78,7 +78,7 @@ async def transfer_handler(event):
                         logger("File uploaded to %s" % os.path.join(remote_root_path, name))
                         await status_message.finish()
 
-                    if "photo" in message.media.to_dict().keys():
+                    if "photo" in message.media.to_dict():
                         name = "%d%s" % (message.media.photo.id, message.file.ext)
                         status_message = await Status_Message.create(event)
                         callback = Callback(event, status_message)
