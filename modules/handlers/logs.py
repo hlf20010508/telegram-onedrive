@@ -74,6 +74,9 @@ class Tail_File_Page:
 @check_in_group
 @check_login
 async def logs_handler(event):
+    if not os.path.exists(log_path):
+        await event.respond('Logs not found.')
+        raise events.StopPropagation
     cmd = cmd_parser(event)
     if len(cmd) == 1:
         with Tail_File_Page(log_path, logs_lines_per_page) as file:
