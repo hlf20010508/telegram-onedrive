@@ -18,6 +18,23 @@ So this project use a user account to download files and a bot account to play t
 
 That's why you need to prepare a lot of things to use this bot.
 
+## Demo
+|/start|/help|/auth Telegram|/auth OneDrive|
+|-|-|-|-|
+|![start](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/edd3f162-02fd-43c0-a6eb-46a7df890c0d)|![help](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/821053dc-5983-431d-ae83-66d095ce2a4b)|![auth-tg-m](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/4f35422d-cd92-4dac-ac8e-c63ead2db2cb)|![auth-od-m](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/7dca129d-1d0f-49d3-9a88-eb2dc16956c0)|
+
+|transfer single|transfer multi|link|/links message_link range|
+|-|-|-|-|
+|![transfer-single-m](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/3c064e08-8051-4f4e-9896-5fca95fa707a)|![transfer-multi-m](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/73f44d7d-e9cc-40fc-a7b1-547d04a5a0ec)|![link-m](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/647f70d3-593c-4a12-bce3-462d6ae78aa5)|![links-m](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/d862d200-9a1c-4642-88c8-610d5bddb49f)|
+
+|/clear|/clearLogs|/logs|/logs range|
+|-|-|-|-|
+|![clear](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/86485b4f-57b5-4a03-b74b-3bffd2800582)|![clearLogs](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/f3a48b2a-12dc-4543-841e-bf76349f4a34)|![logs](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/db07faa8-e8a9-4c4a-ae4f-bf1c88423280)|![logs-param](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/b373456e-2525-45ba-9859-9580a8f93d72)|
+
+|/autoDelete|/url file_url|
+|-|-|
+|![autoDelete-m](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/ff564f9f-66b0-4296-afe4-e8e3cdf70428)|![url](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/95994beb-815f-4e0f-a92c-69b5ffa19862)|
+
 ## Bot Command
 - `/start` to start with bot.
 - `/auth` to authorize telegram and onedrive.
