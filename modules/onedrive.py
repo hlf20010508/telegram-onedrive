@@ -18,6 +18,7 @@ from onedrivesdk.http_response import HttpResponse
 import json
 import asyncio
 import time
+from modules.global_var import od_session_path
 
 
 def authenticate_request(self, request):
@@ -27,7 +28,7 @@ def authenticate_request(self, request):
 
     if self._session.is_expired() and 'offline_access' in self.scopes:
         self.refresh_token()
-        self.save_session(path='session/onedrive.session')
+        self.save_session(path=od_session_path)
 
     request.append_option(
         HeaderOption("Authorization",
@@ -59,7 +60,7 @@ class Onedrive:
             auth_server_url=auth_server_url
         )
 
-        self.session_path = 'session/onedrive.session'
+        self.session_path = od_session_path
         self.remote_root_path = remote_root_path
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
