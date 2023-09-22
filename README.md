@@ -24,13 +24,16 @@ That's why you need to prepare a lot of things to use this bot.
 - `/clear` to clear all history except status message.
 - `/autoDelete` to toggle whether bot should auto delete message.
 - `/clearLogs` to clear logs.
+- `/logs` to show all logs.
 - `/links message_link range` to transfer sequential restricted content.
 - `/url file_url` to upload file through url.
+- `/logs range` to show the most recent logs for the specified page number.
 - `/help` for help.
 
 Example:  
 - `/links https://t.me/c/xxxxxxx/100 2` will transfer `https://t.me/c/xxxxxxx/100` and `https://t.me/c/xxxxxxx/101`.
 - `/url https://example.com/file.txt` will upload `file.txt` to Onedrive. It calls Onedrive's API, which means Onedrive's server will visit the url and download the file for you. If the url is invalid to OneDrive, the bot will try using bot's uploader to transfer.
+- `/logs 2` will show 2 pages of the most recent logs. Each page contains 50 lines of logs.
 
 ## Authorization Steps
 - Send `/auth`.

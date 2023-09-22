@@ -1,0 +1,98 @@
+"""
+:project: telegram-onedrive
+:author: L-ING
+:copyright: (C) 2023 L-ING <hlf01@icloud.com>
+:license: MIT, see LICENSE for more details.
+"""
+
+from telethon import events
+import os
+import asyncio
+from modules.client import tg_bot
+from modules.env import tg_user_name
+from modules.utils import check_in_group, check_login, cmd_parser
+from modules.log import log_path
+from modules.global_var import logs_res, logs_lines_per_page
+
+
+class Tail_File_Page:
+    def __init__(self, path, lines_per_page):
+        self.pos = 0
+        self.lines_per_page = lines_per_page
+        self.file = open(path, 'rb')
+    
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.file.close()
+    
+    def read_all(self):
+        while True:
+            string = ''
+            for _ in range(self.lines_per_page):
+                line = self.file.readline().decode()
+                if line == '':
+                    break
+                string += line
+            if string == '':
+                break
+            yield string
+
+    def read_pages(self, pages):
+        self._seek_lines(pages * self.lines_per_page)
+        while pages:
+            pages -= 1
+            string = self._read_lines(self.lines_per_page)
+            if string == '':
+                break
+            yield string
+
+    def _read_lines(self, lines_num):
+        string = ''
+        while lines_num:
+            lines_num -= 1
+            line = self.file.readline().decode()
+            if line == '':
+                break
+            string += line
+        return string
+    
+    def _seek_lines(self, lines_num):
+        while lines_num:
+            try:
+                self.pos -= 1
+                self.file.seek(self.pos, os.SEEK_END)
+                if self.file.read(1) == b'\n':
+                    lines_num -= 1
+            except:
+                self.file.seek(0, os.SEEK_SET)
+                break
+
+
+@tg_bot.on(events.NewMessage(pattern="/logs", incoming=True, from_users=tg_user_name))
+@check_in_group
+@check_login
+async def logs_handler(event):
+    cmd = cmd_parser(event)
+    if len(cmd) == 1:
+        with Tail_File_Page(log_path, logs_lines_per_page) as file:
+            await event.respond('Outputting logs...')
+            for logs in file.read_all():
+                await event.respond(logs)
+                await asyncio.sleep(1)
+        await event.respond('Finished.')
+    elif len(cmd) == 2:
+        try:
+            pages = int(cmd[1])
+            with Tail_File_Page(log_path, logs_lines_per_page) as file:
+                await event.respond('Outputting logs...')
+                for logs in file.read_pages(pages):
+                    await event.respond(logs)
+                    await asyncio.sleep(1)
+            await event.respond('Finished.')
+        except:
+            await event.respond(logs_res)
+    else:
+        await event.respond(logs_res)
+    raise events.StopPropagation
