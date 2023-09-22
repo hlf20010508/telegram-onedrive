@@ -23,6 +23,7 @@ That's why you need to prepare a lot of things to use this bot.
 - `/auth` to authorize telegram and onedrive.
 - `/clear` to clear all history except status message.
 - `/autoDelete` to toggle whether bot should auto delete message.
+- `/clearLogs` to clear logs.
 - `/links message_link range` to transfer sequential restricted content.
 - `/url file_url` to upload file through url.
 - `/help` for help.

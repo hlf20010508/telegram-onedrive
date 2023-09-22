@@ -17,12 +17,13 @@ od_session_path = 'session/onedrive.session'
 
 
 cmd_helper = '''
-- /auth: Authorize for Telegram and OneDrive.
-- /clear: Clear all history except status message.
+- /auth to authorize for Telegram and OneDrive.
+- /clear to clear all history except status message.
 - /autoDelete to toggle whether bot should auto delete message.
+- /clearLogs to clear logs.
 
-- `/links` message_link range: Transfer sequential restricted content.
-- `/url` file_url: Upload file through url.
+- ```/links message_link range```: Transfer sequential restricted content.
+- ```/url file_url```: Upload file through url.
 '''
 
 

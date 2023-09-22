@@ -20,6 +20,7 @@ def main():
     from modules.handlers.help import help_handler
     from modules.handlers.auth import auth_handler
     from modules.handlers.auto_delete import auto_delete_handler
+    from modules.handlers.clear_logs import clear_logs_handler
     from modules.handlers.clear import clear_handler
     from modules.handlers.links import links_handler
     from modules.handlers.url import url_handler
