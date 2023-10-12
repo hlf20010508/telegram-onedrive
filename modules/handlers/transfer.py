@@ -56,11 +56,13 @@ async def transfer_handler(event):
                 if "?single" in msg_link:
                     msg_link = msg_link.split("?single")[0]
                 msg_id = int(msg_link.split("/")[-1])
-                if 't.me/c/' in msg_link:
-                    if 't.me/b/' in msg_link:
-                        chat = str(msg_link.split("/")[-2])
-                    else:
+                if  't.me/' in msg_link:
+                    if 't.me/c/' in msg_link:
                         chat = int('-100' + str(msg_link.split("/")[-2]))
+                    else:
+                        chat = str(msg_link.split("/")[-2])
+                else:
+                    raise Exception('Not message link')
 
                 message = await tg_client.get_messages(chat, ids=msg_id)
             except:

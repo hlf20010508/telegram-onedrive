@@ -100,7 +100,8 @@ class Onedrive:
     def multipart_uploader(self, session, total_length):
         return ItemUploadFragmentBuilder(session.upload_url, self.client, total_length)
     
-    async def multipart_upload(self, uploader, buffer, offset, part_size):
+    async def multipart_upload(self, uploader, buffer, offset):
+        part_size = buffer.getbuffer().nbytes
         tries = 0
         while True:
             try:
