@@ -3,7 +3,7 @@ A Telegram Bot to transfer files to OneDrive. No file size limitation. Restricte
 
 ## Introduction
 - Based on telethon.
-- Works in Group or Channel.
+- Works only in Group.
 - Transfer files you send or forward.
 - Transfer restricted content.
 - Transfer files from url.
@@ -52,8 +52,8 @@ Example:
 - If the bot says `Onedrive authorization successful!`, everything is done.
 
 ## Usage
-- Add this bot to a group or channel.
-- In the group or channel, forward or upload files(or videos, photos, gifs, stickers, voices).
+- Add this bot to a group.
+- In the group, forward or upload files(or videos, photos, gifs, stickers, voices).
 - If you want to transfer restricted content from a group or channel, right click the content, copy the message link, and send the link.
 - Wait until the transfer completes. You can check status on replied message, tap `Status` to locate current job.
 - Use `/help` for more information about other command.

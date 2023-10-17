@@ -49,9 +49,9 @@ help_res = '''
 
 
 check_in_group_res = '''
-This bot must be used in a Group or Channel!
+This bot must be used in a Group!
 
-Add this bot to a Group or Channel as Admin, and give it ability to Delete Messages.
+Add this bot to a Group as Admin, and give it ability to Delete Messages.
 '''
 
 
