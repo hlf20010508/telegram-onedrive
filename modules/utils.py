@@ -74,7 +74,11 @@ def cmd_parser(event):
 async def delete_message(message):
     from modules import env
     if env.delete_flag:
-        await message.delete()
+        try:
+            await message.delete()
+        except Exception as e:
+            await message.reply(logger(e))
+            await message.reply('Please set this bot as Admin, and give it ability to Delete Messages.')
 
 
 # if message is not edited, it will raise MessageNotModifiedError
