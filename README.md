@@ -1,5 +1,5 @@
 # telegram-onedrive
-A Telegram Bot to transfer files to OneDrive. No file size limitation. Restricted content supported. Doesn't occupy local space.
+A Telegram Bot to transfer files to OneDrive.
 
 ## Introduction
 - Based on telethon.
@@ -26,37 +26,6 @@ A Telegram Bot to transfer files to OneDrive. No file size limitation. Restricte
 |/autoDelete|/url file_url|
 |-|-|
 |![autoDelete-m](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/ff564f9f-66b0-4296-afe4-e8e3cdf70428)|![url](https://github.com/hlf20010508/telegram-onedrive/assets/76218469/95994beb-815f-4e0f-a92c-69b5ffa19862)|
-
-## Bot Command
-- `/start` to start with bot.
-- `/auth` to authorize telegram and onedrive.
-- `/clear` to clear all history except status message.
-- `/autoDelete` to toggle whether bot should auto delete message.
-- `/clearLogs` to clear logs.
-- `/logs` to show all logs.
-- `/links message_link range` to transfer sequential restricted content.
-- `/url file_url` to upload file through url.
-- `/logs range` to show the most recent logs for the specified page number.
-- `/help` for help.
-
-Example:  
-- `/links https://t.me/c/xxxxxxx/100 2` will transfer `https://t.me/c/xxxxxxx/100` and `https://t.me/c/xxxxxxx/101`.
-- `/url https://example.com/file.txt` will upload `file.txt` to Onedrive. It calls Onedrive's API, which means Onedrive's server will visit the url and download the file for you. If the url is invalid to OneDrive, the bot will try using bot's uploader to transfer.
-- `/logs 2` will show 2 pages of the most recent logs. Each page contains 50 lines of logs.
-
-## Authorization Steps
-- Send `/auth`.
-- Wait and you'll receive the login code from telegram.
-- Visit the uri the bot sends, and submit the code.
-- After submission, it will send the authorization uri for OneDrive. Visit, login and authorize.
-- If the bot says `Onedrive authorization successful!`, everything is done.
-
-## Usage
-- Add this bot to a group.
-- In the group, forward or upload files(or videos, photos, gifs, stickers, voices).
-- If you want to transfer restricted content from a group or channel, right click the content, copy the message link, and send the link.
-- Wait until the transfer completes. You can check status on replied message, tap `Status` to locate current job.
-- Use `/help` for more information about other command.
 
 ## Preparation
 1. Open `docker-compose.yml` and edit the environment config.
@@ -99,6 +68,45 @@ Example:
     volumes:
       telegram-onedrive-session:
     ```
+
+## Usage
+### Before Start (Important!)
+- Create a private group without this bot.
+- In bot's profile, press `Add to Group or Channel`.
+- Add this bot to your group.
+- Set this bot as Admin, and give it ability to Delete Messages.
+
+If you don't follow these steps, the bot may not works.
+
+### Authorization Steps
+- Send `/auth`.
+- Wait and you'll receive the login code from telegram.
+- Visit the uri the bot sends, and submit the code.
+- After submission, it will send the authorization uri for OneDrive. Visit, login and authorize.
+- If the bot says `Onedrive authorization successful!`, everything is done.
+
+### Start
+- In the group, forward or upload files (or videos, photos, gifs, stickers, voices).
+- If you want to transfer restricted content from a group or channel, right click the content, copy the message link, and send the link.
+- Wait until the transfer completes. You can check status on replied message, tap `Status` to locate current job.
+- Use `/help` for more information about other command.
+
+## Bot Command
+- `/start` to start with bot.
+- `/auth` to authorize telegram and onedrive.
+- `/clear` to clear all history except status message.
+- `/autoDelete` to toggle whether bot should auto delete message.
+- `/clearLogs` to clear logs.
+- `/logs` to show all logs.
+- `/links message_link range` to transfer sequential restricted content.
+- `/url file_url` to upload file through url.
+- `/logs range` to show the most recent logs for the specified page number.
+- `/help` for help.
+
+Example:  
+- `/links https://t.me/c/xxxxxxx/100 2` will transfer `https://t.me/c/xxxxxxx/100` and `https://t.me/c/xxxxxxx/101`.
+- `/url https://example.com/file.txt` will upload `file.txt` to Onedrive. It calls Onedrive's API, which means Onedrive's server will visit the url and download the file for you. If the url is invalid to OneDrive, the bot will try using bot's uploader to transfer.
+- `/logs 2` will show 2 pages of the most recent logs. Each page contains 50 lines of logs.
 
 ## Launch Through Docker
 ```sh
