@@ -1,6 +1,16 @@
 # telegram-onedrive
 A Telegram Bot to transfer files to OneDrive.
 
+## Attention
+**OneDrive personal account only!**
+
+I don't have OneDrive for Business account, so although supported by [onedrivesdk](https://github.com/OneDrive/onedrive-sdk-python#onedrive-for-business), I can't adapt and test it.  
+I would appreciate it if someone could adapt Business account by editing the code [here](https://github.com/hlf20010508/telegram-onedrive/blob/658a808cb23a76975324c3f8ac87035c852581dd/modules/onedrive.py#L48C1).  
+To authorize successfully, you need to choose `Accounts in any organizational directory and personal Microsoft accounts` in `Supported account types` when creating the app on Azure Portal.  
+PRs are always welcome.
+
+OneDrive for Developers account was tested but failed for some reason which seems to be OneDrive side's problem.
+
 ## Introduction
 - Based on telethon.
 - Works only in Group.
