@@ -23,7 +23,11 @@ class Status_Message:
     async def create(cls, event):
         self = Status_Message()
         self.event = event
-        self.msg_link = '[Status:](https://t.me/c/%d/%d)' % (self.event.message.peer_id.channel_id, self.event.message.id)
+        try:
+            self.msg_link = '[Status:](https://t.me/c/%d/%d)' % (self.event.message.peer_id.channel_id, self.event.message.id)
+        except Exception as e:
+            logger(e)
+            self.msg_link = '[Status:](https://t.me/c/%d/%d)' % (self.event.message.peer_id.chat_id, self.event.message.id)
         self.status = 'In progress...'
         self.template = "Uploaded %.2fMB out of %.2fMB: %.2f%%"
         self.error_template = '- Error:\n%s\n- Upload url:\n%s\n\n- Progress url:\n%s\n\n- Response:\n%s'
