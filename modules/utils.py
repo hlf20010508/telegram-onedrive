@@ -144,11 +144,12 @@ def get_filename_from_url(url):
 
 
 def get_filename(url):
-    response = requests.get(url, stream=True)
+    response = requests.get(url, stream=True, verify=False)
     if response.status_code == 200:
         if 'Content-Length' in response.headers:
             name = get_filename_from_cd(response.headers.get('Content-Disposition'))
-            ext = get_ext(response.headers['Content-Type'])
+            content_type = response.headers['Content-Type']
+            ext = get_ext(content_type)
             if name:
                 if len(name) > 100:
                     if ext:
@@ -158,7 +159,7 @@ def get_filename(url):
             else:
                 name = get_filename_from_url(url)
                 if name:
-                    if ext:
+                    if content_type != 'application/octet-stream' and ext:
                         if '.' + name.split('.')[-1].lower() not in ext:
                             name = name + ext[0]
                 else:

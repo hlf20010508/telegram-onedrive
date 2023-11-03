@@ -79,10 +79,3 @@ Command ```/logs``` format wrong.
 
 Usage: ```/logs range```
 '''
-
-
-analysis_not_http_or_forbidden = 'Url protocol is not HTTP, or the url has been forbidden because of too many failed requests.'
-
-analysis_content_not_found = 'Content not found.'
-
-analysis_work_canncelled = 'The work was canncelled for unknown reason.'
