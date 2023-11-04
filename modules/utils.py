@@ -154,23 +154,27 @@ def get_filename(url):
             name = get_filename_from_cd(response.headers.get('Content-Disposition'))
             content_type = response.headers['Content-Type']
             ext = get_ext(content_type)
-            if name:
-                if len(name) > 100:
-                    if ext:
-                        name = str(int(time.time())) + ext[0]
-                    else:
-                        name = str(int(time.time()))
-            else:
+            if not name:
                 name = get_filename_from_url(url)
-                if name:
-                    if content_type != 'application/octet-stream' and ext:
-                        if '.' + name.split('.')[-1].lower() not in ext:
+            if not name:
+                name = str(int(time.time()))
+                if ext and content_type != 'application/octet-stream':
+                    name = name + ext[0]
+            else:
+                if ext and content_type != 'application/octet-stream':
+                    ori_ext = '.' + name.split('.')[-1].lower()
+                    if len(name) > 100:
+                        name = str(int(time.time()))
+                        if ori_ext in ext:
+                            name = name + ori_ext
+                        else:
+                            name = name + ext[0]
+                    else:
+                        if ori_ext not in ext:
                             name = name + ext[0]
                 else:
-                    if ext:
-                        name = str(int(time.time())) + ext[0]
-                    else:
-                        raise Exception('Url refer to none-file')
+                    if len(name) > 100:
+                        name = str(int(time.time()))
             return name, response
     raise Exception("File from url not found")
 
