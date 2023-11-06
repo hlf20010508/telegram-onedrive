@@ -38,11 +38,6 @@ async def url_handler(event):
     try:
         name, local_response = get_filename(url)
         total_length = int(local_response.headers['Content-Length']) / (1024 * 1024)
-    except Exception as e:
-        await event.reply(logger(e))
-        raise events.StopPropagation
-
-    try:
         logger('upload url: %s' % url)
         progress_url = onedrive.upload_from_url(url, name)
         logger('progress url: %s' % progress_url)
