@@ -1,3 +1,10 @@
+"""
+:project: telegram-onedrive
+:author: L-ING
+:copyright: (C) 2023 L-ING <hlf01@icloud.com>
+:license: MIT, see LICENSE for more details.
+"""
+
 mime_dict = {
     "application/vnd.lotus-1-2-3": [".123"],
     "text/vnd.in3d.3dml": [".3dml"],
