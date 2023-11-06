@@ -109,7 +109,7 @@ class Onedrive:
                 uploader.post(offset, part_size, buffer)
             except OneDriveError as exc:
                 if exc.status_code in (408, 500, 502, 503, 504) and tries < 5:
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(5)
                     continue
                 elif exc.status_code == 416:
                     # Fragment already received
@@ -147,7 +147,7 @@ class Onedrive:
                 return progress_url
             else:
                 tries += 1
-                time.sleep(0.1)
+                time.sleep(5)
                 continue
 
         response_dict = {
@@ -169,7 +169,7 @@ class Onedrive:
                 break
             else:
                 tries += 1
-                time.sleep(0.1)
+                time.sleep(5)
                 continue
         try:
             response._content = json.loads(response.content)
