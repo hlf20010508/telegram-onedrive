@@ -15,6 +15,9 @@ tg_bot_session_path = 'session/bot.session'
 tg_client_session_path = 'session/user.session'
 od_session_path = 'session/onedrive.session'
 
+base_headers = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15'
+}
 
 cmd_helper = '''
 - /auth to authorize for Telegram and OneDrive.

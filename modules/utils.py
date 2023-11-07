@@ -12,9 +12,10 @@ from urllib.parse import unquote, urlparse, parse_qs
 import requests
 import time
 import asyncio
+from copy import copy
 from modules.client import tg_bot, tg_client
 from modules.log import logger
-from modules.global_var import check_in_group_res, not_login_res, file_param_name_list
+from modules.global_var import check_in_group_res, not_login_res, file_param_name_list, base_headers
 from modules.mime import mime_dict
 
 
@@ -148,7 +149,9 @@ def get_filename_from_url(url):
 
 
 def get_filename(url):
-    response = requests.get(url, stream=True, verify=False)
+    headers = copy(base_headers)
+    headers['Referer'] = url
+    response = requests.get(url, stream=True, verify=False, headers=headers)
     if response.status_code == 200:
         if 'Content-Length' in response.headers:
             name = get_filename_from_cd(response.headers.get('Content-Disposition'))
