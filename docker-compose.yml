@@ -4,22 +4,30 @@ services:
     container_name: telegram-onedrive
     image: hlf01/telegram-onedrive
     restart: always
+
+    # If you're on Linux, use this:
     network_mode: host
+    # If you're on Windows or macOS, use this, "xxxx" is your port in server_uri:
+    # ports:
+    #   - xxxx:xxxx
+
     # volumes:
       # - /path/to/*.crt:/telegram-onedrive/server/ssl/server.crt
       # - /path/to/*.key:/telegram-onedrive/server/ssl/server.key
       # - telegram-onedrive-session:/telegram-onedrive/session
+
     environment:
-      - server_uri=$server_uri
+      - server_uri=$server_uri(must be https and port specified, like https://example.com:8080)
       - tg_bot_token=$tg_bot_token
       - tg_api_id=$tg_api_id
       - tg_api_hash=$tg_api_hash
-      - tg_user_phone=$tg_user_phone
-      - tg_user_name=$tg_user_name(optional)
+      - tg_user_phone=$tg_user_phone(use international format, like +xxyyyyyyyyyyy)
+      - tg_user_name=$tg_user_name(optional, no @)
       - od_client_id=$od_client_id
       - od_client_secret=$od_client_secret
-      - remote_root_path=$remote_root_path
-      - delete_flag=$delete_flag(optional)
+      - remote_root_path=$remote_root_path(like /Videos/from-telegram)
+      - delete_flag=$delete_flag(optional, true or false, default to false)
     command: python main.py
+
 # volumes:
 #   telegram-onedrive-session:

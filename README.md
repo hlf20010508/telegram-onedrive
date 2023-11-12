@@ -94,11 +94,29 @@ OneDrive for Developers account was tested but failed for some reason which seem
             - /path/to/*.key:/telegram-onedrive/server/ssl/server.key
           ...
         ```
-3. Create a Telegram bot through [BotFather](https://t.me/BotFather). Record `token` as `tg_bot_token`.
-4. Create a Telegram application on [my.telegram.org](https://my.telegram.org). See [details](https://docs.telethon.dev/en/stable/basic/signing-in.html). Record `api_id` as `tg_api_id`, `api_hash` as `tg_api_hash`.
-5. `tg_user_phone` is the phone number you just used to login to my.telegram.org.
-6. `tg_user_name` is your telegram user name. Check your profile, find your user name, it should be like `@user`, then record `user` as `tg_user_name`. Optional, default to void. If you don't set this parameter, every one can control your bot.
-7. Create a OneDrive application on [portal.azure.com](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) App registrations.
+3. If you're on Linux, simply use
+    ```docker-compose.yml
+    services:
+        telegram-onedrive:
+          ...
+          network_mode: host
+          ...
+    ```
+    if you're on Windows or macOS, use
+    ```docker-compose.yml
+    services:
+        telegram-onedrive:
+          ...
+          ports:
+            - xxxx:xxxx
+          ...
+    ```
+    `xxxx` is your port in `server_uri`.
+4. Create a Telegram bot through [BotFather](https://t.me/BotFather). Record `token` as `tg_bot_token`.
+5. Create a Telegram application on [my.telegram.org](https://my.telegram.org). See [details](https://docs.telethon.dev/en/stable/basic/signing-in.html). Record `api_id` as `tg_api_id`, `api_hash` as `tg_api_hash`.
+6. `tg_user_phone` is the phone number you just used to login to my.telegram.org.
+7. `tg_user_name` is your telegram user name. Check your profile, find your user name, it should be like `@user`, then record `user` as `tg_user_name`. Optional, default to void. If you don't set this parameter, every one can control your bot.
+8. Create a OneDrive application on [portal.azure.com](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) App registrations.
     - Press `New registrations`.
     - Fill `Name`.
     - In `Supported account types` choose `Personal Microsoft accounts only`.
@@ -107,9 +125,9 @@ OneDrive for Developers account was tested but failed for some reason which seem
     - Press `Register`.
     - In application's `Overview`, record `Application (client) ID` as `od_client_id`.
     - Go to application's `Certificates & secrets`, press `Client secrets`, and press `New client secret`. Then fill `Description`, and choose an `Expires`. Finnaly, press `Add`. Record `Value` as `od_client_secret`.
-8. `remote_root_path` is a directory on OneDrive. Like `/MyFiles/Telegram`. Default to `/`.
-9. `delete_flag` decides whether bot can auto delete message. Pass `true` or `false`. Optional, default to `false`.
-10. Optional, to keep sessions after recreating docker container, create a volume to store it in docker-compose.yml:
+9. `remote_root_path` is a directory on OneDrive. Like `/Videos/from-telegram`. Default to `/`.
+10. `delete_flag` decides whether bot can auto delete message. Pass `true` or `false`. Optional, default to `false`.
+11. Optional, to keep sessions after recreating docker container, create a volume to store it in docker-compose.yml:
     ```docker-compose.yml
     services:
     telegram-onedrive:
