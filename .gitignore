@@ -7,5 +7,5 @@ log
 temp
 session
 dev.sh
-test.py
+test*
 .devrc
