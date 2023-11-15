@@ -120,7 +120,7 @@ OneDrive for Developers account was tested but failed for some reason which seem
     - Press `New registrations`.
     - Fill `Name`.
     - In `Supported account types` choose `Personal Microsoft accounts only`.
-    - In `Redirect URI`, `platform` select `Web`, uri domain should be the same with `server_uri`, route must be `/auth`.
+    - In `Redirect URI`, `platform` select `Web`, uri domain should be the same with `server_uri`, route must be `/auth`, like `https://example.com:8080/auth`.
         - Explain: The authorization code will be sent through the uri you offer, like `https://example.com:8080/auth?code=xxxxxxx`. So in this project, it use flask as a server to handle this request.
     - Press `Register`.
     - In application's `Overview`, record `Application (client) ID` as `od_client_id`.
