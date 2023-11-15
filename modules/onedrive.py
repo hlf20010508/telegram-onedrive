@@ -47,8 +47,9 @@ def http_response_init(self, status, headers, content):
 
 class Onedrive:
     def __init__(self, client_id, client_secret, redirect_uri, remote_root_path):
-        api_base_url = "https://graph.microsoft.com/v1.0/"
+        api_base_url = "https://graph.microsoft.com/v1.0/me/"
         auth_server_url = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
+        auth_token_url='https://login.microsoftonline.com/common/oauth2/v2.0/token'
 
         scopes = ["offline_access", "Files.ReadWrite"]
 
@@ -57,7 +58,8 @@ class Onedrive:
             http_provider=http_provider,
             client_id=client_id,
             scopes=scopes,
-            auth_server_url=auth_server_url
+            auth_server_url=auth_server_url,
+            auth_token_url=auth_token_url
         )
 
         self.session_path = od_session_path

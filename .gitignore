@@ -2,10 +2,8 @@
 .DS_Store
 __pycache__
 log
-*.session
-*.session-journal
+*session*
 temp
-session
 dev.sh
 test*
-.devrc
+.dev*
