@@ -13,9 +13,9 @@ import requests
 import time
 import asyncio
 from copy import copy
-from modules.client import tg_bot, tg_client
+from modules.client import tg_bot, tg_client, onedrive
 from modules.log import logger
-from modules.global_var import check_in_group_res, not_login_res, file_param_name_list, base_headers
+from modules.global_var import check_in_group_res, tg_not_login_res, od_not_login_res, file_param_name_list, base_headers
 from modules.mime import mime_dict
 
 
@@ -103,18 +103,26 @@ def check_in_group(func):
     return wrapper
 
 
-def check_login(func):
+def check_tg_login(func):
     async def wrapper(event, *args, **kwargs):
         try:
             if not await tg_client.get_me():
-                await res_not_login(event)
+                await res_not_login(event, tg_not_login_res)
         except:
-            await res_not_login(event)
+            await res_not_login(event, tg_not_login_res)
         return await func(event, *args, **kwargs)
     return wrapper
 
 
-async def res_not_login(event):
+def check_od_login(func):
+    async def wrapper(event, *args, **kwargs):
+        if not onedrive.session:
+            await res_not_login(event, od_not_login_res)
+        return await func(event, *args, **kwargs)
+    return wrapper
+
+
+async def res_not_login(event, not_login_res):
     from modules.handlers.auth import auth_handler
     await event.respond(not_login_res)
     await auth_handler(event, propagate=True)

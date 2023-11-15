@@ -10,7 +10,7 @@ import os
 import asyncio
 from modules.client import tg_bot
 from modules.env import tg_user_name
-from modules.utils import check_in_group, check_login, cmd_parser
+from modules.utils import check_in_group, check_tg_login, check_od_login, cmd_parser
 from modules.log import log_path
 from modules.global_var import logs_res, logs_lines_per_page
 
@@ -72,7 +72,8 @@ class Tail_File_Page:
 
 @tg_bot.on(events.NewMessage(pattern="/logs", incoming=True, from_users=tg_user_name))
 @check_in_group
-@check_login
+@check_tg_login
+@check_od_login
 async def logs_handler(event):
     if not os.path.exists(log_path):
         await event.respond('Logs not found.')

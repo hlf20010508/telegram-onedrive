@@ -10,14 +10,15 @@ from telethon.tl import types
 import os
 from modules.client import tg_bot, tg_client, onedrive
 from modules.env import tg_user_name, remote_root_path
-from modules.utils import Callback, Status_Message, check_in_group, check_login, get_link
+from modules.utils import Callback, Status_Message, check_in_group, check_tg_login, check_od_login, get_link
 from modules.log import logger
 from modules.transfer import multi_parts_uploader
 
 
 @tg_bot.on(events.NewMessage(incoming=True, from_users=tg_user_name))
 @check_in_group
-@check_login
+@check_tg_login
+@check_od_login
 async def transfer_handler(event):
     if event.media and not isinstance(event.media, types.MessageMediaWebPage):
         message = await tg_client.get_messages(event.message.peer_id, ids=event.message.id)

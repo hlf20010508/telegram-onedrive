@@ -23,6 +23,7 @@ def main():
     from modules.handlers.clear_logs import clear_logs_handler
     from modules.handlers.clear import clear_handler
     from modules.handlers.logs import logs_handler
+    from modules.handlers.logout import logout_handler
     from modules.handlers.links import links_handler
     from modules.handlers.url import url_handler
     from modules.handlers.transfer import transfer_handler

@@ -8,12 +8,13 @@
 from telethon import events
 from modules.client import tg_bot
 from modules.env import tg_user_name
-from modules.utils import check_in_group, check_login
+from modules.utils import check_in_group, check_tg_login, check_od_login
 
 
 @tg_bot.on(events.NewMessage(pattern="/autoDelete", incoming=True, from_users=tg_user_name))
 @check_in_group
-@check_login
+@check_tg_login
+@check_od_login
 async def auto_delete_handler(event):
     from modules import env
     if env.delete_flag:

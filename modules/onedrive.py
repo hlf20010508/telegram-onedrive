@@ -18,6 +18,7 @@ from onedrivesdk.http_response import HttpResponse
 import json
 import asyncio
 import time
+import os
 from modules.global_var import od_session_path
 
 
@@ -43,6 +44,16 @@ def http_response_init(self, status, headers, content):
     self._status = status
     self._headers = headers
     self._content = content
+
+
+@property
+def session(self):
+    return self._session
+
+
+def logout(self):
+    self._session = None
+    os.remove(od_session_path)
 
 
 class Onedrive:
@@ -83,11 +94,18 @@ class Onedrive:
         )
         self.save_session()
     
+    @property
+    def session(self):
+        return self.client.auth_provider.session
+
     def save_session(self):
         self.client.auth_provider.save_session(path=self.session_path)
 
     def load_session(self):
         self.client.auth_provider.load_session(path=self.session_path)
+    
+    def logout(self):
+        self.client.auth_provider.logout()
 
     def stream_upload(self, buffer, name):
         request = self.client.item(path=self.remote_root_path).children[name].content.request()
@@ -257,5 +275,7 @@ class ItemUploadFragmentBuilder(RequestBuilderBase):
 
 # Overwrite the standard upload operation to use this one
 AuthProvider.authenticate_request = authenticate_request
+AuthProvider.session = session
+AuthProvider.logout = logout
 ItemRequestBuilder.create_session = create_session
 HttpResponse.__init__ = http_response_init

@@ -8,13 +8,14 @@
 from telethon import events
 from modules.client import tg_bot, tg_client
 from modules.env import tg_user_name
-from modules.utils import check_in_group, check_login, cmd_parser, delete_message
+from modules.utils import check_in_group, check_tg_login, check_od_login, cmd_parser, delete_message
 from modules.global_var import links_res
 
 
 @tg_bot.on(events.NewMessage(pattern="/links", incoming=True, from_users=tg_user_name))
 @check_in_group
-@check_login
+@check_tg_login
+@check_od_login
 async def links_handler(event):
     try:
         cmd = cmd_parser(event)

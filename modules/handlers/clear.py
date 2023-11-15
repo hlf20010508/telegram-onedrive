@@ -8,7 +8,7 @@
 from telethon import events
 from modules.client import tg_bot, tg_client
 from modules.env import tg_user_name
-from modules.utils import check_in_group, check_login
+from modules.utils import check_in_group, check_tg_login, check_od_login
 
 
 async def clear_history(event):
@@ -20,7 +20,8 @@ async def clear_history(event):
 
 @tg_bot.on(events.NewMessage(pattern="/clear", incoming=True, from_users=tg_user_name))
 @check_in_group
-@check_login
+@check_tg_login
+@check_od_login
 async def clear_handler(event):
     await clear_history(event)
     raise events.StopPropagation

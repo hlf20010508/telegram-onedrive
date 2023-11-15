@@ -25,6 +25,7 @@ cmd_helper = '''
 - /autoDelete to toggle whether bot should auto delete message.
 - /clearLogs to clear logs.
 - /logs to show all logs.
+- /logout to logout OneDrive.
 
 - ```/links message_link range```: Transfer sequential restricted content.
 - ```/url file_url```: Upload file through url.
@@ -58,8 +59,13 @@ Add this bot to a Group as Admin, and give it ability to Delete Messages.
 '''
 
 
-not_login_res = '''
+tg_not_login_res = '''
 You haven't logined to Telegram.
+'''
+
+
+od_not_login_res = '''
+You haven't logined to OneDrive.
 '''
 
 
@@ -81,4 +87,9 @@ logs_res = '''
 Command ```/logs``` format wrong.
 
 Usage: ```/logs range```
+'''
+
+
+logout_res = '''
+OneDrive logout successfully.
 '''

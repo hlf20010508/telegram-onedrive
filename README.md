@@ -161,6 +161,7 @@ If you don't follow these steps, the bot may not works.
 - `/autoDelete` to toggle whether bot should auto delete message.
 - `/clearLogs` to clear logs.
 - `/logs` to show all logs.
+- `/logout` to logout OneDrive.
 - `/links message_link range` to transfer sequential restricted content.
 - `/url file_url` to upload file through url.
 - `/logs range` to show the most recent logs for the specified page number.
