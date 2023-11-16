@@ -5,6 +5,8 @@
 :license: MIT, see LICENSE for more details.
 """
 
+tg_login_max_attempts = 3
+
 PART_SIZE = 2 * 1024 * 1024
 
 file_param_name_list = ['name', 'filename', 'file_name', 'title', 'file']
