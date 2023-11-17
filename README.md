@@ -5,6 +5,18 @@ A Telegram Bot to transfer files to OneDrive.
 - **Please read [Preparation](#preparation) carefully and don't omit any steps.**
 - **Please read [Usage - Before Start](#before-start-important), or the bot may not work.**
 
+## Account Types
+### Supported
+- Persoanl account.
+- All types of business accounts, [details](https://learn.microsoft.com/en-us/office365/servicedescriptions/office-365-platform-service-description/office-365-platform-service-description#feature-availability-across-some-plans).
+- All types of educational accounts if domain administrator exists.
+
+### Not Supported
+- All types of educational accounts if domain administrator **doesn't** exist.
+
+### Not Supported Yet
+- Microsoft 365 operated by 21Vianet(世纪互联).
+
 ## Introductions
 - Based on telethon.
 - Works only in Group.
