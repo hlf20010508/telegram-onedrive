@@ -32,7 +32,7 @@ class Code_Callback:
                     logger('Invalid code. Please try again.')
                 )
             else:
-                await conv.send_message(logger("New code sent, please try again."))
+                await self.conv.send_message(logger("New code sent, please try again."))
         else:
             if self.tg_login_attempts > 0:
                 await self.conv.send_message(
@@ -96,10 +96,12 @@ async def auth_handler(event, propagate=False):
         tg_code_callback = Code_Callback(conv, 'tg')
         od_code_callback = Code_Callback(conv, 'od')
         global tg_client
-        await conv.send_message(logger("Logining into Telegram..."))
         while True:
             try:
+                await conv.send_message(logger("Logining into Telegram..."))
                 _tg_client = await tg_client.start(tg_user_phone, code_callback=tg_code_callback, max_attempts=tg_login_max_attempts)
+                tg_client = _tg_client
+                await conv.send_message(logger("Login to Telegram successful!"))
                 break
             except RuntimeError as e:
                 await tg_client.log_out()
@@ -117,11 +119,9 @@ async def auth_handler(event, propagate=False):
                 auth_server.kill()
                 raise events.StopPropagation
 
-        tg_client = _tg_client
-        await conv.send_message(logger("Login to Telegram successful!"))
-
         try:
             onedrive.load_session()
+            await conv.send_message(logger("Onedrive authorization successful!"))
         except:
             code = await od_code_callback()
             if code:
