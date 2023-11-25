@@ -91,7 +91,7 @@ async def url_handler(event):
             if total_length > 0:
                 logger('use local uploader to upload from url')
                 callback = Callback(event, status_message)
-                await multi_parts_uploader_from_url(name, local_response, total_length, callback)
+                await multi_parts_uploader_from_url(name, local_response, callback)
                 logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
                 await status_message.finish()
             else:

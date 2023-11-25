@@ -163,8 +163,6 @@ def get_filename(url):
     headers['Referer'] = url
     headers["Connection"] = "close"
     response = requests.get(url, stream=True, verify=False, headers=headers)
-    logger(response.request.headers)
-    logger(response.headers)
     if response.status_code == 200:
         name = get_filename_from_cd(response.headers.get('Content-Disposition'))
         content_type = response.headers['Content-Type']
