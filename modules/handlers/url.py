@@ -47,21 +47,32 @@ async def url_handler(event):
 
     try:
         name, local_response = get_filename(url)
-        total_length = int(local_response.headers['Content-Length']) / (1024 * 1024)
+        if "Content-Length" in local_response.headers:
+            total_length = int(local_response.headers['Content-Length']) / (1024 * 1024)
+        elif "Transfer-Encoding" in local_response.headers and local_response.headers["Transfer-Encoding"] == "chunked":
+            total_length = -1
+        else:
+            raise Exception(
+                "Neither Content-Length nor Transfer-Encoding is in response headers.\nStatus code:\n%s\nResponse:\n%s" %
+                (local_response.status_code, local_response.headers)
+            )
         logger('upload url: %s' % url)
-        progress_url = onedrive.upload_from_url(url, name)
-        logger('progress url: %s' % progress_url)
     except Exception as e:
         await event.reply(logger(e))
         raise events.StopPropagation 
 
     try:
+        progress_url = onedrive.upload_from_url(url, name)
+        logger('progress url: %s' % progress_url)
         while True:
             response = onedrive.upload_from_url_progress(progress_url)
             progress = response.content
             if progress['status'] in ['notStarted', 'inProgress', 'completed']:
                 percentage = float(progress['percentageComplete'])
-                status_message.status = status_message.template % (total_length * percentage / 100, total_length, percentage)
+                if total_length > 0:
+                    status_message.status = status_message.template % (total_length * percentage / 100, total_length, percentage)
+                else:
+                    status_message.status = status_message.template_short % percentage
                 logger(status_message.status)
                 await status_message.update()
 
@@ -74,13 +85,24 @@ async def url_handler(event):
             else:
                 raise Exception('status error')
 
-    except:
+    except Exception as e:
+        logger(e)
         try:
-            logger('use local uploader to upload from url')
-            callback = Callback(event, status_message)
-            await multi_parts_uploader_from_url(name, local_response, callback)
-            logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
-            await status_message.finish()
+            if total_length > 0:
+                logger('use local uploader to upload from url')
+                callback = Callback(event, status_message)
+                await multi_parts_uploader_from_url(name, local_response, total_length, callback)
+                logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
+                await status_message.finish()
+            else:
+                logger(local_response.headers)
+                # this happends when downloading github release assets
+                # sometimes it has Content-Length, sometimes not
+                await status_message.report_error("Content-Length not found in response headers.")
         except Exception as e:
-            await status_message.report_error(e, url, progress_url, progress)
+            try:
+                await status_message.report_error(e, progress_url, progress)
+            except Exception as e1:
+                logger(e1)
+                await status_message.report_error(e)
     raise events.StopPropagation

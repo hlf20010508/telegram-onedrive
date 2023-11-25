@@ -43,20 +43,28 @@ class Code_Callback:
                     logger("Please visit %s to input your code to login to Telegram." % server_uri)
                 )
         self.tg_login_attempts += 1
-        requests.get(
-            url=os.path.join(server_uri, "tg"),
-            params={"refresh": True},
-            verify=False
-        )
         while True:
-            res = requests.get(
-                url=os.path.join(server_uri, "tg"),
-                verify=False
-            ).json()
-            if res["success"]:
+            try:
+                requests.get(
+                    url=os.path.join(server_uri, "tg"),
+                    params={"refresh": True},
+                    verify=False
+                )
                 break
-            await asyncio.sleep(1)
-        return res["code"]
+            except:
+                pass
+        
+        while True:
+            try:
+                res = requests.get(
+                    url=os.path.join(server_uri, "tg"),
+                    verify=False
+                ).json()
+                if res["success"]:
+                    return res["code"]
+                await asyncio.sleep(1)
+            except:
+                pass
     
     async def od_code(self):
         auth_url = onedrive.get_auth_url()
@@ -64,19 +72,22 @@ class Code_Callback:
             logger("Here are the authorization url of OneDrive:\n\n%s" % auth_url)
         )
         while True:
-            res = requests.get(
-                url=os.path.join(server_uri, "auth"),
-                params={"get": True},
-                verify=False,
-            ).json()
-            if res["success"]:
-                return res["code"]
-            elif res["failed"]:
-                await self.conv.send_message(
-                    logger(res['failed_info'])
-                )
-                return False
-            await asyncio.sleep(1)
+            try:
+                res = requests.get(
+                    url=os.path.join(server_uri, "auth"),
+                    params={"get": True},
+                    verify=False,
+                ).json()
+                if res["success"]:
+                    return res["code"]
+                elif res["failed"]:
+                    await self.conv.send_message(
+                        logger(res['failed_info'])
+                    )
+                    return False
+                await asyncio.sleep(1)
+            except:
+                pass
         
     async def code(self):
         if self.type == "tg":

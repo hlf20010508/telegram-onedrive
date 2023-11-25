@@ -73,9 +73,7 @@ async def multi_parts_uploader(
     buffer.close()
 
 
-async def multi_parts_uploader_from_url(name, response, progress_callback=None):
-    total_length = int(response.headers['Content-Length'])
-
+async def multi_parts_uploader_from_url(name, response, total_length, progress_callback=None):
     upload_session = onedrive.multipart_upload_session_builder(name)
     uploader = onedrive.multipart_uploader(upload_session, total_length)
 

@@ -165,6 +165,10 @@ class Onedrive:
             if response.status == 202:
                 progress_url = response.headers['Location']
                 return progress_url
+            # when using business acounts, which is not supported by OneDrive REST API.
+            # See https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_upload_url?view=odsp-graph-online
+            elif response.status == 409:
+                break
             else:
                 tries += 1
                 time.sleep(5)

@@ -31,8 +31,9 @@ class Status_Message:
             self.msg_link = '[Status:](https://t.me/c/%d/%d)' % (self.event.message.peer_id.chat_id, self.event.message.id)
         self.status = 'In progress...'
         self.template = "Uploaded %.2fMB out of %.2fMB: %.2f%%"
-        self.error_template = '- Error:\n%s\n- Upload url:\n%s\n\n- Progress url:\n%s\n\n- Response:\n%s'
-        self.error_template_full = '- Error:\n%s\n- Upload url:\n%s\n\n- Progress url:\n%s\n\n- Response:\n%s\n\n-Analysis:\n%s'
+        self.template_short = "Uploaded: %.2f%%"
+        self.error_template = '- Error:\n%s'
+        self.error_template_full = '- Error:\n%s\n\n- Progress url:\n%s\n\n- Response:\n%s'
         self.message = await self.event.respond(self.response)
         return self
     
@@ -46,11 +47,11 @@ class Status_Message:
     async def update(self):
         await edit_message(tg_bot, self.message, self.response)
 
-    async def report_error(self, exception, file_url, progress_url, response, analysis=None):
-        if analysis:
-            await self.event.reply(self.error_template_full % (logger(exception), file_url, progress_url, logger(response), analysis))
+    async def report_error(self, error, progress_url=None, response=None):
+        if progress_url:
+            await self.event.reply(self.error_template_full % (logger(error), progress_url, logger(response)))
         else:
-            await self.event.reply(self.error_template % (logger(exception), file_url, progress_url, logger(response)))
+            await self.event.reply(self.error_template % logger(error))
     
     async def finish(self):
         self.status = 'Done.'
@@ -158,35 +159,38 @@ def get_filename_from_url(url):
 
 def get_filename(url):
     headers = copy(base_headers)
+    # some video resource websites need Referer, or it will return 404
     headers['Referer'] = url
+    headers["Connection"] = "close"
     response = requests.get(url, stream=True, verify=False, headers=headers)
+    logger(response.request.headers)
+    logger(response.headers)
     if response.status_code == 200:
-        if 'Content-Length' in response.headers:
-            name = get_filename_from_cd(response.headers.get('Content-Disposition'))
-            content_type = response.headers['Content-Type']
-            ext = get_ext(content_type)
-            if not name:
-                name = get_filename_from_url(url)
-            if not name:
-                name = str(int(time.time()))
-                if ext and content_type != 'application/octet-stream':
-                    name = name + ext[0]
-            else:
-                if ext and content_type != 'application/octet-stream':
-                    ori_ext = '.' + name.split('.')[-1].lower()
-                    if len(name) > 100:
-                        name = str(int(time.time()))
-                        if ori_ext in ext:
-                            name = name + ori_ext
-                        else:
-                            name = name + ext[0]
+        name = get_filename_from_cd(response.headers.get('Content-Disposition'))
+        content_type = response.headers['Content-Type']
+        ext = get_ext(content_type)
+        if not name:
+            name = get_filename_from_url(url)
+        if not name:
+            name = str(int(time.time()))
+            if ext and content_type != 'application/octet-stream':
+                name = name + ext[0]
+        else:
+            if ext and content_type != 'application/octet-stream':
+                ori_ext = '.' + name.split('.')[-1].lower()
+                if len(name) > 100:
+                    name = str(int(time.time()))
+                    if ori_ext in ext:
+                        name = name + ori_ext
                     else:
-                        if ori_ext not in ext:
-                            name = name + ext[0]
+                        name = name + ext[0]
                 else:
-                    if len(name) > 100:
-                        name = str(int(time.time()))
-            return name, response
+                    if ori_ext not in ext:
+                        name = name + ext[0]
+            else:
+                if len(name) > 100:
+                    name = str(int(time.time()))
+        return name, response
     raise Exception("File from url not found")
 
 
