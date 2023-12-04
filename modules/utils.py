@@ -11,7 +11,6 @@ import re
 from urllib.parse import unquote, urlparse, parse_qs
 import requests
 import time
-import asyncio
 from copy import copy
 from modules.client import tg_bot, tg_client, onedrive
 from modules.log import logger
