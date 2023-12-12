@@ -67,7 +67,7 @@ async def url_handler(event):
         while True:
             response = onedrive.upload_from_url_progress(progress_url)
             progress = response.content
-            if progress['status'] in ['notStarted', 'inProgress', 'completed']:
+            if progress['status'] in ['notStarted', 'inProgress', 'completed', 'waiting']:
                 percentage = float(progress['percentageComplete'])
                 if total_length > 0:
                     status_message.status = status_message.template % (total_length * percentage / 100, total_length, percentage)
@@ -83,7 +83,7 @@ async def url_handler(event):
 
                 await asyncio.sleep(5)
             else:
-                raise Exception('status error')
+                raise Exception('status error: %s' % progress)
 
     except Exception as e:
         logger(e)
