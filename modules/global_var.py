@@ -29,9 +29,12 @@ cmd_helper = '''
 - /logs to show all logs.
 - /logout to logout OneDrive.
 
-- ```/links message_link range```: Transfer sequential restricted content.
-- ```/url file_url```: Upload file through url.
-- ```/logs range```: Show the most recent logs for the specified page number.
+```/links message_link range```
+To transfer sequential restricted content.
+```/url file_url```
+To upload file through url.
+```/logs range```
+To show the most recent logs for the specified page number.
 '''
 
 
