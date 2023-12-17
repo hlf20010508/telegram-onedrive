@@ -26,6 +26,7 @@ def main():
     from modules.handlers.url import url_handler
     from modules.handlers.drive import drive_handler
     from modules.handlers.dir import dir_handler
+    from modules.handlers.magnet import magnet_handler
     from modules.handlers.transfer import transfer_handler
 
     tg_bot.run_until_disconnected()
