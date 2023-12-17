@@ -149,7 +149,8 @@ A Telegram Bot to transfer files to OneDrive.
 - Create a group.
 - In bot's profile, press `Add to Group or Channel`.
 - Add this bot to your group.
-- Set this bot as Admin, and give it ability to Delete Messages.
+- Set this bot as Admin, and give it all rights like this
+<img width="330" alt="image" src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/d5fc1130-493e-47fb-9c45-67c328470692">
 
 If you don't follow these steps, the bot may not works.
 
