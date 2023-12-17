@@ -22,6 +22,45 @@ import os
 from modules.global_var import od_session_path
 
 
+def authenticate(self, code, redirect_uri, client_secret, resource=None):
+        params = {
+            "client_id": self.client_id,
+            "redirect_uri": redirect_uri,
+            "client_secret": client_secret,
+            "code": code,
+            "response_type": "code",
+            "grant_type": "authorization_code"
+        }
+
+        if resource is not None:
+            params["resource"] = resource
+
+        auth_url = self._auth_token_url
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        response = self._http_provider.send(
+            method="POST",
+            headers=headers,
+            url=auth_url,
+            data=params
+        )
+
+        rcont = json.loads(response.content)
+        try:
+            self._session = self._session_type(
+                rcont["token_type"],
+                rcont["expires_in"],
+                rcont["scope"],
+                rcont["access_token"],
+                self.client_id,
+                self._auth_token_url,
+                redirect_uri,
+                rcont["refresh_token"] if "refresh_token" in rcont else None,
+                client_secret
+            )
+        except:
+            raise Exception('response content:\n' + str(rcont))
+
+
 def authenticate_request(self, request):
     if self._session is None:
         raise RuntimeError("""Session must be authenticated 
@@ -278,6 +317,7 @@ class ItemUploadFragmentBuilder(RequestBuilderBase):
 
 
 # Overwrite the standard upload operation to use this one
+AuthProvider.authenticate = authenticate
 AuthProvider.authenticate_request = authenticate_request
 AuthProvider.session = session
 AuthProvider.logout = logout
