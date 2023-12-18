@@ -86,7 +86,7 @@ A Telegram Bot to transfer files to OneDrive.
 
 ## Preparation
 1. Open `docker-compose.yml` and edit the environment config.
-2. `server_uri` is your domain. You need to specify a port, like `https://example.com:8080`, or `https://127.0.0.1:8080` if you don't have a web server. Protocol must be "https", not "http".
+2. `server_uri` is your domain. You must specify a port (unless you're using a reverse proxy), like `https://example.com:8080`, or `https://127.0.0.1:8080` if you don't have a web server. Protocol must be "https", not "http".
     - The self-signed ssl keys may be expired, you can remind me for an update.
     - Some web browser may prevent you from visiting this url because of ssl mismatch. Try using [Chromium](https://download-chromium.appspot.com).
     - If you want to specify your own ssl keys, especially if you have your own site, or the self-signed ssl keys have expired, you can import your ssl keys like this:
@@ -117,11 +117,35 @@ A Telegram Bot to transfer files to OneDrive.
           ...
     ```
     `xxxx` is your port in `server_uri`.
-4. Create a Telegram bot through [BotFather](https://t.me/BotFather). Record `token` as `tg_bot_token`.
-5. Create a Telegram application on [my.telegram.org](https://my.telegram.org). See [details](https://docs.telethon.dev/en/stable/basic/signing-in.html). Record `api_id` as `tg_api_id`, `api_hash` as `tg_api_hash`.
-6. `tg_user_phone` is the phone number you just used to login to my.telegram.org.
-7. `tg_user_name` is your telegram user name. Check your profile, find your user name, it should be like `@user`, then record `user` as `tg_user_name`. Optional, default to void. If you don't set this parameter, every one can control your bot.
-8. Create a OneDrive application on [portal.azure.com](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) App registrations.
+4. Optional, if you're using reverse proxy, you need to set `reverse_proxy` to `true`. Default to `false`.
+    Then specify a port `xxxx`, reflected to `8080`:
+    ```docker-compose.yml
+    services:
+        telegram-onedrive:
+          ...
+          ports:
+            - xxxx:8080
+          ...
+    ```
+    Make sure your reverse proxy use ssl, real server protocol is `http`, and specify the port `xxxx`. For example, in `Nginx`:
+    ```nginx
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    server_name example.com;
+
+    ssl_certificate path/to/public.pem;
+    ssl_certificate_key path/to/private.key;
+
+    location / {
+        proxy_pass http://127.0.0.1:xxxx/;
+    }
+    ```
+5. Create a Telegram bot through [BotFather](https://t.me/BotFather). Record `token` as `tg_bot_token`.
+6. Create a Telegram application on [my.telegram.org](https://my.telegram.org). See [details](https://docs.telethon.dev/en/stable/basic/signing-in.html). Record `api_id` as `tg_api_id`, `api_hash` as `tg_api_hash`.
+7. `tg_user_phone` is the phone number you just used to login to my.telegram.org.
+8. `tg_user_name` is your telegram user name. Check your profile, find your user name, it should be like `@user`, then record `user` as `tg_user_name`. Optional, default to void. If you don't set this parameter, every one can control your bot.
+9. Create a OneDrive application on [portal.azure.com](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) App registrations.
     - Press `New registrations`.
     - Fill `Name`.
     - In `Supported account types` choose `Accounts in any organizational directory and personal Microsoft accounts`.
@@ -130,9 +154,9 @@ A Telegram Bot to transfer files to OneDrive.
     - Press `Register`.
     - In application's `Overview`, record `Application (client) ID` as `od_client_id`.
     - Go to application's `Certificates & secrets`, press `Client secrets`, and press `New client secret`. Then fill `Description`, and choose an `Expires`. Finnaly, press `Add`. Record `Value` as `od_client_secret`.
-9. `remote_root_path` is a directory on OneDrive. Like `/Videos/from-telegram`. Default to `/`.
-10. `delete_flag` decides whether bot can auto delete message. Pass `true` or `false`. Optional, default to `false`.
-11. Optional, to keep sessions after recreating docker container, create a volume to store it in docker-compose.yml:
+10. `remote_root_path` is a directory on OneDrive. Like `/Videos/from-telegram`. Default to `/`.
+11. `delete_flag` decides whether bot can auto delete message. Pass `true` or `false`. Optional, default to `false`.
+12. Optional, to keep sessions after recreating docker container, create a volume to store it in docker-compose.yml:
     ```docker-compose.yml
     services:
     telegram-onedrive:
