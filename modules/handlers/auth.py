@@ -11,7 +11,7 @@ import asyncio
 import os
 from telethon import events
 from telethon.errors.rpcerrorlist import FloodWaitError
-from modules.env import tg_user_name, tg_user_phone, server_uri
+from modules.env import tg_user_name, tg_user_phone, tg_user_password, server_uri
 from modules.utils import check_in_group
 from modules.client import tg_bot, tg_client, onedrive, init_tg_client
 from modules.log import logger
@@ -110,7 +110,12 @@ async def auth_handler(event, propagate=False):
         while True:
             try:
                 await conv.send_message(logger("Logining into Telegram..."))
-                _tg_client = await tg_client.start(tg_user_phone, code_callback=tg_code_callback, max_attempts=tg_login_max_attempts)
+                _tg_client = await tg_client.start(
+                    phone=tg_user_phone,
+                    password=tg_user_password,
+                    code_callback=tg_code_callback,
+                    max_attempts=tg_login_max_attempts
+                )
                 tg_client = _tg_client
                 await conv.send_message(logger("Login to Telegram successful!"))
                 break
