@@ -86,7 +86,7 @@ A Telegram Bot to transfer files to OneDrive.
 
 ## Preparation
 1. Open `docker-compose.yml` and edit the environment config.
-2. `server_uri` is your domain. You must specify a port (unless you're using a reverse proxy), like `https://example.com:8080`, or `https://127.0.0.1:8080` if you don't have a web server. Protocol must be "https", not "http".
+2. `server_uri` is your domain, like `https://example.com`, or `https://127.0.0.1:xxxx` if you don't have a web server. Protocol must be "https", not "http".
     - The self-signed ssl keys may be expired, you can remind me for an update.
     - Some web browser may prevent you from visiting this url because of ssl mismatch. Try using [Chromium](https://download-chromium.appspot.com).
     - If you want to specify your own ssl keys, especially if you have your own site, or the self-signed ssl keys have expired, you can import your ssl keys like this:
@@ -99,26 +99,7 @@ A Telegram Bot to transfer files to OneDrive.
             - /path/to/*.key:/telegram-onedrive/server/ssl/server.key
           ...
         ```
-3. If you're on Linux, simply use
-    ```docker-compose.yml
-    services:
-        telegram-onedrive:
-          ...
-          network_mode: host
-          ...
-    ```
-    if you're on Windows or macOS, use
-    ```docker-compose.yml
-    services:
-        telegram-onedrive:
-          ...
-          ports:
-            - xxxx:xxxx
-          ...
-    ```
-    `xxxx` is your port in `server_uri`.
-4. Optional, if you're using reverse proxy, you need to set `reverse_proxy` to `true`. Default to `false`.
-    Then specify a port `xxxx`, reflected to `8080`:
+3. Reflect port:
     ```docker-compose.yml
     services:
         telegram-onedrive:
@@ -127,7 +108,8 @@ A Telegram Bot to transfer files to OneDrive.
             - xxxx:8080
           ...
     ```
-    Make sure your reverse proxy use ssl, real server protocol is `http`, and specify the port `xxxx`. For example, in `Nginx`:
+4. Optional, if you're using reverse proxy, you need to set `reverse_proxy` to `true`. Default to `false`.
+    Make sure your reverse proxy use ssl, real server protocol is `http`. For example, in `Nginx`:
     ```nginx
     listen 443 ssl;
     listen [::]:443 ssl;

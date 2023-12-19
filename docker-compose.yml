@@ -4,17 +4,10 @@ services:
     container_name: telegram-onedrive
     image: hlf01/telegram-onedrive
     restart: always
-
-    # If you're on Linux, and not using reverse proxy, use this:
-    network_mode: host
-
-    # If you're on Windows or macOS, and not using reverse proxy, use this, "xxxx" is your port in server_uri:
-    # ports:
-    #   - xxxx:xxxx
     
-    # If you're using reverse proxy, use this, "xxxx" is the port you want to be used in your reverse proxy:
-    # ports:
-    #   - xxxx:8080
+    # xxxx is the port you want to be reflected
+    ports:
+      - xxxx:8080
 
     # volumes:
       # - /path/to/*.crt:/telegram-onedrive/server/ssl/server.crt
@@ -22,7 +15,7 @@ services:
       # - telegram-onedrive-session:/telegram-onedrive/session
 
     environment:
-      - server_uri=$server_uri(must be https and port specified, like https://example.com:8080)
+      - server_uri=$server_uri(must be https, like https://example.com)
       # - reverse_proxy=$reverse_proxy(optional, true or false, default to false)
       - tg_bot_token=$tg_bot_token
       - tg_api_id=$tg_api_id

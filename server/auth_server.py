@@ -58,10 +58,8 @@ def onedrive_code():
 
 
 if __name__ == "__main__":
-    server_uri = os.environ["server_uri"]
     reverse_proxy = True if os.environ.get("reverse_proxy", 'false') == 'true' else False
+    ssl_context = None
     if not reverse_proxy:
-        port = int(server_uri.split(':')[-1].split('/')[0])
-        app.run(host="0.0.0.0", port=port, ssl_context=("server/ssl/server.crt", "server/ssl/server.key"))
-    else:
-        app.run(host="0.0.0.0", port=8080)
+        ssl_context = ("server/ssl/server.crt", "server/ssl/server.key")
+    app.run(host="0.0.0.0", port=8080, ssl_context=ssl_context)
