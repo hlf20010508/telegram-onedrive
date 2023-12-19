@@ -14,7 +14,7 @@ tg_api_id = int(os.environ["tg_api_id"])
 tg_api_hash = os.environ["tg_api_hash"]
 tg_user_phone = os.environ["tg_user_phone"]
 tg_user_password = os.environ.get("tg_user_password", None)
-tg_user_name = os.environ.get("tg_user_name", None)
+tg_user_name = os.environ.get("tg_user_name", None).split(',')
 # telegram bot
 tg_bot_token = os.environ["tg_bot_token"]
 # onedrive

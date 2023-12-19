@@ -127,7 +127,7 @@ A Telegram Bot to transfer files to OneDrive.
 6. Create a Telegram application on [my.telegram.org](https://my.telegram.org). See [details](https://docs.telethon.dev/en/stable/basic/signing-in.html). Record `api_id` as `tg_api_id`, `api_hash` as `tg_api_hash`.
 7. `tg_user_phone` is the phone number you just used to login to my.telegram.org.
 8. Optional, if you have two-step verification enabled, set `tg_user_password` as your 2FA password.
-8. `tg_user_name` is your telegram user name. Check your profile, find your user name, it should be like `@user`, then record `user` as `tg_user_name`. Optional, default to void. If you don't set this parameter, every one can control your bot.
+8. `tg_user_name` is your telegram user name. Check your profile, find your user name, it should be like `@user`, then record `user` as `tg_user_name`. If you need multiple users, use `,` to split, like `user1,user2`. Optional, default to void. If you don't set this parameter, every one can control your bot.
 9. Create a OneDrive application on [portal.azure.com](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) App registrations.
     - Press `New registrations`.
     - Fill `Name`.
