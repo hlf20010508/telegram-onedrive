@@ -10,8 +10,10 @@ services:
       - xxxx:8080
 
     # volumes:
+      # if you have your own ssl files, uncomment and edit these two lines:
       # - /path/to/*.crt:/telegram-onedrive/server/ssl/server.crt
       # - /path/to/*.key:/telegram-onedrive/server/ssl/server.key
+      # if you want to save your login session, uncomment this line, no edit needed:
       # - telegram-onedrive-session:/telegram-onedrive/session
 
     environment:
@@ -29,5 +31,6 @@ services:
       # - delete_flag=$delete_flag(optional, true or false, default to false)
     command: python main.py
 
+# if you want to save your login session, uncomment these two lines, no edit needed:
 # volumes:
 #   telegram-onedrive-session:

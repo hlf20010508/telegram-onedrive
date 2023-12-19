@@ -132,14 +132,14 @@ A Telegram Bot to transfer files to OneDrive.
     - Press `New registrations`.
     - Fill `Name`.
     - In `Supported account types` choose `Accounts in any organizational directory and personal Microsoft accounts`.
-    - In `Redirect URI`, `platform` select `Web`, uri domain should be the same with `server_uri`, route must be `/auth`, like `https://example.com:8080/auth`.
-        - Explain: The authorization code will be sent through the uri you offer, like `https://example.com:8080/auth?code=xxxxxxx`. So in this project, it use flask as a server to handle this request.
+    - In `Redirect URI`, `platform` select `Web`, uri domain should be the same with `server_uri`, route must be `/auth`, like `https://example.com/auth`.
+        - Explain: The authorization code will be sent through the uri you offer, like `https://example.com/auth?code=xxxxxxx`. So in this project, it use flask as a server to handle this request.
     - Press `Register`.
     - In application's `Overview`, record `Application (client) ID` as `od_client_id`.
     - Go to application's `Certificates & secrets`, press `Client secrets`, and press `New client secret`. Then fill `Description`, and choose an `Expires`. Finnaly, press `Add`. Record `Value` as `od_client_secret`.
 10. `remote_root_path` is a directory on OneDrive. Like `/Videos/from-telegram`. Default to `/`.
 11. `delete_flag` decides whether bot can auto delete message. Pass `true` or `false`. Optional, default to `false`.
-12. Optional, to keep sessions after recreating docker container, create a volume to store it in docker-compose.yml:
+12. Optional, to keep sessions after recreating docker container, create a volume to store it:
     ```docker-compose.yml
     services:
     telegram-onedrive:
@@ -150,6 +150,7 @@ A Telegram Bot to transfer files to OneDrive.
     volumes:
       telegram-onedrive-session:
     ```
+    All you have to do is uncomment those lines, no edit needed.
 
 ## Usage
 ### Before Start (Important!)
