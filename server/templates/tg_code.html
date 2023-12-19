@@ -56,7 +56,12 @@
         methods: {
             submitForm() {
                 if (!this.submitted) {
-                    axios.post('/tg', {
+                    let currentPath = window.location.pathname;
+                    if (!currentPath.endsWith('/')) {
+                        currentPath += '/';
+                    }
+                    let requestUrl = currentPath + 'tg';
+                    axios.post(requestUrl, {
                         code: this.form.code
                     }).then((res) => {
                         if (res.data.success) {
