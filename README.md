@@ -85,10 +85,10 @@ A Telegram Bot to transfer files to OneDrive.
 </details>
 
 ## Preparation
-1. Open `docker-compose.yml` and edit the environment config.
+1. Open `docker-compose.yml` and edit the environment configuration.
 2. `server_uri` is your domain, like `https://example.com`, or `https://127.0.0.1:xxxx` if you don't have a web server. Protocol must be "https", not "http".
     - The self-signed ssl keys may be expired, you can remind me for an update.
-    - Some web browser may prevent you from visiting this url because of ssl mismatch. Try using [Chromium](https://download-chromium.appspot.com).
+    - Some web browsers may prevent you from visiting this url because of ssl mismatch. Try using [Chromium](https://download-chromium.appspot.com).
     - If you want to specify your own ssl keys, especially if you have your own site, or the self-signed ssl keys have expired, you can import your ssl keys like this:
         ```docker-compose.yml
         services:
@@ -99,7 +99,7 @@ A Telegram Bot to transfer files to OneDrive.
             - /path/to/*.key:/telegram-onedrive/server/ssl/server.key
           ...
         ```
-3. Reflect port:
+3. Reflect the port:
     ```docker-compose.yml
     services:
         telegram-onedrive:
@@ -125,9 +125,9 @@ A Telegram Bot to transfer files to OneDrive.
     ```
 5. Create a Telegram bot through [BotFather](https://t.me/BotFather). Record `token` as `tg_bot_token`.
 6. Create a Telegram application on [my.telegram.org](https://my.telegram.org). See [details](https://docs.telethon.dev/en/stable/basic/signing-in.html). Record `api_id` as `tg_api_id`, `api_hash` as `tg_api_hash`.
-7. `tg_user_phone` is the phone number you just used to login to my.telegram.org.
+7. `tg_user_phone` is the phone number you just used to login to my.telegram.org. It's in international format, like `+xxyyyyyyyyyyy`.
 8. Optional, if you have two-step verification enabled, set `tg_user_password` as your 2FA password.
-8. `tg_user_name` is your telegram user name. Check your profile, find your user name, it should be like `@user`, then record `user` as `tg_user_name`. If you need multiple users, use `,` to split, like `user1,user2`. Optional, default to void. If you don't set this parameter, every one can control your bot.
+8. `tg_user_name` is your telegram user name. Check your profile, find your user name, it should be like `@user`, then record `user` as `tg_user_name`. If you need multiple users, use `,` to split, like `user1,user2`. Optional, default to void. If you don't set this parameter, everyone can control your bot.
 9. Create a OneDrive application on [portal.azure.com](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) App registrations.
     - Press `New registrations`.
     - Fill `Name`.
@@ -139,7 +139,7 @@ A Telegram Bot to transfer files to OneDrive.
     - Go to application's `Certificates & secrets`, press `Client secrets`, and press `New client secret`. Then fill `Description`, and choose an `Expires`. Finnaly, press `Add`. Record `Value` as `od_client_secret`.
 10. `remote_root_path` is a directory on OneDrive. Like `/Videos/from-telegram`. Default to `/`.
 11. `delete_flag` decides whether bot can auto delete message. Pass `true` or `false`. Optional, default to `false`.
-12. Optional, to keep sessions after recreating docker container, create a volume to store it:
+12. Optional, to keep sessions after recreating docker container, create a volume to store them:
     ```docker-compose.yml
     services:
     telegram-onedrive:
@@ -157,8 +157,8 @@ A Telegram Bot to transfer files to OneDrive.
 - Create a group.
 - In bot's profile, press `Add to Group or Channel`.
 - Add this bot to your group.
-- Set this bot as Admin, and give it all rights like this
-<img width="330" alt="image" src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/d5fc1130-493e-47fb-9c45-67c328470692">
+- Set this bot as Admin, and give it all rights like this  
+    <img width="330" alt="image" src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/d5fc1130-493e-47fb-9c45-67c328470692">
 
 If you don't follow these steps, the bot may not works.
 
@@ -178,13 +178,13 @@ If you don't follow these steps, the bot may not works.
 ## Bot Command
 - `/start` to start with bot.
 - `/auth` to authorize telegram and onedrive.
-- `/clear` to clear all history except status message.
+- `/clear` to clear history.
 - `/autoDelete` to toggle whether bot should auto delete message.
 - `/clearLogs` to clear logs.
 - `/logs` to show all logs.
 - `/logout` to logout OneDrive.
 - `/links message_link range` to transfer sequential restricted content.
-- `/url file_url` to upload file through url.
+- `/url file_url` to upload the file through url.
 - `/logs range` to show the most recent logs for the specified page number.
 - `/help` for help.
 
@@ -194,14 +194,17 @@ Example:
 - `/logs 2` will show 2 pages of the most recent logs. Each page contains 50 lines of logs.
 
 ## Launch Through Docker
+Install docker compose
 ```sh
-# install docker-compose
-sudo apt-get install docker-compose
-# launch
-sudo docker-compose up -d
+sudo apt-get install docker-compose-plugin
 ```
 
-build your docker image
+Launch
+```sh
+sudo docker compose up -d
+```
+
+Build your docker image
 ```sh
 sudo docker build -t YOUR_HOST_NAME/telegram-onedrive --no-cache .
 ```
