@@ -58,6 +58,7 @@ class Onedrive:
             self.client_secret
         )
         self.save_session()
+        self.load_session()
 
     @property
     def session(self):
