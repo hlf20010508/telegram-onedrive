@@ -28,6 +28,8 @@ cmd_helper = '''
 - /clearLogs to clear logs.
 - /logs to show all logs.
 - /logout to logout OneDrive.
+- /addDrive to add a OneDrive account.
+- /listDrive to list all OneDrive accounts.
 
 ```/links message_link range```
 To transfer sequential restricted content.
@@ -35,6 +37,8 @@ To transfer sequential restricted content.
 To upload file through url.
 ```/logs range```
 To show the most recent logs for the specified page number.
+```/changeDrive index```
+To change the OneDrive account.
 '''
 
 
@@ -92,4 +96,11 @@ logs_res = '''
 Command ```/logs``` format wrong.
 
 Usage: ```/logs range```
+'''
+
+change_drive_res = '''
+Command /changeDrive format wrong.
+
+Usage:
+```/changeDrive index```
 '''

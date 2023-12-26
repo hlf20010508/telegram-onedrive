@@ -16,7 +16,6 @@ from modules.handlers.auth import od_auth
 @tg_bot.on(events.NewMessage(pattern="/addDrive", incoming=True, from_users=tg_user_name))
 @check_in_group
 @check_tg_login
-@check_od_login
 async def add_drive_handler(event):
     auth_server = subprocess.Popen(('python', 'server/auth_server.py'))
     async with tg_bot.conversation(event.chat_id) as conv:
