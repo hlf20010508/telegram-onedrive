@@ -2,7 +2,7 @@
 .DS_Store
 __pycache__
 log
-*session*
+session
 temp
 dev.sh
 test*

@@ -5,94 +5,18 @@
 :license: MIT, see LICENSE for more details.
 """
 
+import json
+import asyncio
+import time
 from onedrivesdk import HttpProvider, AuthProvider, OneDriveClient
 from onedrivesdk.options import HeaderOption
 from onedrivesdk.error import OneDriveError, ErrorCode
 from onedrivesdk.model.upload_session import UploadSession
 from onedrivesdk.model.item import Item
-from onedrivesdk.request.item_create_session import ItemCreateSessionRequestBuilder
-from onedrivesdk.request.item_request_builder import ItemRequestBuilder
 from onedrivesdk.request_builder_base import RequestBuilderBase
 from onedrivesdk.request_base import RequestBase
-from onedrivesdk.http_response import HttpResponse
-import json
-import asyncio
-import time
-import os
-from modules.global_var import od_session_path
-
-
-def authenticate(self, code, redirect_uri, client_secret, resource=None):
-        params = {
-            "client_id": self.client_id,
-            "redirect_uri": redirect_uri,
-            "client_secret": client_secret,
-            "code": code,
-            "response_type": "code",
-            "grant_type": "authorization_code"
-        }
-
-        if resource is not None:
-            params["resource"] = resource
-
-        auth_url = self._auth_token_url
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        response = self._http_provider.send(
-            method="POST",
-            headers=headers,
-            url=auth_url,
-            data=params
-        )
-
-        rcont = json.loads(response.content)
-        try:
-            self._session = self._session_type(
-                rcont["token_type"],
-                rcont["expires_in"],
-                rcont["scope"],
-                rcont["access_token"],
-                self.client_id,
-                self._auth_token_url,
-                redirect_uri,
-                rcont["refresh_token"] if "refresh_token" in rcont else None,
-                client_secret
-            )
-        except:
-            raise Exception('response content:\n' + str(rcont))
-
-
-def authenticate_request(self, request):
-    if self._session is None:
-        raise RuntimeError("""Session must be authenticated 
-            before applying authentication to a request.""")
-
-    if self._session.is_expired() and 'offline_access' in self.scopes:
-        self.refresh_token()
-        self.save_session(path=od_session_path)
-
-    request.append_option(
-        HeaderOption("Authorization",
-                        "bearer {}".format(self._session.access_token)))
-
-
-def create_session(self, item=None):
-    return ItemCreateSessionRequestBuilder(self.append_to_request_url("createUploadSession"), self._client, item=item)
-
-
-def http_response_init(self, status, headers, content):
-    self._status = status
-    self._headers = headers
-    self._content = content
-
-
-@property
-def session(self):
-    return self._session
-
-
-def logout(self):
-    self._session = None
-    os.remove(od_session_path)
+from modules.onedrive.session import SQLiteSession
+import modules.onedrive._rewrite
 
 
 class Onedrive:
@@ -101,18 +25,20 @@ class Onedrive:
         auth_server_url = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
         auth_token_url='https://login.microsoftonline.com/common/oauth2/v2.0/token'
 
-        scopes = ["offline_access", "Files.ReadWrite"]
+        scopes = ["offline_access", "Files.ReadWrite", "User.Read"]
 
         http_provider = HttpProvider()
         auth_provider = AuthProvider(
             http_provider=http_provider,
             client_id=client_id,
             scopes=scopes,
+            session_type=SQLiteSession,
             auth_server_url=auth_server_url,
             auth_token_url=auth_token_url
         )
 
-        self.session_path = od_session_path
+        http_provider.base_url = api_base_url
+
         self.remote_root_path = remote_root_path
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
@@ -132,19 +58,20 @@ class Onedrive:
             self.client_secret
         )
         self.save_session()
-    
+        self.load_session()
+
     @property
     def session(self):
         return self.client.auth_provider.session
 
     def save_session(self):
-        self.client.auth_provider.save_session(path=self.session_path)
+        self.client.auth_provider.save_session()
 
     def load_session(self):
-        self.client.auth_provider.load_session(path=self.session_path)
+        self.client.auth_provider.load_session()
     
     def logout(self):
-        self.client.auth_provider.logout()
+        return self.client.auth_provider.logout()
 
     def stream_upload(self, buffer, name):
         request = self.client.item(path=self.remote_root_path).children[name].content.request()
@@ -314,12 +241,3 @@ class ItemUploadFragmentBuilder(RequestBuilderBase):
             The resulting UploadSession from the operation
         """
         return self.request(begin, length, buffer, options).post()
-
-
-# Overwrite the standard upload operation to use this one
-AuthProvider.authenticate = authenticate
-AuthProvider.authenticate_request = authenticate_request
-AuthProvider.session = session
-AuthProvider.logout = logout
-ItemRequestBuilder.create_session = create_session
-HttpResponse.__init__ = http_response_init

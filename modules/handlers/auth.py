@@ -99,13 +99,26 @@ class Code_Callback:
         return await self.code()
 
 
+async def od_auth(conv):
+    od_code_callback = Code_Callback(conv, 'od')
+    code = await od_code_callback()
+    if code:
+        try:
+            onedrive.auth(code)
+            await conv.send_message(logger("Onedrive authorization successful!"))
+        except Exception as e:
+            await conv.send_message(logger(e))
+            await conv.send_message(logger("Onedrive authorization failed."))
+    else:
+        await conv.send_message(logger("Onedrive authorization failed."))
+
+
 @tg_bot.on(events.NewMessage(pattern="/auth", incoming=True, from_users=tg_user_name))
 @check_in_group
 async def auth_handler(event, propagate=False):
     auth_server = subprocess.Popen(('python', 'server/auth_server.py'))
     async with tg_bot.conversation(event.chat_id) as conv:
         tg_code_callback = Code_Callback(conv, 'tg')
-        od_code_callback = Code_Callback(conv, 'od')
         global tg_client
         while True:
             try:
@@ -139,16 +152,7 @@ async def auth_handler(event, propagate=False):
             onedrive.load_session()
             await conv.send_message(logger("Onedrive authorization successful!"))
         except:
-            code = await od_code_callback()
-            if code:
-                try:
-                    onedrive.auth(code)
-                    await conv.send_message(logger("Onedrive authorization successful!"))
-                except Exception as e:
-                    await conv.send_message(logger(e))
-                    await conv.send_message(logger("Onedrive authorization failed."))
-            else:
-                await conv.send_message(logger("Onedrive authorization failed."))
+            await od_auth(conv)
 
     auth_server.kill()
 

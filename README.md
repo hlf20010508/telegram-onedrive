@@ -25,6 +25,7 @@ A Telegram Bot to transfer files to OneDrive.
 - Transfer files from url.
 - No file size limitation.
 - Doesn't occupy local space, works entirely on memory through multipart transfer.
+- Support multiple OneDrive accounts.
 
 ## Demos
 <details>
@@ -182,6 +183,9 @@ If you don't follow these steps, the bot may not works.
 - `/clearLogs` to clear logs.
 - `/logs` to show all logs.
 - `/logout` to logout OneDrive.
+- `/addDrive` to add a OneDrive account.
+- `/listDrive` to list all OneDrive accounts.
+- `/changeDrive index` to change the OneDrive account.
 - `/links message_link range` to transfer sequential restricted content.
 - `/url file_url` to upload the file through url.
 - `/logs range` to show the most recent logs for the specified page number.
