@@ -61,5 +61,8 @@ if __name__ == "__main__":
     reverse_proxy = True if os.environ.get("reverse_proxy", 'false') == 'true' else False
     ssl_context = None
     if not reverse_proxy:
-        ssl_context = ("server/ssl/server.crt", "server/ssl/server.key")
+        if os.path.exists("server/ssl/server.crt") and os.path.exists("server/ssl/server.key"):
+            ssl_context = ("server/ssl/server.crt", "server/ssl/server.key")
+        else:
+            ssl_context = 'adhoc'
     app.run(host="0.0.0.0", port=8080, ssl_context=ssl_context)

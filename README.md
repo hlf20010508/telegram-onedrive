@@ -87,9 +87,8 @@ A Telegram Bot to transfer files to OneDrive.
 ## Preparation
 1. Open `docker-compose.yml` and edit the environment configuration.
 2. `server_uri` is your domain, like `https://example.com`, or `https://127.0.0.1:xxxx` if you don't have a web server. Protocol must be "https", not "http".
-    - The self-signed ssl keys may be expired, you can remind me for an update.
     - Some web browsers may prevent you from visiting this url because of ssl mismatch. Try using [Chromium](https://download-chromium.appspot.com).
-    - If you want to specify your own ssl keys, especially if you have your own site, or the self-signed ssl keys have expired, you can import your ssl keys like this:
+    - If you want to specify your own ssl keys, especially if you have your own site, you can import your ssl keys like this:
         ```docker-compose.yml
         services:
         telegram-onedrive:
