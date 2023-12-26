@@ -93,8 +93,3 @@ Command ```/logs``` format wrong.
 
 Usage: ```/logs range```
 '''
-
-
-logout_res = '''
-OneDrive logout successfully.
-'''

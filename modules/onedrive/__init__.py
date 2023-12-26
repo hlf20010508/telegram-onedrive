@@ -70,7 +70,7 @@ class Onedrive:
         self.client.auth_provider.load_session()
     
     def logout(self):
-        self.client.auth_provider.logout()
+        return self.client.auth_provider.logout()
 
     def stream_upload(self, buffer, name):
         request = self.client.item(path=self.remote_root_path).children[name].content.request()

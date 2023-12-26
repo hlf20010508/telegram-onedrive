@@ -80,6 +80,7 @@ def logout(self):
     has_other_user = self._session.logout()
     if not has_other_user:
         self._session = None
+    return has_other_user
 
 # Overwrite the standard upload operation to use this one
 AuthProvider.authenticate = authenticate
