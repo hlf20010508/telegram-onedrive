@@ -79,23 +79,26 @@ You haven't logined to OneDrive.
 
 
 links_res = '''
-Command ```/links``` format wrong.
+Command /links format wrong.
 
-Usage: ```/links message_link range```
+Usage:
+```/links message_link range```
 '''
 
 
 url_res = '''
-Command ```/url``` format wrong.
+Command /url format wrong.
 
-Usage: ```/url file_url```
+Usage:
+```/url file_url```
 '''
 
 
 logs_res = '''
-Command ```/logs``` format wrong.
+Command /logs format wrong.
 
-Usage: ```/logs range```
+Usage:
+```/logs range```
 '''
 
 change_drive_res = '''
