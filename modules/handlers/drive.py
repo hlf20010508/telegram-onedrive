@@ -9,7 +9,7 @@ from telethon import events
 import subprocess
 from modules.client import tg_bot, onedrive
 from modules.env import tg_user_name
-from modules.utils import check_in_group, check_tg_login, cmd_parser, CMDException
+from modules.utils import check_in_group, check_tg_login, cmd_parser
 from modules.handlers.auth import od_auth
 
 
@@ -96,7 +96,8 @@ async def drive_handler(event):
                 raise events.StopPropagation
             
             if index < len(users):
-                should_show_current_user = onedrive.logout(users[index])
+                should_show_current_user = True if users[index] == onedrive.session.username else False
+                onedrive.logout(users[index])
                 if should_show_current_user:
                     current_user = onedrive.session.current_user
                     logout_res = f"OneDrive logout successfully.\nCurrent account is {current_user}"

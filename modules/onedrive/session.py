@@ -168,8 +168,8 @@ class SQLiteSession(Session):
         
         else:
             self.db.delete_user(username)
-            # don't show current user
-            return False
+            # has other users
+            return True
     
     def change_user(self, username):
         record = self.db.get_user(username)

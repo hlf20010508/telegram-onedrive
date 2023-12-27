@@ -118,6 +118,7 @@ class Database:
                 insert into current_user(user_id) values(?);
             '''
             self.execute(command, params=(user_id,))
+        self.commit()
     
     def get_user_id(self, username):
         command = '''
