@@ -32,7 +32,7 @@ async def dir_handler(event):
             if sub_cmd == 'reset':
                 Dir.reset()
                 await event.respond(f'Directory reset to default `{Dir.path}`')
-            # /dir remote_path
+            # /dir $remote_path
             else:
                 remote_path = cmd[1]
                 if remote_path.startswith('/'):
@@ -40,7 +40,7 @@ async def dir_handler(event):
                     await event.respond(f'Directory set to `{Dir.path}`')
                 else:
                     await event.respond('Directory path should start with /')
-        # /dir temp remote_path
+        # /dir temp $remote_path
         elif len(cmd) == 3:
             sub_cmd = cmd[1]
             if sub_cmd == 'temp':

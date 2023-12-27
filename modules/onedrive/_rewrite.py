@@ -90,8 +90,8 @@ def session(self):
     return self._session
 
 
-def logout(self):
-    has_other_user = self._session.logout()
+def logout(self, username=''):
+    has_other_user = self._session.logout(username)
     if not has_other_user:
         self._session = None
     return has_other_user

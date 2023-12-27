@@ -79,6 +79,8 @@ async def logs_handler(event):
         await event.respond('Logs not found.')
         raise events.StopPropagation
     cmd = cmd_parser(event)
+
+    # /logs
     if len(cmd) == 1:
         with Tail_File_Page(log_path, logs_lines_per_page) as file:
             await event.respond('Outputting logs...')
@@ -86,17 +88,31 @@ async def logs_handler(event):
                 await event.respond(logs)
                 await asyncio.sleep(1)
         await event.respond('Finished.')
+
     elif len(cmd) == 2:
-        try:
-            pages = int(cmd[1])
+        sub_cmd = cmd[1]
+        # /logs clear
+        if sub_cmd == 'clear':
+            if os.path.exists(log_path):
+                os.system("rm %s" % log_path)
+                await event.respond("Logs cleared.")
+            else:
+                await event.respond("Logs not found.")
+
+        # /logs $range
+        else:
+            try:
+                pages = int(sub_cmd)
+            except ValueError:
+                await event.reply('Logs page range should be integer.')
+                raise events.StopPropagation
+
             with Tail_File_Page(log_path, logs_lines_per_page) as file:
                 await event.respond('Outputting logs...')
                 for logs in file.read_pages(pages):
                     await event.respond(logs)
                     await asyncio.sleep(1)
             await event.respond('Finished.')
-        except:
-            await event.respond(logs_res)
     else:
         await event.respond(logs_res)
     raise events.StopPropagation

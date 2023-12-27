@@ -70,8 +70,8 @@ class Onedrive:
     def load_session(self):
         self.client.auth_provider.load_session()
     
-    def logout(self):
-        return self.client.auth_provider.logout()
+    def logout(self, username=''):
+        return self.client.auth_provider.logout(username)
 
     @property
     def remote_root_path(self):

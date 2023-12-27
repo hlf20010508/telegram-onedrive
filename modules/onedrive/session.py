@@ -141,10 +141,15 @@ class SQLiteSession(Session):
         except (UserNotFoundException, sqlite3.OperationalError):
             raise NoSessionExecption("No session found.")
 
-    def logout(self):
-        self.db.delete_user(self.username)
-        try:
-            record = self.db.get_an_user()
+    def logout(self, username=''):
+        if not username or username == self.username:
+            self.db.delete_user(self.username)
+            try:
+                record = self.db.get_an_user()
+            except UserNotFoundException:
+                self.db.clear_current_user()
+                # no other users
+                return False
 
             self.username = record['username']
             self.token_type = record['token_type']
@@ -158,10 +163,12 @@ class SQLiteSession(Session):
             self.client_secret = record['client_secret']
 
             self.db.set_current_user(self.username)
+            # has other users
             return True
-
-        except UserNotFoundException:
-            self.db.clear_current_user()
+        
+        else:
+            self.db.delete_user(username)
+            # don't show current user
             return False
     
     def change_user(self, username):

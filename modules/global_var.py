@@ -35,24 +35,29 @@ help_res = '''
 - /auth to authorize for Telegram and OneDrive.
 - /clear to clear all history except status message.
 - /autoDelete to toggle whether bot should auto delete message.
-- /clearLogs to clear logs.
 - /logs to show all logs.
-- /logout to logout OneDrive.
-- /addDrive to add a OneDrive account.
-- /listDrive to list all OneDrive accounts.
+- /drive to list all OneDrive accounts.
 - /dir to show current OneDrive directory.
 
-```/links message_link range```
+```/links $message_link $range```
 To transfer sequential restricted content.
-```/url file_url```
+```/url $file_url```
 To upload file through url.
-```/logs range```
+```/logs $range```
 To show the most recent logs for the specified page number.
-```/changeDrive index```
+```/logs clear```
+To clear logs.
+```/drive add```
+To add a OneDrive account.
+```/drive $index```
 To change the OneDrive account.
-```/dir remote_path```
+```/drive logout```
+To logout current OneDrive account.
+```/drive logout $index```
+To logout specified OneDrive account.
+```/dir $remote_path```
 To set OneDrive directory.
-```/dir temp remote_path```
+```/dir temp $remote_path```
 To set temporary OneDrive directory.
 ```/dir reset```
 To reset OneDrive directory to default.
@@ -86,7 +91,7 @@ links_res = '''
 Command /links format wrong.
 
 Usage:
-```/links message_link range```
+```/links $message_link $range```
 '''
 
 
@@ -94,7 +99,7 @@ url_res = '''
 Command /url format wrong.
 
 Usage:
-```/url file_url```
+```/url $file_url```
 '''
 
 
@@ -102,15 +107,29 @@ logs_res = '''
 Command /logs format wrong.
 
 Usage:
-```/logs range```
+```/logs```
+
+```/logs $range```
+
+```/logs clear```
 '''
 
-change_drive_res = '''
-Command /changeDrive format wrong.
+
+drive_res = '''
+Command /drive format wrong.
 
 Usage:
-```/changeDrive index```
+```/drive```
+
+```/drive add```
+
+```/drive $index```
+
+```/drive logout```
+
+```/drive logout $index```
 '''
+
 
 dir_res = '''
 Command /dir format wrong.
@@ -120,7 +139,7 @@ Usage:
 
 ```/dir reset```
 
-```/dir remote_path```
+```/dir $remote_path```
 
-```/dir temp remote_path```
+```/dir temp $remote_path```
 '''

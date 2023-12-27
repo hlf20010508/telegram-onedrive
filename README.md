@@ -30,14 +30,6 @@ A Telegram Bot to transfer files to OneDrive.
 
 ## Demos
 <details>
-    <summary>/start</summary>
-    <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/edd3f162-02fd-43c0-a6eb-46a7df890c0d" alt="/start">
-</details>
-<details>
-    <summary>/help</summary>
-    <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/821053dc-5983-431d-ae83-66d095ce2a4b" alt="/help">
-</details>
-<details>
     <summary>/auth Telegram</summary>
     <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/4f35422d-cd92-4dac-ac8e-c63ead2db2cb" alt="/auth Telegram">
 </details>
@@ -58,7 +50,7 @@ A Telegram Bot to transfer files to OneDrive.
     <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/647f70d3-593c-4a12-bce3-462d6ae78aa5" alt="link">
 </details>
 <details>
-    <summary>/links message_link range</summary>
+    <summary>/links $message_link $range</summary>
     <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/d862d200-9a1c-4642-88c8-610d5bddb49f" alt="/links message_link range">
 </details>
 <details>
@@ -66,15 +58,11 @@ A Telegram Bot to transfer files to OneDrive.
     <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/86485b4f-57b5-4a03-b74b-3bffd2800582" alt="/clear">
 </details>
 <details>
-    <summary>/clearLogs</summary>
-    <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/f3a48b2a-12dc-4543-841e-bf76349f4a34" alt="/clearLogs">
-</details>
-<details>
     <summary>/logs</summary>
     <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/db07faa8-e8a9-4c4a-ae4f-bf1c88423280" alt="/logs">
 </details>
 <details>
-    <summary>/logs range</summary>
+    <summary>/logs $range</summary>
     <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/b373456e-2525-45ba-9859-9580a8f93d72" alt="/logs range">
 </details>
 <details>
@@ -82,7 +70,7 @@ A Telegram Bot to transfer files to OneDrive.
     <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/ff564f9f-66b0-4296-afe4-e8e3cdf70428" alt="/autoDelete">
 </details>
 <details>
-    <summary>/url file_url</summary>
+    <summary>/url $file_url</summary>
     <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/95994beb-815f-4e0f-a92c-69b5ffa19862" alt="/url file_url">
 </details>
 
@@ -181,18 +169,19 @@ If you don't follow these steps, the bot may not works.
 - `/auth` to authorize telegram and onedrive.
 - `/clear` to clear history.
 - `/autoDelete` to toggle whether bot should auto delete message.
-- `/clearLogs` to clear logs.
+- `/drive` to list all OneDrive accounts.
+- `/drive add` to add a OneDrive account.
+- `/drive $index` to change the OneDrive account.
+- `/drive logout` to logout current OneDrive account.
+- `/drive logout $index` to logout specified OneDrive account.
+- `/links $message_link $range` to transfer sequential restricted content.
+- `/url $file_url` to upload the file through url.
 - `/logs` to show all logs.
-- `/logout` to logout OneDrive.
-- `/addDrive` to add a OneDrive account.
-- `/listDrive` to list all OneDrive accounts.
-- `/changeDrive index` to change the OneDrive account.
-- `/links message_link range` to transfer sequential restricted content.
-- `/url file_url` to upload the file through url.
-- `/logs range` to show the most recent logs for the specified page number.
+- `/logs $range` to show the most recent logs for the specified page number.
+- `/logs clear` to clear logs.
 - `/dir` to show current OneDrive directory.
-- `/dir remote_path` to set OneDrive directory.
-- `/dir temp remote_path` to set temporary OneDrive directory.
+- `/dir $remote_path` to set OneDrive directory.
+- `/dir temp $remote_path` to set temporary OneDrive directory.
 - `/dir reset` to reset OneDrive directory to default.
 - `/help` for help.
 

@@ -20,15 +20,11 @@ def main():
     from modules.handlers.help import help_handler
     from modules.handlers.auth import auth_handler
     from modules.handlers.auto_delete import auto_delete_handler
-    from modules.handlers.clear_logs import clear_logs_handler
     from modules.handlers.clear import clear_handler
     from modules.handlers.logs import logs_handler
-    from modules.handlers.logout import logout_handler
     from modules.handlers.links import links_handler
     from modules.handlers.url import url_handler
-    from modules.handlers.add_drive import add_drive_handler
-    from modules.handlers.list_drive import list_drive_handler
-    from modules.handlers.change_drive import change_drive_handler
+    from modules.handlers.drive import drive_handler
     from modules.handlers.dir import dir_handler
     from modules.handlers.transfer import transfer_handler
 
