@@ -9,7 +9,7 @@ from telethon import events
 import subprocess
 from modules.client import tg_bot
 from modules.env import tg_user_name
-from modules.utils import check_in_group, check_tg_login, check_od_login
+from modules.utils import check_in_group, check_tg_login
 from modules.handlers.auth import od_auth
 
 

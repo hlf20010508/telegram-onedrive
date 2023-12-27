@@ -21,7 +21,17 @@ base_headers = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15'
 }
 
-cmd_helper = '''
+
+start_res = '''
+Transfer files to Onedrive.
+
+Forward or upload files to me, or pass message link to transfer restricted content from group or channel.
+
+- /help: Ask for help.
+'''
+
+
+help_res = '''
 - /auth to authorize for Telegram and OneDrive.
 - /clear to clear all history except status message.
 - /autoDelete to toggle whether bot should auto delete message.
@@ -30,6 +40,7 @@ cmd_helper = '''
 - /logout to logout OneDrive.
 - /addDrive to add a OneDrive account.
 - /listDrive to list all OneDrive accounts.
+- /dir to show current OneDrive directory.
 
 ```/links message_link range```
 To transfer sequential restricted content.
@@ -39,26 +50,19 @@ To upload file through url.
 To show the most recent logs for the specified page number.
 ```/changeDrive index```
 To change the OneDrive account.
-'''
+```/dir remote_path```
+To set OneDrive directory.
+```/dir temp remote_path```
+To set temporary OneDrive directory.
+```/dir reset```
+To reset OneDrive directory to default.
 
-
-start_res = '''
-Transfer files to Onedrive.
-
-Forward or upload files to me, or pass message link to transfer restricted content from group or channel.
-%s
-- /help: Ask for help.
-'''%cmd_helper
-
-
-help_res = '''
-%s
 - To transfer files, forward or upload to me.
 - To transfer restricted content, right click the content, copy the message link, and send to me.
 - Tap Status on replied status message to locate current job.
 - Uploading through url will call Onedrive's API, which means Onedrive's server will visit the url and download the file for you. If the url is invalid to OneDrive, the bot will try using bot's uploader to transfer.
 - Each log page contains 50 lines of logs.
-'''%cmd_helper
+'''
 
 
 check_in_group_res = '''
@@ -106,4 +110,17 @@ Command /changeDrive format wrong.
 
 Usage:
 ```/changeDrive index```
+'''
+
+dir_res = '''
+Command /dir format wrong.
+
+Usage:
+```/dir```
+
+```/dir reset```
+
+```/dir remote_path```
+
+```/dir temp remote_path```
 '''

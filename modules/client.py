@@ -8,7 +8,7 @@
 import os
 from telethon import TelegramClient
 from modules.onedrive import Onedrive
-from modules.env import tg_api_id, tg_api_hash, tg_bot_token, od_client_id, od_client_secret, server_uri, remote_root_path
+from modules.env import tg_api_id, tg_api_hash, tg_bot_token, od_client_id, od_client_secret, server_uri
 from modules.global_var import tg_bot_session_path, tg_client_session_path
 
 def init_tg_client():
@@ -23,6 +23,5 @@ tg_client = init_tg_client()
 onedrive = Onedrive(
     client_id=od_client_id,
     client_secret=od_client_secret,
-    redirect_uri=os.path.join(server_uri, "auth"),
-    remote_root_path=remote_root_path,
+    redirect_uri=os.path.join(server_uri, "auth")
 )

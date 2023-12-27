@@ -72,6 +72,10 @@ class Callback:
         await self.status_message.update()
 
 
+class CMDException(Exception):
+    pass
+
+
 def cmd_parser(event):
     return event.text.split()
 

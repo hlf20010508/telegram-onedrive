@@ -16,11 +16,12 @@ from onedrivesdk.model.item import Item
 from onedrivesdk.request_builder_base import RequestBuilderBase
 from onedrivesdk.request_base import RequestBase
 from modules.onedrive.session import SQLiteSession
+from modules.onedrive.dir import Dir
 import modules.onedrive._rewrite
 
 
 class Onedrive:
-    def __init__(self, client_id, client_secret, redirect_uri, remote_root_path):
+    def __init__(self, client_id, client_secret, redirect_uri):
         api_base_url = "https://graph.microsoft.com/v1.0/me/"
         auth_server_url = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
         auth_token_url='https://login.microsoftonline.com/common/oauth2/v2.0/token'
@@ -39,7 +40,6 @@ class Onedrive:
 
         http_provider.base_url = api_base_url
 
-        self.remote_root_path = remote_root_path
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
         self.client = OneDriveClient(
@@ -72,6 +72,13 @@ class Onedrive:
     
     def logout(self):
         return self.client.auth_provider.logout()
+
+    @property
+    def remote_root_path(self):
+        return Dir.path
+
+    def check_dir_temp(self):
+        Dir.check_temp()
 
     def stream_upload(self, buffer, name):
         request = self.client.item(path=self.remote_root_path).children[name].content.request()

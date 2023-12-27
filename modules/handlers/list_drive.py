@@ -9,7 +9,6 @@ from telethon import events
 from modules.client import tg_bot, onedrive
 from modules.env import tg_user_name
 from modules.utils import check_in_group, check_tg_login
-from modules.onedrive.database import UserNotFoundException
 
 
 @tg_bot.on(events.NewMessage(pattern="/listDrive", incoming=True, from_users=tg_user_name))

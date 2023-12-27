@@ -29,6 +29,7 @@ def main():
     from modules.handlers.add_drive import add_drive_handler
     from modules.handlers.list_drive import list_drive_handler
     from modules.handlers.change_drive import change_drive_handler
+    from modules.handlers.dir import dir_handler
     from modules.handlers.transfer import transfer_handler
 
     tg_bot.run_until_disconnected()

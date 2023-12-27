@@ -61,6 +61,7 @@ async def url_handler(event):
         await event.reply(logger(e))
         raise events.StopPropagation 
 
+    last_remote_root_path = onedrive.remote_root_path
     try:
         progress_url = onedrive.upload_from_url(url, name)
         logger('progress url: %s' % progress_url)
@@ -77,7 +78,7 @@ async def url_handler(event):
                 await status_message.update()
 
                 if progress['status'] == 'completed':
-                    logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
+                    logger("File uploaded to %s"%os.path.join(last_remote_root_path, name))
                     await status_message.finish()
                     break
 
@@ -92,7 +93,7 @@ async def url_handler(event):
                 logger('use local uploader to upload from url')
                 callback = Callback(event, status_message)
                 await multi_parts_uploader_from_url(name, local_response, callback)
-                logger("File uploaded to %s"%os.path.join(onedrive.remote_root_path, name))
+                logger("File uploaded to %s"%os.path.join(last_remote_root_path, name))
                 await status_message.finish()
             else:
                 logger(local_response.headers)
@@ -105,4 +106,5 @@ async def url_handler(event):
             except Exception as e1:
                 logger(e1)
                 await status_message.report_error(e)
+    onedrive.check_dir_temp()
     raise events.StopPropagation
