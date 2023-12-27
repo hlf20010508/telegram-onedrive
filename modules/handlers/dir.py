@@ -34,7 +34,7 @@ async def dir_handler(event):
                 await event.respond(f'Directory reset to default `{Dir.path}`')
             # /dir $remote_path
             else:
-                remote_path = cmd[1]
+                remote_path = cmd[1].strip().strip('*')
                 if remote_path.startswith('/'):
                     Dir.set_perm_path(remote_path)
                     await event.respond(f'Directory set to `{Dir.path}`')
@@ -44,7 +44,7 @@ async def dir_handler(event):
         elif len(cmd) == 3:
             sub_cmd = cmd[1]
             if sub_cmd == 'temp':
-                remote_path = cmd[2]
+                remote_path = cmd[2].strip().strip('*')
                 if remote_path.startswith('/'):
                     Dir.set_temp_path(remote_path)
                     await event.respond(f'Temporary directory set to `{Dir.path}`')
