@@ -9,6 +9,7 @@ from onedrivesdk import AuthProvider
 from onedrivesdk.request.item_create_session import ItemCreateSessionRequestBuilder
 from onedrivesdk.request.item_request_builder import ItemRequestBuilder
 from onedrivesdk.http_response import HttpResponse
+from onedrivesdk.options import HeaderOption
 import json
 
 
@@ -61,6 +62,19 @@ def authenticate(self, code, redirect_uri, client_secret, resource=None):
             raise Exception('response content:\n' + str(rcont))
 
 
+def authenticate_request(self, request):
+    if self._session is None:
+        raise RuntimeError("""Session must be authenticated 
+            before applying authentication to a request.""")
+
+    if self._session.is_expired() and 'offline_access' in self.scopes:
+        self.refresh_token()
+
+    request.append_option(
+        HeaderOption("Authorization",
+                        "bearer {}".format(self._session.access_token)))
+
+
 def create_session(self, item=None):
     return ItemCreateSessionRequestBuilder(self.append_to_request_url("createUploadSession"), self._client, item=item)
 
@@ -84,6 +98,7 @@ def logout(self):
 
 # Overwrite the standard upload operation to use this one
 AuthProvider.authenticate = authenticate
+AuthProvider.authenticate_request = authenticate_request
 AuthProvider.session = session
 AuthProvider.logout = logout
 ItemRequestBuilder.create_session = create_session
