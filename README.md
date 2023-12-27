@@ -182,6 +182,7 @@ If you don't follow these steps, the bot may not works.
 - `/dir` to show current OneDrive directory.
 - `/dir $remote_path` to set OneDrive directory.
 - `/dir temp $remote_path` to set temporary OneDrive directory.
+- `/dir temp cancel` to restore OneDrive directory to the previous one.
 - `/dir reset` to reset OneDrive directory to default.
 - `/help` for help.
 

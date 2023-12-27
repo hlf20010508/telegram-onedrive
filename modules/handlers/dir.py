@@ -40,16 +40,23 @@ async def dir_handler(event):
                     await event.respond(f'Directory set to `{Dir.path}`')
                 else:
                     await event.respond('Directory path should start with /')
-        # /dir temp $remote_path
+        
         elif len(cmd) == 3:
             sub_cmd = cmd[1]
             if sub_cmd == 'temp':
-                remote_path = cmd[2].strip().strip('*')
-                if remote_path.startswith('/'):
-                    Dir.set_temp_path(remote_path)
-                    await event.respond(f'Temporary directory set to `{Dir.path}`')
+                sub_cmd = cmd[2]
+                # /dir temp $remote_path
+                if sub_cmd != 'cancel':
+                    remote_path = cmd[2].strip().strip('*')
+                    if remote_path.startswith('/'):
+                        Dir.set_temp_path(remote_path)
+                        await event.respond(f'Temporary directory set to `{Dir.path}`')
+                    else:
+                        await event.respond('Directory path should start with /')
+                # /dir temp cancel
                 else:
-                    await event.respond('Directory path should start with /')
+                    Dir.check_temp()
+                    await event.respond(f'Directory restored to `{Dir.path}')
             else:
                 raise CMDException('Sub command of /dir temp wrong.')
         else:

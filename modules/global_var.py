@@ -59,6 +59,8 @@ To logout specified OneDrive account.
 To set OneDrive directory.
 ```/dir temp $remote_path```
 To set temporary OneDrive directory.
+```/dir temp cancel```
+To restore OneDrive directory to the previous one.
 ```/dir reset```
 To reset OneDrive directory to default.
 
@@ -142,4 +144,6 @@ Usage:
 ```/dir $remote_path```
 
 ```/dir temp $remote_path```
+
+```/dir temp cancel```
 '''
