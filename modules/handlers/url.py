@@ -78,8 +78,10 @@ async def url_handler(event):
                 await status_message.update()
 
                 if progress['status'] == 'completed':
-                    logger("File uploaded to %s"%os.path.join(last_remote_root_path, name))
-                    await status_message.finish()
+                    await status_message.finish(
+                        path=os.path.join(last_remote_root_path, name),
+                        size=total_length
+                    )
                     break
 
                 await asyncio.sleep(5)
@@ -93,8 +95,10 @@ async def url_handler(event):
                 logger('use local uploader to upload from url')
                 callback = Callback(event, status_message)
                 await multi_parts_uploader_from_url(name, local_response, callback)
-                logger("File uploaded to %s"%os.path.join(last_remote_root_path, name))
-                await status_message.finish()
+                await status_message.finish(
+                    path=os.path.join(last_remote_root_path, name),
+                    size=total_length
+                )
             else:
                 logger(local_response.headers)
                 # this happends when downloading github release assets

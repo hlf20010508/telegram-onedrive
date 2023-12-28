@@ -52,8 +52,11 @@ class Status_Message:
         else:
             await self.event.reply(self.error_template % logger(error))
     
-    async def finish(self):
-        self.status = 'Done.'
+    async def finish(self, path, size):
+        if size > 0:
+            self.status = logger('Done.\n\nFile uploaded to %s\n\nSize: %.2fMB' % (path, size / (1024 * 1024)))
+        else:
+            self.status = logger('Done.\n\nFile uploaded to %s' % path)
         await edit_message(tg_bot, self.message, self.response)
         await delete_message(self.event)
         await delete_message(self.message)

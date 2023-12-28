@@ -9,7 +9,7 @@ import json
 import asyncio
 import time
 from onedrivesdk import HttpProvider, AuthProvider, OneDriveClient
-from onedrivesdk.options import HeaderOption
+from onedrivesdk.options import HeaderOption, QueryOption
 from onedrivesdk.error import OneDriveError, ErrorCode
 from onedrivesdk.model.upload_session import UploadSession
 from onedrivesdk.model.item import Item
@@ -86,7 +86,9 @@ class Onedrive:
         request.send(data=buffer)
 
     def multipart_upload_session_builder(self, name):
-        item = Item({})
+        item = Item({
+            '@microsoft.graph.conflictBehavior': 'rename'
+        })
         session = self.client.item(path=self.remote_root_path).children[name].create_session(item).post()
         return session
     
@@ -99,7 +101,7 @@ class Onedrive:
         while True:
             try:
                 tries += 1
-                uploader.post(offset, part_size, buffer)
+                response = uploader.post(offset, part_size, buffer)
             except OneDriveError as exc:
                 if exc.status_code in (408, 500, 502, 503, 504) and tries < 5:
                     await asyncio.sleep(5)
@@ -116,6 +118,7 @@ class Onedrive:
                 # Swallow value errors (usually JSON error) and try again.
                 continue
             break  # while True
+        return response._prop_dict
     
     def upload_from_url(self, url, name):
         opts = [

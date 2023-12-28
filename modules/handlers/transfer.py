@@ -26,20 +26,24 @@ async def transfer_handler(event):
         
         try:
             if "document" in event.media.to_dict():
-                name = "%d%s" % (event.media.document.id, event.file.ext)
+                name = event.file.name
                 status_message = await Status_Message.create(event)
                 callback = Callback(event, status_message)
-                await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
-                logger("File uploaded to %s" % os.path.join(last_remote_root_path, name))
-                await status_message.finish()
+                response_dict = await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
+                await status_message.finish(
+                    path=os.path.join(last_remote_root_path, response_dict['name']),
+                    size=event.file.size
+                )
             elif "photo" in event.media.to_dict():
                 name = "%d%s" % (event.media.photo.id, event.file.ext)
                 status_message = await Status_Message.create(event)
                 callback = Callback(event, status_message)
                 buffer = await message.download_media(file=bytes, progress_callback=callback)
                 onedrive.stream_upload(buffer, name)
-                logger("File uploaded to %s" % os.path.join(last_remote_root_path, name))
-                await status_message.finish()
+                await status_message.finish(
+                    path=os.path.join(last_remote_root_path, name),
+                    size=event.file.size
+                )
         except Exception as e:
             await event.reply('Error: %s' % logger(e))
     
@@ -68,20 +72,24 @@ async def transfer_handler(event):
             if message:
                 try:
                     if "document" in message.media.to_dict():
-                        name = "%d%s" % (message.media.document.id, message.file.ext)
+                        name = event.file.name
                         status_message = await Status_Message.create(event)
                         callback = Callback(event, status_message)
-                        await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
-                        logger("File uploaded to %s" % os.path.join(last_remote_root_path, name))
-                        await status_message.finish()
+                        response_dict = await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
+                        await status_message.finish(
+                            path=os.path.join(last_remote_root_path, response_dict['name']),
+                            size=event.file.size
+                        )
                     elif "photo" in message.media.to_dict():
                         name = "%d%s" % (message.media.photo.id, message.file.ext)
                         status_message = await Status_Message.create(event)
                         callback = Callback(event, status_message)
                         buffer = await message.download_media(file=bytes, progress_callback=callback)
                         onedrive.stream_upload(buffer, name)
-                        logger("File uploaded to %s" % os.path.join(last_remote_root_path, name))
-                        await status_message.finish()
+                        await status_message.finish(
+                            path=os.path.join(last_remote_root_path, name),
+                            size=event.file.size
+                        )
                 except Exception as e:
                     await event.reply('Error: %s' % logger(e))
             else:

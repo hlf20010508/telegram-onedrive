@@ -63,7 +63,7 @@ async def multi_parts_uploader(
                 current_size += len(part)
             task_list.clear()
             buffer.seek(0)
-            await onedrive.multipart_upload(uploader, buffer, pre_offset)
+            response_dict = await onedrive.multipart_upload(uploader, buffer, pre_offset)
             pre_offset = offset
             buffer = BytesIO()
             if progress_callback:
@@ -71,6 +71,7 @@ async def multi_parts_uploader(
                 if inspect.isawaitable(cor):
                     await cor
     buffer.close()
+    return response_dict
 
 
 async def multi_parts_uploader_from_url(name, response, progress_callback=None):
@@ -89,10 +90,11 @@ async def multi_parts_uploader_from_url(name, response, progress_callback=None):
         buffer = BytesIO()
         buffer.write(chunk)
         buffer.seek(0)
-        await onedrive.multipart_upload(uploader, buffer, offset)
+        response_dict = await onedrive.multipart_upload(uploader, buffer, offset)
         offset += buffer.getbuffer().nbytes
         part_num += 1
         if progress_callback and (part_num % 5 ==0 or offset == total_length):
             cor = progress_callback(offset, total_length)
             if inspect.isawaitable(cor):
                 await cor
+    return response_dict
