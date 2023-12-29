@@ -22,7 +22,7 @@ from modules.utils import (
 )
 from modules.log import logger
 from modules.transfer import multi_parts_uploader_from_url
-from modules.global_var import url_res
+from modules.res import url_res
 
 
 @tg_bot.on(events.NewMessage(pattern="/url", incoming=True, from_users=tg_user_name))

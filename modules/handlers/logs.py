@@ -12,7 +12,8 @@ from modules.client import tg_bot
 from modules.env import tg_user_name
 from modules.utils import check_in_group, check_tg_login, check_od_login, cmd_parser
 from modules.log import log_path
-from modules.global_var import logs_res, logs_lines_per_page
+from modules.global_var import LOGS_LINES_PER_PAGE
+from modules.res import logs_res
 
 
 class Tail_File_Page:
@@ -82,7 +83,7 @@ async def logs_handler(event):
 
     # /logs
     if len(cmd) == 1:
-        with Tail_File_Page(log_path, logs_lines_per_page) as file:
+        with Tail_File_Page(log_path, LOGS_LINES_PER_PAGE) as file:
             await event.respond('Outputting logs...')
             for logs in file.read_all():
                 await event.respond(logs)
@@ -107,7 +108,7 @@ async def logs_handler(event):
                 await event.reply('Logs page range should be integer.')
                 raise events.StopPropagation
 
-            with Tail_File_Page(log_path, logs_lines_per_page) as file:
+            with Tail_File_Page(log_path, LOGS_LINES_PER_PAGE) as file:
                 await event.respond('Outputting logs...')
                 for logs in file.read_pages(pages):
                     await event.respond(logs)

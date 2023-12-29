@@ -8,7 +8,7 @@
 from telethon import events
 from modules.client import tg_bot
 from modules.env import tg_user_name
-from modules.global_var import start_res
+from modules.res import start_res
 from modules.utils import check_in_group
 
 

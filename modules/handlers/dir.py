@@ -9,7 +9,7 @@ from telethon import events
 from modules.client import tg_bot
 from modules.env import tg_user_name
 from modules.utils import check_in_group, check_tg_login, check_od_login, cmd_parser, CMDException
-from modules.global_var import dir_res
+from modules.res import dir_res
 from modules.onedrive.utils import Dir
 
 

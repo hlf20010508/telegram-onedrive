@@ -15,7 +15,7 @@ from modules.env import tg_user_name, tg_user_phone, tg_user_password, server_ur
 from modules.utils import check_in_group
 from modules.client import tg_bot, tg_client, onedrive, init_tg_client
 from modules.log import logger
-from modules.global_var import tg_login_max_attempts
+from modules.global_var import TG_LOGIN_MAX_ATTEMPTS
 
 
 class Code_Callback:
@@ -127,7 +127,7 @@ async def auth_handler(event, propagate=False):
                     phone=tg_user_phone,
                     password=tg_user_password,
                     code_callback=tg_code_callback,
-                    max_attempts=tg_login_max_attempts
+                    max_attempts=TG_LOGIN_MAX_ATTEMPTS
                 )
                 tg_client = _tg_client
                 await conv.send_message(logger("Login to Telegram successful!"))

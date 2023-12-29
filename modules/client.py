@@ -9,12 +9,12 @@ import os
 from telethon import TelegramClient
 from modules.onedrive import Onedrive
 from modules.env import tg_api_id, tg_api_hash, tg_bot_token, od_client_id, od_client_secret, server_uri
-from modules.global_var import tg_bot_session_path, tg_client_session_path
+from modules.global_var import TG_BOT_SESSION_PATH, TG_CLIENT_SESSION_PATH
 
 def init_tg_client():
-    return TelegramClient(tg_client_session_path, tg_api_id, tg_api_hash, sequential_updates=True)
+    return TelegramClient(TG_CLIENT_SESSION_PATH, tg_api_id, tg_api_hash, sequential_updates=True)
 
-tg_bot = TelegramClient(tg_bot_session_path, tg_api_id, tg_api_hash, sequential_updates=True).start(
+tg_bot = TelegramClient(TG_BOT_SESSION_PATH, tg_api_id, tg_api_hash, sequential_updates=True).start(
     bot_token=tg_bot_token
 )
 

@@ -14,7 +14,8 @@ import time
 from copy import copy
 from modules.client import tg_bot, tg_client, onedrive
 from modules.log import logger
-from modules.global_var import check_in_group_res, tg_not_login_res, od_not_login_res, file_param_name_list, base_headers
+from modules.global_var import FILE_PARAM_NAME_LIST, BASE_HEADERS
+from modules.res import check_in_group_res, tg_not_login_res, od_not_login_res
 from modules.mime import mime_dict
 from modules.onedrive.utils import preprocess_url_file_name
 
@@ -153,7 +154,7 @@ def get_filename_from_url(url):
     parsed_url = urlparse(url)
     captured_value_dict = parse_qs(parsed_url.query)
     for item_name in captured_value_dict:
-        if item_name.lower() in file_param_name_list:
+        if item_name.lower() in FILE_PARAM_NAME_LIST:
             name = captured_value_dict[item_name]
             break
     if not name:
@@ -165,7 +166,7 @@ def get_filename_from_url(url):
 
 
 def get_filename(url):
-    headers = copy(base_headers)
+    headers = copy(BASE_HEADERS)
     # some video resource websites need Referer, or it will return 404
     headers['Referer'] = url
     headers["Connection"] = "close"

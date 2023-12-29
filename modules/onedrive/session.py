@@ -8,7 +8,7 @@
 import sqlite3
 from onedrivesdk.session import Session
 from modules.onedrive.database import Database, UserNotFoundException
-from modules.global_var import od_session_path
+from modules.global_var import OD_SESSION_PATH
 
 
 class NoSessionExecption(Exception):
@@ -16,7 +16,7 @@ class NoSessionExecption(Exception):
 
 
 class SQLiteSession(Session):
-    db = Database(path=od_session_path)
+    db = Database(path=OD_SESSION_PATH)
 
     def __init__(
         self,
