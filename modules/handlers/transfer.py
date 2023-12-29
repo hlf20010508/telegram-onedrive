@@ -27,6 +27,8 @@ async def transfer_handler(event):
         try:
             if "document" in event.media.to_dict():
                 name = event.file.name
+                if not name:
+                    name = "%d%s" % (event.media.document.id, event.file.ext)
                 status_message = await Status_Message.create(event)
                 callback = Callback(event, status_message)
                 response_dict = await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
@@ -73,6 +75,8 @@ async def transfer_handler(event):
                 try:
                     if "document" in message.media.to_dict():
                         name = message.file.name
+                        if not name:
+                            name = "%d%s" % (message.media.document.id, message.file.ext)
                         status_message = await Status_Message.create(event)
                         callback = Callback(event, status_message)
                         response_dict = await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
