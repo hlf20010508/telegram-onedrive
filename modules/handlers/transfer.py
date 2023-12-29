@@ -13,6 +13,7 @@ from modules.env import tg_user_name
 from modules.utils import Callback, Status_Message, check_in_group, check_tg_login, check_od_login, get_link
 from modules.log import logger
 from modules.transfer import multi_parts_uploader
+from modules.onedrive.utils import preprocess_tg_file_name, use_id_ext_name
 
 
 @tg_bot.on(events.NewMessage(incoming=True, from_users=tg_user_name))
@@ -26,9 +27,7 @@ async def transfer_handler(event):
         
         try:
             if "document" in event.media.to_dict():
-                name = event.file.name
-                if not name:
-                    name = "%d%s" % (event.media.document.id, event.file.ext)
+                name = preprocess_tg_file_name(event)
                 status_message = await Status_Message.create(event)
                 callback = Callback(event, status_message)
                 response_dict = await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
@@ -37,7 +36,7 @@ async def transfer_handler(event):
                     size=event.file.size
                 )
             elif "photo" in event.media.to_dict():
-                name = "%d%s" % (event.media.photo.id, event.file.ext)
+                name = use_id_ext_name(event)
                 status_message = await Status_Message.create(event)
                 callback = Callback(event, status_message)
                 buffer = await message.download_media(file=bytes, progress_callback=callback)
@@ -74,9 +73,7 @@ async def transfer_handler(event):
             if message:
                 try:
                     if "document" in message.media.to_dict():
-                        name = message.file.name
-                        if not name:
-                            name = "%d%s" % (message.media.document.id, message.file.ext)
+                        name = preprocess_tg_file_name(message)
                         status_message = await Status_Message.create(event)
                         callback = Callback(event, status_message)
                         response_dict = await multi_parts_uploader(tg_client, message.media.document, name, progress_callback=callback)
@@ -85,7 +82,7 @@ async def transfer_handler(event):
                             size=message.file.size
                         )
                     elif "photo" in message.media.to_dict():
-                        name = "%d%s" % (message.media.photo.id, message.file.ext)
+                        name = use_id_ext_name(message)
                         status_message = await Status_Message.create(event)
                         callback = Callback(event, status_message)
                         buffer = await message.download_media(file=bytes, progress_callback=callback)

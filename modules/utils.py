@@ -16,6 +16,7 @@ from modules.client import tg_bot, tg_client, onedrive
 from modules.log import logger
 from modules.global_var import check_in_group_res, tg_not_login_res, od_not_login_res, file_param_name_list, base_headers
 from modules.mime import mime_dict
+from modules.onedrive.utils import preprocess_url_file_name
 
 
 class Status_Message:
@@ -194,6 +195,7 @@ def get_filename(url):
             else:
                 if len(name) > 100:
                     name = str(int(time.time()))
+        name = preprocess_url_file_name(name)
         return name, response
     raise Exception("File from url not found")
 

@@ -22,6 +22,37 @@ base_headers = {
 }
 
 
+INVALID_COMPONENT = ['#', '"', '*', ':', '<', '>', '?', '/', '\\', '|', '_vti_']
+INVALID_NAME = [
+    '.lock',
+    'CON',
+    'PRN',
+    'AUX',
+    'NUL',
+    'COM0',
+    'COM1',
+    'COM2',
+    'COM3',
+    'COM4',
+    'COM5',
+    'COM6',
+    'COM7',
+    'COM8',
+    'COM9',
+    'LPT0',
+    'LPT1',
+    'LPT2',
+    'LPT3',
+    'LPT4',
+    'LPT5',
+    'LPT6',
+    'LPT7',
+    'LPT8',
+    'LPT9',
+    'desktop.ini'
+]
+
+
 start_res = '''
 Transfer files to Onedrive.
 

@@ -8,6 +8,7 @@
 import json
 import asyncio
 import time
+import os
 from onedrivesdk import HttpProvider, AuthProvider, OneDriveClient
 from onedrivesdk.options import HeaderOption, QueryOption
 from onedrivesdk.error import OneDriveError, ErrorCode
@@ -16,7 +17,8 @@ from onedrivesdk.model.item import Item
 from onedrivesdk.request_builder_base import RequestBuilderBase
 from onedrivesdk.request_base import RequestBase
 from modules.onedrive.session import SQLiteSession
-from modules.onedrive.dir import Dir
+from modules.onedrive.utils import Dir
+from modules.log import logger
 import modules.onedrive._rewrite
 
 
@@ -89,7 +91,7 @@ class Onedrive:
         item = Item({
             '@microsoft.graph.conflictBehavior': 'rename'
         })
-        session = self.client.item(path=self.remote_root_path).children[name].create_session(item).post()
+        session = self.client.item(path=os.path.join(self.remote_root_path, name)).create_session(item).post()
         return session
     
     def multipart_uploader(self, session, total_length):
@@ -114,9 +116,13 @@ class Onedrive:
                     continue
                 else:
                     raise exc
-            except ValueError:
+            except ValueError as e:
+                logger(e)
                 # Swallow value errors (usually JSON error) and try again.
-                continue
+                if tries < 5:
+                    continue
+                else:
+                    raise e
             break  # while True
         return response._prop_dict
     
