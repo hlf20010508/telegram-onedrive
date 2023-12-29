@@ -11,6 +11,7 @@ from modules.client import tg_bot, onedrive
 from modules.env import tg_user_name
 from modules.utils import check_in_group, check_tg_login, cmd_parser
 from modules.handlers.auth import od_auth
+from modules.res import drive_res
 
 
 @tg_bot.on(events.NewMessage(pattern="/drive", incoming=True, from_users=tg_user_name))
@@ -107,5 +108,5 @@ async def drive_handler(event):
             else:
                 await event.reply('Account index out of range.')
         else:
-            await event.reply()
+            await event.reply(drive_res)
     raise events.StopPropagation
