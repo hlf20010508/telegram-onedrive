@@ -11,11 +11,11 @@ import urllib3
 
 def main():
     urllib3.disable_warnings()
-    if not os.path.exists('session'):
-        os.mkdir('session')
+    if not os.path.exists("session"):
+        os.mkdir("session")
 
     from modules.client import tg_bot
-    
+
     from modules.handlers.start import start_handler
     from modules.handlers.help import help_handler
     from modules.handlers.auth import auth_handler

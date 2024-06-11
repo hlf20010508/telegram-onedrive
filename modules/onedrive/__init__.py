@@ -25,8 +25,10 @@ import modules.onedrive._rewrite
 class Onedrive:
     def __init__(self, client_id, client_secret, redirect_uri):
         api_base_url = "https://graph.microsoft.com/v1.0/me/"
-        auth_server_url = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
-        auth_token_url='https://login.microsoftonline.com/common/oauth2/v2.0/token'
+        auth_server_url = (
+            "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
+        )
+        auth_token_url = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 
         scopes = ["offline_access", "Files.ReadWrite", "User.Read"]
 
@@ -37,27 +39,21 @@ class Onedrive:
             scopes=scopes,
             session_type=SQLiteSession,
             auth_server_url=auth_server_url,
-            auth_token_url=auth_token_url
+            auth_token_url=auth_token_url,
         )
 
         http_provider.base_url = api_base_url
 
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
-        self.client = OneDriveClient(
-            api_base_url,
-            auth_provider,
-            http_provider
-        )
+        self.client = OneDriveClient(api_base_url, auth_provider, http_provider)
 
     def get_auth_url(self):
         return self.client.auth_provider.get_auth_url(self.redirect_uri)
 
     def auth(self, auth_code):
         self.client.auth_provider.authenticate(
-            auth_code,
-            self.redirect_uri,
-            self.client_secret
+            auth_code, self.redirect_uri, self.client_secret
         )
         self.save_session()
         self.load_session()
@@ -71,8 +67,8 @@ class Onedrive:
 
     def load_session(self):
         self.client.auth_provider.load_session()
-    
-    def logout(self, username=''):
+
+    def logout(self, username=""):
         return self.client.auth_provider.logout(username)
 
     @property
@@ -83,20 +79,26 @@ class Onedrive:
         Dir.check_temp()
 
     def stream_upload(self, buffer, name):
-        request = self.client.item(path=self.remote_root_path).children[name].content.request()
-        request.method = 'PUT'
+        request = (
+            self.client.item(path=self.remote_root_path)
+            .children[name]
+            .content.request()
+        )
+        request.method = "PUT"
         request.send(data=buffer)
 
     def multipart_upload_session_builder(self, name):
-        item = Item({
-            '@microsoft.graph.conflictBehavior': 'rename'
-        })
-        session = self.client.item(path=os.path.join(self.remote_root_path, name)).create_session(item).post()
+        item = Item({"@microsoft.graph.conflictBehavior": "rename"})
+        session = (
+            self.client.item(path=os.path.join(self.remote_root_path, name))
+            .create_session(item)
+            .post()
+        )
         return session
-    
+
     def multipart_uploader(self, session, total_length):
         return ItemUploadFragmentBuilder(session.upload_url, self.client, total_length)
-    
+
     async def multipart_upload(self, uploader, buffer, offset):
         part_size = buffer.getbuffer().nbytes
         tries = 0
@@ -125,27 +127,25 @@ class Onedrive:
                     raise e
             break  # while True
         return response._prop_dict
-    
+
     def upload_from_url(self, url, name):
         opts = [
-            HeaderOption('Prefer', 'respond-async'),
+            HeaderOption("Prefer", "respond-async"),
         ]
 
-        request = self.client.item(path=self.remote_root_path).children.request(options=opts)
-        request.content_type = 'application/json'
-        request.method = 'POST'
+        request = self.client.item(path=self.remote_root_path).children.request(
+            options=opts
+        )
+        request.content_type = "application/json"
+        request.method = "POST"
 
-        data = {
-            "@microsoft.graph.sourceUrl": url,
-            "name": name,
-            "file": {}
-        }
+        data = {"@microsoft.graph.sourceUrl": url, "name": name, "file": {}}
 
         tries = 0
         while tries < 5:
             response = request.send(content=data)
             if response.status == 202:
-                progress_url = response.headers['Location']
+                progress_url = response.headers["Location"]
                 return progress_url
             # when using business acounts, which is not supported by OneDrive REST API.
             # See https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_upload_url?view=odsp-graph-online
@@ -157,20 +157,16 @@ class Onedrive:
                 continue
 
         response_dict = {
-            'Status': response.status,
-            'Headers': response.headers,
-            'Content': response.content
+            "Status": response.status,
+            "Headers": response.headers,
+            "Content": response.content,
         }
-        raise Exception('upload from url response error: ' + str(response_dict))
-    
-    def upload_from_url_progress(self, url):        
+        raise Exception("upload from url response error: " + str(response_dict))
+
+    def upload_from_url_progress(self, url):
         tries = 0
         while tries < 5:
-            response = self.client.http_provider.send(
-                method="GET",
-                headers={},
-                url=url
-            )
+            response = self.client.http_provider.send(method="GET", headers={}, url=url)
             if response.status >= 200 and response.status < 300:
                 break
             else:
@@ -183,7 +179,8 @@ class Onedrive:
             response._content = {
                 "error": {
                     "code": ErrorCode.Malformed,
-                    "message": "The following invalid JSON was returned:\n%s" % response.content
+                    "message": "The following invalid JSON was returned:\n%s"
+                    % response.content,
                 }
             }
         return response

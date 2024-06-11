@@ -5,16 +5,16 @@
 :license: MIT, see LICENSE for more details.
 """
 
-start_res = '''
+start_res = """
 Transfer files to Onedrive.
 
 Forward or upload files to me, or pass message link to transfer restricted content from group or channel.
 
 - /help: Ask for help.
-'''
+"""
 
 
-help_res = '''
+help_res = """
 - /auth to authorize for Telegram and OneDrive.
 - /clear to clear all history except status message.
 - /autoDelete to toggle whether bot should auto delete message.
@@ -52,43 +52,43 @@ To reset OneDrive directory to default.
 - Tap Status on replied status message to locate current job.
 - Uploading through url will call Onedrive's API, which means Onedrive's server will visit the url and download the file for you. If the url is invalid to OneDrive, the bot will try using bot's uploader to transfer.
 - Each log page contains 50 lines of logs.
-'''
+"""
 
 
-check_in_group_res = '''
+check_in_group_res = """
 This bot must be used in a Group!
 
 Add this bot to a Group as Admin, and give it ability to Delete Messages.
-'''
+"""
 
 
-tg_not_login_res = '''
+tg_not_login_res = """
 You haven't logined to Telegram.
-'''
+"""
 
 
-od_not_login_res = '''
+od_not_login_res = """
 You haven't logined to OneDrive.
-'''
+"""
 
 
-links_res = '''
+links_res = """
 Command /links format wrong.
 
 Usage:
 ```/links $message_link $range```
-'''
+"""
 
 
-url_res = '''
+url_res = """
 Command /url format wrong.
 
 Usage:
 ```/url $file_url```
-'''
+"""
 
 
-logs_res = '''
+logs_res = """
 Command /logs format wrong.
 
 Usage:
@@ -97,10 +97,10 @@ Usage:
 ```/logs $range```
 
 ```/logs clear```
-'''
+"""
 
 
-drive_res = '''
+drive_res = """
 Command /drive format wrong.
 
 Usage:
@@ -113,10 +113,10 @@ Usage:
 ```/drive logout```
 
 ```/drive logout $index```
-'''
+"""
 
 
-dir_res = '''
+dir_res = """
 Command /dir format wrong.
 
 Usage:
@@ -129,4 +129,4 @@ Usage:
 ```/dir temp $remote_path```
 
 ```/dir temp cancel```
-'''
+"""

@@ -9,16 +9,17 @@ from datetime import datetime
 from traceback import print_exc
 from io import StringIO
 
-log_path = 'log'
+log_path = "log"
+
 
 def logger(message):
-    with open(log_path, 'a') as log_file:
+    with open(log_path, "a") as log_file:
         time = datetime.now()
         if isinstance(message, Exception):
             message = StringIO()
             print_exc(file=message)
             message = message.getvalue()
-        template = '%s\n%s\n'
-        print(template % (time, message), end='')
+        template = "%s\n%s\n"
+        print(template % (time, message), end="")
         log_file.write(template % (time, message))
     return message

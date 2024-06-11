@@ -18,7 +18,7 @@ from modules.utils import (
     check_od_login,
     cmd_parser,
     get_link,
-    get_filename
+    get_filename,
 )
 from modules.log import logger
 from modules.transfer import multi_parts_uploader_from_url
@@ -34,7 +34,7 @@ async def url_handler(event):
         cmd = cmd_parser(event)
         url = cmd[1]
         # lest the url is bold
-        url = url.strip().strip('*')
+        url = url.strip().strip("*")
     except:
         await event.reply(url_res)
         raise events.StopPropagation
@@ -48,62 +48,75 @@ async def url_handler(event):
     try:
         name, local_response = get_filename(url)
         if "Content-Length" in local_response.headers:
-            total_length = int(local_response.headers['Content-Length']) / (1024 * 1024)
-        elif "Transfer-Encoding" in local_response.headers and local_response.headers["Transfer-Encoding"] == "chunked":
+            total_length = int(local_response.headers["Content-Length"]) / (1024 * 1024)
+        elif (
+            "Transfer-Encoding" in local_response.headers
+            and local_response.headers["Transfer-Encoding"] == "chunked"
+        ):
             total_length = -1
         else:
             raise Exception(
-                "Neither Content-Length nor Transfer-Encoding is in response headers.\nStatus code:\n%s\nResponse:\n%s" %
-                (local_response.status_code, local_response.headers)
+                "Neither Content-Length nor Transfer-Encoding is in response headers.\nStatus code:\n%s\nResponse:\n%s"
+                % (local_response.status_code, local_response.headers)
             )
-        logger('upload url: %s' % url)
+        logger("upload url: %s" % url)
     except Exception as e:
         await event.reply(logger(e))
-        raise events.StopPropagation 
+        raise events.StopPropagation
 
     last_remote_root_path = onedrive.remote_root_path
     try:
         progress_url = onedrive.upload_from_url(url, name)
-        logger('progress url: %s' % progress_url)
+        logger("progress url: %s" % progress_url)
         while True:
             response = onedrive.upload_from_url_progress(progress_url)
             progress = response.content
-            if progress['status'] in ['notStarted', 'inProgress', 'completed', 'waiting']:
-                percentage = float(progress['percentageComplete'])
+            if progress["status"] in [
+                "notStarted",
+                "inProgress",
+                "completed",
+                "waiting",
+            ]:
+                percentage = float(progress["percentageComplete"])
                 if total_length > 0:
-                    status_message.status = status_message.template % (total_length * percentage / 100, total_length, percentage)
+                    status_message.status = status_message.template % (
+                        total_length * percentage / 100,
+                        total_length,
+                        percentage,
+                    )
                 else:
                     status_message.status = status_message.template_short % percentage
                 logger(status_message.status)
                 await status_message.update()
 
-                if progress['status'] == 'completed':
+                if progress["status"] == "completed":
                     await status_message.finish(
                         path=os.path.join(last_remote_root_path, name),
-                        size=total_length
+                        size=total_length,
                     )
                     break
 
                 await asyncio.sleep(5)
             else:
-                raise Exception('status error: %s' % progress)
+                raise Exception("status error: %s" % progress)
 
     except Exception as e:
         logger(e)
         try:
             if total_length > 0:
-                logger('use local uploader to upload from url')
+                logger("use local uploader to upload from url")
                 callback = Callback(event, status_message)
                 await multi_parts_uploader_from_url(name, local_response, callback)
                 await status_message.finish(
-                    path=os.path.join(last_remote_root_path, name),
-                    size=total_length
+                    path=os.path.join(last_remote_root_path, name), size=total_length
                 )
             else:
                 logger(local_response.headers)
                 # this happends when downloading github release assets
                 # sometimes it has Content-Length, sometimes not
-                await status_message.report_error("Content-Length not found in response headers.")
+                await status_message.report_error(
+                    "Content-Length not found in response headers."
+                )
         except Exception as e:
             try:
                 await status_message.report_error(e, progress_url, progress)

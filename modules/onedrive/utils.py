@@ -48,9 +48,9 @@ def use_id_ext_name(event):
 
 def is_file_name_valid(name):
     if (
-        not name or
-        any(component in name for component in INVALID_COMPONENT) or
-        name in INVALID_NAME
+        not name
+        or any(component in name for component in INVALID_COMPONENT)
+        or name in INVALID_NAME
     ):
         return False
     else:
@@ -61,18 +61,18 @@ def is_file_name_valid(name):
 def preprocess_tg_file_name(event):
     name = event.file.name
     if is_file_name_valid(name):
-        return name.strip().lstrip('~$')
+        return name.strip().lstrip("~$")
     else:
         return use_id_ext_name(event)
 
 
 def preprocess_url_file_name(name):
     if is_file_name_valid(name):
-        return name.strip().lstrip('~$')
+        return name.strip().lstrip("~$")
     else:
-        ext = name.split('.')
+        ext = name.split(".")
         if len(ext) > 1:
             ext = ext[-1]
-            return f'{int(time.time())}.{ext}'
+            return f"{int(time.time())}.{ext}"
         else:
             return str(int(time.time()))

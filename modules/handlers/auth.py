@@ -28,19 +28,18 @@ class Code_Callback:
     async def tg_code(self):
         if self.tg_code_resent:
             if self.tg_login_attempts > 0:
-                await self.conv.send_message(
-                    logger('Invalid code. Please try again.')
-                )
+                await self.conv.send_message(logger("Invalid code. Please try again."))
             else:
                 await self.conv.send_message(logger("New code sent, please try again."))
         else:
             if self.tg_login_attempts > 0:
-                await self.conv.send_message(
-                    logger('Invalid code. Please try again.')
-                )
+                await self.conv.send_message(logger("Invalid code. Please try again."))
             else:
                 await self.conv.send_message(
-                    logger("Please visit %s to input your code to login to Telegram." % server_uri)
+                    logger(
+                        "Please visit %s to input your code to login to Telegram."
+                        % server_uri
+                    )
                 )
         self.tg_login_attempts += 1
         while True:
@@ -48,24 +47,23 @@ class Code_Callback:
                 requests.get(
                     url=os.path.join(server_uri, "tg"),
                     params={"refresh": True},
-                    verify=False
+                    verify=False,
                 )
                 break
             except:
                 pass
-        
+
         while True:
             try:
                 res = requests.get(
-                    url=os.path.join(server_uri, "tg"),
-                    verify=False
+                    url=os.path.join(server_uri, "tg"), verify=False
                 ).json()
                 if res["success"]:
                     return res["code"]
                 await asyncio.sleep(1)
             except:
                 pass
-    
+
     async def od_code(self):
         auth_url = onedrive.get_auth_url()
         await self.conv.send_message(
@@ -81,14 +79,12 @@ class Code_Callback:
                 if res["success"]:
                     return res["code"]
                 elif res["failed"]:
-                    await self.conv.send_message(
-                        logger(res['failed_info'])
-                    )
+                    await self.conv.send_message(logger(res["failed_info"]))
                     return False
                 await asyncio.sleep(1)
             except:
                 pass
-        
+
     async def code(self):
         if self.type == "tg":
             return await self.tg_code()
@@ -100,7 +96,7 @@ class Code_Callback:
 
 
 async def od_auth(conv):
-    od_code_callback = Code_Callback(conv, 'od')
+    od_code_callback = Code_Callback(conv, "od")
     code = await od_code_callback()
     if code:
         try:
@@ -116,9 +112,9 @@ async def od_auth(conv):
 @tg_bot.on(events.NewMessage(pattern="/auth", incoming=True, from_users=tg_user_name))
 @check_in_group
 async def auth_handler(event, propagate=False):
-    auth_server = subprocess.Popen(('python', 'server/auth_server.py'))
+    auth_server = subprocess.Popen(("python", "server/auth_server.py"))
     async with tg_bot.conversation(event.chat_id) as conv:
-        tg_code_callback = Code_Callback(conv, 'tg')
+        tg_code_callback = Code_Callback(conv, "tg")
         global tg_client
         while True:
             try:
@@ -127,7 +123,7 @@ async def auth_handler(event, propagate=False):
                     phone=tg_user_phone,
                     password=tg_user_password,
                     code_callback=tg_code_callback,
-                    max_attempts=TG_LOGIN_MAX_ATTEMPTS
+                    max_attempts=TG_LOGIN_MAX_ATTEMPTS,
                 )
                 tg_client = _tg_client
                 await conv.send_message(logger("Login to Telegram successful!"))
@@ -138,7 +134,9 @@ async def auth_handler(event, propagate=False):
                 tg_code_callback.tg_login_attempts = 0
                 tg_code_callback.tg_code_resent = True
                 logger(e)
-                await conv.send_message(logger("Max attempts achieved, sending new code."))
+                await conv.send_message(
+                    logger("Max attempts achieved, sending new code.")
+                )
             except FloodWaitError as e:
                 await conv.send_message(logger("%s" % e))
                 auth_server.kill()

@@ -29,7 +29,7 @@ class SQLiteSession(Session):
         auth_server_url,
         redirect_uri,
         refresh_token=None,
-        client_secret=None
+        client_secret=None,
     ):
         super().__init__(
             token_type=token_type,
@@ -40,7 +40,7 @@ class SQLiteSession(Session):
             auth_server_url=auth_server_url,
             redirect_uri=redirect_uri,
             refresh_token=refresh_token,
-            client_secret=client_secret
+            client_secret=client_secret,
         )
         self.username = username
 
@@ -56,7 +56,7 @@ class SQLiteSession(Session):
         auth_server_url=None,
         redirect_uri=None,
         refresh_token=None,
-        client_secret=None
+        client_secret=None,
     ):
         session = super().__new__(cls)
 
@@ -78,14 +78,14 @@ class SQLiteSession(Session):
             expires_in=expires_in,
             scope_string=scope_string,
             access_token=access_token,
-            refresh_token=refresh_token
+            refresh_token=refresh_token,
         )
         self.db.update_user(
             username=self.username,
             expires_at=self._expires_at,
             scope=self.scope,
             access_token=self.access_token,
-            refresh_token=self.refresh_token
+            refresh_token=self.refresh_token,
         )
 
     def save_session(self, **save_session_kwargs):
@@ -105,7 +105,7 @@ class SQLiteSession(Session):
                 auth_server_url=self.auth_server_url,
                 redirect_uri=self.redirect_uri,
                 refresh_token=self.refresh_token,
-                client_secret=self.client_secret
+                client_secret=self.client_secret,
             )
 
         except sqlite3.IntegrityError:
@@ -119,7 +119,7 @@ class SQLiteSession(Session):
                 auth_server_url=self.auth_server_url,
                 redirect_uri=self.redirect_uri,
                 refresh_token=self.refresh_token,
-                client_secret=self.client_secret
+                client_secret=self.client_secret,
             )
 
     @classmethod
@@ -127,21 +127,21 @@ class SQLiteSession(Session):
         try:
             record = cls.db.get_current_user()
             return cls.new(
-                username=record['username'],
-                token_type=record['token_type'],
-                expires_at=record['expires_at'],
-                scope=record['scope'],
-                access_token=record['access_token'],
-                client_id=record['client_id'],
-                auth_server_url=record['auth_server_url'],
-                redirect_uri=record['redirect_uri'],
-                refresh_token=record['refresh_token'],
-                client_secret=record['client_secret']
+                username=record["username"],
+                token_type=record["token_type"],
+                expires_at=record["expires_at"],
+                scope=record["scope"],
+                access_token=record["access_token"],
+                client_id=record["client_id"],
+                auth_server_url=record["auth_server_url"],
+                redirect_uri=record["redirect_uri"],
+                refresh_token=record["refresh_token"],
+                client_secret=record["client_secret"],
             )
         except (UserNotFoundException, sqlite3.OperationalError):
             raise NoSessionExecption("No session found.")
 
-    def logout(self, username=''):
+    def logout(self, username=""):
         if not username or username == self.username:
             self.db.delete_user(self.username)
             try:
@@ -151,39 +151,39 @@ class SQLiteSession(Session):
                 # no other users
                 return False
 
-            self.username = record['username']
-            self.token_type = record['token_type']
-            self._expires_at = record['expires_at']
-            self.scope = record['scope']
-            self.access_token = record['access_token']
-            self.client_id = record['client_id']
-            self.auth_server_url = record['auth_server_url']
-            self.redirect_uri = record['redirect_uri']
-            self.refresh_token = record['refresh_token']
-            self.client_secret = record['client_secret']
+            self.username = record["username"]
+            self.token_type = record["token_type"]
+            self._expires_at = record["expires_at"]
+            self.scope = record["scope"]
+            self.access_token = record["access_token"]
+            self.client_id = record["client_id"]
+            self.auth_server_url = record["auth_server_url"]
+            self.redirect_uri = record["redirect_uri"]
+            self.refresh_token = record["refresh_token"]
+            self.client_secret = record["client_secret"]
 
             self.db.set_current_user(self.username)
             # has other users
             return True
-        
+
         else:
             self.db.delete_user(username)
             # has other users
             return True
-    
+
     def change_user(self, username):
         record = self.db.get_user(username)
 
-        self.username = record['username']
-        self.token_type = record['token_type']
-        self._expires_at = record['expires_at']
-        self.scope = record['scope']
-        self.access_token = record['access_token']
-        self.client_id = record['client_id']
-        self.auth_server_url = record['auth_server_url']
-        self.redirect_uri = record['redirect_uri']
-        self.refresh_token = record['refresh_token']
-        self.client_secret = record['client_secret']
+        self.username = record["username"]
+        self.token_type = record["token_type"]
+        self._expires_at = record["expires_at"]
+        self.scope = record["scope"]
+        self.access_token = record["access_token"]
+        self.client_id = record["client_id"]
+        self.auth_server_url = record["auth_server_url"]
+        self.redirect_uri = record["redirect_uri"]
+        self.refresh_token = record["refresh_token"]
+        self.client_secret = record["client_secret"]
 
         self.db.set_current_user(self.username)
         return self.username
@@ -191,7 +191,7 @@ class SQLiteSession(Session):
     @property
     def users(self):
         return self.db.show_all_users()
-    
+
     @property
     def current_user(self):
-        return self.db.get_current_user()['username']
+        return self.db.get_current_user()["username"]

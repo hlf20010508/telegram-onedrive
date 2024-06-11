@@ -20,23 +20,23 @@ class Tail_File_Page:
     def __init__(self, path, lines_per_page):
         self.pos = 0
         self.lines_per_page = lines_per_page
-        self.file = open(path, 'rb')
-    
+        self.file = open(path, "rb")
+
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.file.close()
-    
+
     def read_all(self):
         while True:
-            string = ''
+            string = ""
             for _ in range(self.lines_per_page):
                 line = self.file.readline().decode()
-                if line == '':
+                if line == "":
                     break
                 string += line
-            if string == '':
+            if string == "":
                 break
             yield string
 
@@ -45,26 +45,26 @@ class Tail_File_Page:
         while pages:
             pages -= 1
             string = self._read_lines(self.lines_per_page)
-            if string == '':
+            if string == "":
                 break
             yield string
 
     def _read_lines(self, lines_num):
-        string = ''
+        string = ""
         while lines_num:
             lines_num -= 1
             line = self.file.readline().decode()
-            if line == '':
+            if line == "":
                 break
             string += line
         return string
-    
+
     def _seek_lines(self, lines_num):
         while lines_num:
             try:
                 self.pos -= 1
                 self.file.seek(self.pos, os.SEEK_END)
-                if self.file.read(1) == b'\n':
+                if self.file.read(1) == b"\n":
                     lines_num -= 1
             except:
                 self.file.seek(0, os.SEEK_SET)
@@ -77,23 +77,23 @@ class Tail_File_Page:
 @check_od_login
 async def logs_handler(event):
     if not os.path.exists(log_path):
-        await event.respond('Logs not found.')
+        await event.respond("Logs not found.")
         raise events.StopPropagation
     cmd = cmd_parser(event)
 
     # /logs
     if len(cmd) == 1:
         with Tail_File_Page(log_path, LOGS_LINES_PER_PAGE) as file:
-            await event.respond('Outputting logs...')
+            await event.respond("Outputting logs...")
             for logs in file.read_all():
                 await event.respond(logs)
                 await asyncio.sleep(1)
-        await event.respond('Finished.')
+        await event.respond("Finished.")
 
     elif len(cmd) == 2:
         sub_cmd = cmd[1]
         # /logs clear
-        if sub_cmd == 'clear':
+        if sub_cmd == "clear":
             if os.path.exists(log_path):
                 os.system("rm %s" % log_path)
                 await event.respond("Logs cleared.")
@@ -105,15 +105,15 @@ async def logs_handler(event):
             try:
                 pages = int(sub_cmd)
             except ValueError:
-                await event.reply('Logs page range should be integer.')
+                await event.reply("Logs page range should be integer.")
                 raise events.StopPropagation
 
             with Tail_File_Page(log_path, LOGS_LINES_PER_PAGE) as file:
-                await event.respond('Outputting logs...')
+                await event.respond("Outputting logs...")
                 for logs in file.read_pages(pages):
                     await event.respond(logs)
                     await asyncio.sleep(1)
-            await event.respond('Finished.')
+            await event.respond("Finished.")
     else:
         await event.respond(logs_res)
     raise events.StopPropagation

@@ -10,11 +10,11 @@ import os
 
 app = Flask(__name__)
 
-code_tg = ''
-code_od = ''
+code_tg = ""
+code_od = ""
 
 od_auth_failed = False
-od_failed_info = ''
+od_failed_info = ""
 
 
 @app.route("/")
@@ -35,7 +35,7 @@ def telegram_code():
             else:
                 return jsonify({"success": True, "code": code_tg})
         else:
-            code_tg = ''
+            code_tg = ""
             return jsonify({"success": True})
 
 
@@ -48,21 +48,31 @@ def onedrive_code():
             return "Authorization Successful!"
         else:
             od_auth_failed = True
-            od_failed_info = '%s' % request.args.to_dict()
+            od_failed_info = "%s" % request.args.to_dict()
             return od_failed_info
     else:
         if not code_od:
-            return jsonify({"success": False, "failed": od_auth_failed, "failed_info": od_failed_info})
+            return jsonify(
+                {
+                    "success": False,
+                    "failed": od_auth_failed,
+                    "failed_info": od_failed_info,
+                }
+            )
         else:
             return jsonify({"success": True, "code": code_od})
 
 
 if __name__ == "__main__":
-    reverse_proxy = True if os.environ.get("reverse_proxy", 'false') == 'true' else False
+    reverse_proxy = (
+        True if os.environ.get("reverse_proxy", "false") == "true" else False
+    )
     ssl_context = None
     if not reverse_proxy:
-        if os.path.exists("server/ssl/server.crt") and os.path.exists("server/ssl/server.key"):
+        if os.path.exists("server/ssl/server.crt") and os.path.exists(
+            "server/ssl/server.key"
+        ):
             ssl_context = ("server/ssl/server.crt", "server/ssl/server.key")
         else:
-            ssl_context = 'adhoc'
+            ssl_context = "adhoc"
     app.run(host="0.0.0.0", port=8080, ssl_context=ssl_context)
