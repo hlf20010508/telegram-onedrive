@@ -7,11 +7,10 @@
 
 import json
 import asyncio
-import time
 import os
 from onedrivesdk import HttpProvider, AuthProvider, OneDriveClient
-from onedrivesdk.options import HeaderOption, QueryOption
-from onedrivesdk.error import OneDriveError, ErrorCode
+from onedrivesdk.options import HeaderOption
+from onedrivesdk.error import OneDriveError
 from onedrivesdk.model.upload_session import UploadSession
 from onedrivesdk.model.item import Item
 from onedrivesdk.request_builder_base import RequestBuilderBase
@@ -127,63 +126,6 @@ class Onedrive:
                     raise e
             break  # while True
         return response._prop_dict
-
-    def upload_from_url(self, url, name):
-        opts = [
-            HeaderOption("Prefer", "respond-async"),
-        ]
-
-        request = self.client.item(path=self.remote_root_path).children.request(
-            options=opts
-        )
-        request.content_type = "application/json"
-        request.method = "POST"
-
-        data = {"@microsoft.graph.sourceUrl": url, "name": name, "file": {}}
-
-        tries = 0
-        while tries < 5:
-            response = request.send(content=data)
-            if response.status == 202:
-                progress_url = response.headers["Location"]
-                return progress_url
-            # when using business acounts, which is not supported by OneDrive REST API.
-            # See https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_upload_url?view=odsp-graph-online
-            elif response.status == 409:
-                break
-            else:
-                tries += 1
-                time.sleep(5)
-                continue
-
-        response_dict = {
-            "Status": response.status,
-            "Headers": response.headers,
-            "Content": response.content,
-        }
-        raise Exception("upload from url response error: " + str(response_dict))
-
-    def upload_from_url_progress(self, url):
-        tries = 0
-        while tries < 5:
-            response = self.client.http_provider.send(method="GET", headers={}, url=url)
-            if response.status >= 200 and response.status < 300:
-                break
-            else:
-                tries += 1
-                time.sleep(5)
-                continue
-        try:
-            response._content = json.loads(response.content)
-        except:
-            response._content = {
-                "error": {
-                    "code": ErrorCode.Malformed,
-                    "message": "The following invalid JSON was returned:\n%s"
-                    % response.content,
-                }
-            }
-        return response
 
 
 class ItemUploadFragment(RequestBase):

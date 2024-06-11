@@ -8,14 +8,13 @@
 import subprocess
 import requests
 import asyncio
-import os
 from telethon import events
 from telethon.errors.rpcerrorlist import FloodWaitError
 from modules.env import tg_user_name, tg_user_phone, tg_user_password, server_uri
 from modules.utils import check_in_group
 from modules.client import tg_bot, tg_client, onedrive, init_tg_client
 from modules.log import logger
-from modules.global_var import TG_LOGIN_MAX_ATTEMPTS
+from modules.global_var import TG_LOGIN_MAX_ATTEMPTS, TG_CODE_URL, OD_CODE_URL
 
 
 class Code_Callback:
@@ -45,19 +44,17 @@ class Code_Callback:
         while True:
             try:
                 requests.get(
-                    url=os.path.join(server_uri, "tg"),
+                    url=TG_CODE_URL,
                     params={"refresh": True},
                     verify=False,
                 )
                 break
             except:
-                pass
+                await asyncio.sleep(1)
 
         while True:
             try:
-                res = requests.get(
-                    url=os.path.join(server_uri, "tg"), verify=False
-                ).json()
+                res = requests.get(url=TG_CODE_URL, verify=False).json()
                 if res["success"]:
                     return res["code"]
                 await asyncio.sleep(1)
@@ -72,7 +69,7 @@ class Code_Callback:
         while True:
             try:
                 res = requests.get(
-                    url=os.path.join(server_uri, "auth"),
+                    url=OD_CODE_URL,
                     params={"get": True},
                     verify=False,
                 ).json()

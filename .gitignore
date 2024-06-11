@@ -4,6 +4,7 @@ __pycache__
 log
 session
 temp
-dev.sh
+dev.*
+devrc.*
 test*
 .dev*

@@ -188,7 +188,7 @@ If you don't follow these steps, the bot may not works.
 
 Example:  
 - `/links https://t.me/c/xxxxxxx/100 2` will transfer `https://t.me/c/xxxxxxx/100` and `https://t.me/c/xxxxxxx/101`.
-- `/url https://example.com/file.txt` will upload `file.txt` to Onedrive. It calls Onedrive's API, which means Onedrive's server will visit the url and download the file for you. If the url is invalid to OneDrive, the bot will try using bot's uploader to transfer.
+- `/url https://example.com/file.txt` will upload `file.txt`.
 - `/logs 2` will show 2 pages of the most recent logs. Each page contains 50 lines of logs.
 
 ## Launch Through Docker

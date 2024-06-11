@@ -6,7 +6,6 @@
 """
 
 from telethon import events
-import asyncio
 import os
 from modules.client import tg_bot, onedrive
 from modules.env import tg_user_name
@@ -49,15 +48,11 @@ async def url_handler(event):
         name, local_response = get_filename(url)
         if "Content-Length" in local_response.headers:
             total_length = int(local_response.headers["Content-Length"]) / (1024 * 1024)
-        elif (
-            "Transfer-Encoding" in local_response.headers
-            and local_response.headers["Transfer-Encoding"] == "chunked"
-        ):
-            total_length = -1
         else:
+            logger(local_response.headers)
+
             raise Exception(
-                "Neither Content-Length nor Transfer-Encoding is in response headers.\nStatus code:\n%s\nResponse:\n%s"
-                % (local_response.status_code, local_response.headers)
+                f"Content-Length not found in response headers.\nStatus code:\n{local_response.status_code}\nResponse headers:\n{local_response.headers}"
             )
         logger("upload url: %s" % url)
     except Exception as e:
@@ -65,63 +60,17 @@ async def url_handler(event):
         raise events.StopPropagation
 
     last_remote_root_path = onedrive.remote_root_path
+
     try:
-        progress_url = onedrive.upload_from_url(url, name)
-        logger("progress url: %s" % progress_url)
-        while True:
-            response = onedrive.upload_from_url_progress(progress_url)
-            progress = response.content
-            if progress["status"] in [
-                "notStarted",
-                "inProgress",
-                "completed",
-                "waiting",
-            ]:
-                percentage = float(progress["percentageComplete"])
-                if total_length > 0:
-                    status_message.status = status_message.template % (
-                        total_length * percentage / 100,
-                        total_length,
-                        percentage,
-                    )
-                else:
-                    status_message.status = status_message.template_short % percentage
-                logger(status_message.status)
-                await status_message.update()
-
-                if progress["status"] == "completed":
-                    await status_message.finish(
-                        path=os.path.join(last_remote_root_path, name),
-                        size=total_length,
-                    )
-                    break
-
-                await asyncio.sleep(5)
-            else:
-                raise Exception("status error: %s" % progress)
-
+        callback = Callback(event, status_message)
+        await multi_parts_uploader_from_url(name, local_response, callback)
+        await status_message.finish(
+            path=os.path.join(last_remote_root_path, name), size=total_length
+        )
     except Exception as e:
         logger(e)
-        try:
-            if total_length > 0:
-                logger("use local uploader to upload from url")
-                callback = Callback(event, status_message)
-                await multi_parts_uploader_from_url(name, local_response, callback)
-                await status_message.finish(
-                    path=os.path.join(last_remote_root_path, name), size=total_length
-                )
-            else:
-                logger(local_response.headers)
-                # this happends when downloading github release assets
-                # sometimes it has Content-Length, sometimes not
-                await status_message.report_error(
-                    "Content-Length not found in response headers."
-                )
-        except Exception as e:
-            try:
-                await status_message.report_error(e, progress_url, progress)
-            except Exception as e1:
-                logger(e1)
-                await status_message.report_error(e)
+        await status_message.report_error(e)
+
     onedrive.check_dir_temp()
+
     raise events.StopPropagation

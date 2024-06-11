@@ -40,9 +40,6 @@ class Status_Message:
         self.template = "Uploaded %.2fMB out of %.2fMB: %.2f%%"
         self.template_short = "Uploaded: %.2f%%"
         self.error_template = "- Error:\n%s"
-        self.error_template_full = (
-            "- Error:\n%s\n\n- Progress url:\n%s\n\n- Response:\n%s"
-        )
         self.message = await self.event.respond(self.response)
         return self
 
@@ -56,14 +53,8 @@ class Status_Message:
     async def update(self):
         await edit_message(tg_bot, self.message, self.response)
 
-    async def report_error(self, error, progress_url=None, response=None):
-        if progress_url:
-            await self.event.reply(
-                self.error_template_full
-                % (logger(error), progress_url, logger(response))
-            )
-        else:
-            await self.event.reply(self.error_template % logger(error))
+    async def report_error(self, error):
+        await self.event.reply(self.error_template % logger(error))
 
     async def finish(self, path, size):
         if size > 0:

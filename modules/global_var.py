@@ -51,3 +51,6 @@ INVALID_NAME = [
     "LPT9",
     "desktop.ini",
 ]
+
+TG_CODE_URL = "https://127.0.0.1:8080/tg"
+OD_CODE_URL = "https://127.0.0.1:8080/auth"

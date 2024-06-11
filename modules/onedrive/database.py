@@ -23,6 +23,7 @@ class Database:
 
         self.init()
         if not self.is_valid():
+            self.close()
             os.remove(self.path)
             self.init()
 
