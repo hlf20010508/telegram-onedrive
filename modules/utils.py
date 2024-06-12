@@ -38,7 +38,6 @@ class Status_Message:
             )
         self.status = "In progress..."
         self.template = "Uploaded %.2fMB out of %.2fMB: %.2f%%"
-        self.template_short = "Uploaded: %.2f%%"
         self.error_template = "- Error:\n%s"
         self.message = await self.event.respond(self.response)
         return self
@@ -57,13 +56,10 @@ class Status_Message:
         await self.event.reply(self.error_template % logger(error))
 
     async def finish(self, path, size):
-        if size > 0:
-            self.status = logger(
-                "Done.\n\nFile uploaded to %s\n\nSize: %.2fMB"
-                % (path, size / (1024 * 1024))
-            )
-        else:
-            self.status = logger("Done.\n\nFile uploaded to %s" % path)
+        self.status = logger(
+            "Done.\n\nFile uploaded to %s\n\nSize: %.2fMB"
+            % (path, size / (1024 * 1024))
+        )
         await edit_message(tg_bot, self.message, self.response)
         await delete_message(self.event)
         await delete_message(self.message)
