@@ -100,14 +100,16 @@ class Onedrive:
 
     async def multipart_upload(self, uploader, buffer, offset):
         part_size = buffer.getbuffer().nbytes
+        max_retries = 10
+        retry_delay = 5
         tries = 0
         while True:
             try:
                 tries += 1
                 response = uploader.post(offset, part_size, buffer)
             except OneDriveError as exc:
-                if exc.status_code in (408, 500, 502, 503, 504) and tries < 5:
-                    await asyncio.sleep(5)
+                if exc.status_code in (408, 500, 502, 503, 504) and tries < max_retries:
+                    await asyncio.sleep(retry_delay)
                     continue
                 elif exc.status_code == 416:
                     # Fragment already received
@@ -120,7 +122,8 @@ class Onedrive:
             except ValueError as e:
                 logger(e)
                 # Swallow value errors (usually JSON error) and try again.
-                if tries < 5:
+                if tries < max_retries:
+                    await asyncio.sleep(retry_delay)
                     continue
                 else:
                     raise e
