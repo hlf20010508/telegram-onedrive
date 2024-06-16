@@ -69,17 +69,24 @@ class Callback:
     def __init__(self, event, status_message):
         self.event = event
         self.status_message = status_message
+        self.last_call_time = get_current_timestamp()
 
     async def __call__(self, current, total):
-        current = current / (1024 * 1024)
-        total = total / (1024 * 1024)
-        self.status_message.status = self.status_message.template % (
-            current,
-            total,
-            current / total * 100,
-        )
-        logger(self.status_message.status)
-        await self.status_message.update()
+        interval = 5
+
+        if get_current_timestamp() - self.last_call_time >= interval:
+            current = current / (1024 * 1024)
+            total = total / (1024 * 1024)
+            self.status_message.status = self.status_message.template % (
+                current,
+                total,
+                current / total * 100,
+            )
+            logger(self.status_message.status)
+
+            await self.status_message.update()
+
+            self.last_call_time = get_current_timestamp()
 
 
 class CMDException(Exception):
@@ -240,3 +247,7 @@ def get_link(string):
             return False
     except:
         return False
+
+
+def get_current_timestamp():
+    return int(time.time())
