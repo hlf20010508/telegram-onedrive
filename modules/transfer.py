@@ -10,12 +10,12 @@ import math
 import inspect
 from io import BytesIO
 import asyncio
-from modules.client import onedrive
+from modules.client import onedrive, tg_client
 from modules.global_var import PART_SIZE
 
 
-async def download_part(client, input_location, offset):
-    stream = client.iter_download(
+async def download_part(input_location, offset):
+    stream = tg_client.iter_download(
         input_location, offset=offset, request_size=PART_SIZE, limit=PART_SIZE
     )
     part = await stream.__anext__()
@@ -23,9 +23,7 @@ async def download_part(client, input_location, offset):
     return part
 
 
-async def multi_parts_uploader(
-    client, document, name, conn_num=5, progress_callback=None
-):
+async def multi_parts_uploader(document, name, conn_num=5, progress_callback=None):
     input_location = types.InputDocumentFileLocation(
         id=document.id,
         access_hash=document.access_hash,
@@ -51,9 +49,7 @@ async def multi_parts_uploader(
 
     buffer = BytesIO()
     while current_part_num < total_part_num:
-        task_list.append(
-            asyncio.ensure_future(download_part(client, input_location, offset))
-        )
+        task_list.append(asyncio.ensure_future(download_part(input_location, offset)))
         current_part_num += 1
         if current_part_num < total_part_num:
             offset += PART_SIZE

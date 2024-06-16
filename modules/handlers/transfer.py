@@ -40,7 +40,7 @@ async def transfer_handler(event):
                 status_message = await Status_Message.create(event)
                 callback = Callback(event, status_message)
                 response_dict = await multi_parts_uploader(
-                    tg_client, message.media.document, name, progress_callback=callback
+                    message.media.document, name, progress_callback=callback
                 )
                 await status_message.finish(
                     path=os.path.join(last_remote_root_path, response_dict["name"]),
@@ -91,7 +91,6 @@ async def transfer_handler(event):
                         status_message = await Status_Message.create(event)
                         callback = Callback(event, status_message)
                         response_dict = await multi_parts_uploader(
-                            tg_client,
                             message.media.document,
                             name,
                             progress_callback=callback,
