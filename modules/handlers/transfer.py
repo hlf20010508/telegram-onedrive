@@ -21,6 +21,7 @@ from modules.utils import (
 from modules.log import logger
 from modules.transfer import multi_parts_uploader
 from modules.onedrive.utils import preprocess_tg_file_name, use_id_ext_name
+from modules.dot_t2o import parse_t2o
 
 
 @tg_bot.on(events.NewMessage(incoming=True, from_users=tg_user_name))
@@ -37,15 +38,19 @@ async def transfer_handler(event):
         try:
             if "document" in event.media.to_dict():
                 name = preprocess_tg_file_name(event)
-                status_message = await Status_Message.create(event)
-                callback = Callback(event, status_message)
-                response_dict = await multi_parts_uploader(
-                    message.media.document, name, progress_callback=callback
-                )
-                await status_message.finish(
-                    path=os.path.join(last_remote_root_path, response_dict["name"]),
-                    size=event.file.size,
-                )
+
+                if not name.endswith(".t2o"):
+                    status_message = await Status_Message.create(event)
+                    callback = Callback(event, status_message)
+                    response_dict = await multi_parts_uploader(
+                        message.media.document, name, progress_callback=callback
+                    )
+                    await status_message.finish(
+                        path=os.path.join(last_remote_root_path, response_dict["name"]),
+                        size=event.file.size,
+                    )
+                else:
+                    await parse_t2o(event, message)
             elif "photo" in event.media.to_dict():
                 name = use_id_ext_name(event)
                 status_message = await Status_Message.create(event)
