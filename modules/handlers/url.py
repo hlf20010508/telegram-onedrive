@@ -47,7 +47,7 @@ async def url_handler(event):
     try:
         name, local_response = get_filename(url)
         if "Content-Length" in local_response.headers:
-            total_length = int(local_response.headers["Content-Length"]) / (1024 * 1024)
+            total_length = int(local_response.headers["Content-Length"])
         else:
             logger(local_response.headers)
 
@@ -63,9 +63,12 @@ async def url_handler(event):
 
     try:
         callback = Callback(event, status_message)
-        await multi_parts_uploader_from_url(name, local_response, callback)
+        response_dict = await multi_parts_uploader_from_url(
+            name, local_response, callback
+        )
         await status_message.finish(
-            path=os.path.join(last_remote_root_path, name), size=total_length
+            path=os.path.join(last_remote_root_path, response_dict["name"]),
+            size=total_length,
         )
     except Exception as e:
         logger(e)
