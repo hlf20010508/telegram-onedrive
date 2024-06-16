@@ -50,8 +50,11 @@ To reset OneDrive directory to default.
 - To transfer files, forward or upload to me.
 - To transfer restricted content, right click the content, copy the message link, and send to me.
 - Tap Status on replied status message to locate current job.
-- Uploading through url will call Onedrive's API, which means Onedrive's server will visit the url and download the file for you. If the url is invalid to OneDrive, the bot will try using bot's uploader to transfer.
+- To upload files through url, the headers of the file response must includes `Content-Length`.
 - Each log page contains 50 lines of logs.
+- Support files with extension .t2o as scripts.
+
+See [example](https://github.com/hlf20010508/telegram-onedrive#example).
 """
 
 

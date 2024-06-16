@@ -186,10 +186,24 @@ If you don't follow these steps, the bot may not works.
 - `/dir reset` to reset OneDrive directory to default.
 - `/help` for help.
 
-Example:  
+The bot support files with extension `.t2o` as scripts. You can use them to automate the bot.
+
+### Example
 - `/links https://t.me/c/xxxxxxx/100 2` will transfer `https://t.me/c/xxxxxxx/100` and `https://t.me/c/xxxxxxx/101`.
-- `/url https://example.com/file.txt` will upload `file.txt`.
+- `/url https://example.com/file.txt` will upload `file.txt`. The headers of the file response must includes `Content-Length`.
 - `/logs 2` will show 2 pages of the most recent logs. Each page contains 50 lines of logs.
+- In a file named `example.t2o`, write these lines for example:
+    ```
+    [link]
+    https://t.me/xxxx/100
+    https://t.me/yyyy/200 2
+    https://t.me/zzzz/40
+
+    [url]
+    https://example.com/file1.txt
+    https://example.com/file2.txt
+    ```
+    This will transfer `https://t.me/xxxx/100`, `https://t.me/yyyy/200`, `https://t.me/yyyy/201`, `https://t.me/zzzz/40`, `file1.txt`, `file2.txt`.
 
 ## Launch Through Docker
 Install docker compose
