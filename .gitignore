@@ -1,7 +1,7 @@
 .venv
 .DS_Store
 __pycache__
-log
+log.txt
 session
 temp
 dev.*

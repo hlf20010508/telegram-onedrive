@@ -18,7 +18,7 @@ help_res = """
 - /auth to authorize for Telegram and OneDrive.
 - /clear to clear all history except status message.
 - /autoDelete to toggle whether bot should auto delete message.
-- /logs to show all logs.
+- /logs to send log file.
 - /drive to list all OneDrive accounts.
 - /dir to show current OneDrive directory.
 
@@ -26,8 +26,6 @@ help_res = """
 To transfer sequential restricted content.
 ```/url $file_url```
 To upload file through url.
-```/logs $range```
-To show the most recent logs for the specified page number.
 ```/logs clear```
 To clear logs.
 ```/drive add```
@@ -96,8 +94,6 @@ Command /logs format wrong.
 
 Usage:
 ```/logs```
-
-```/logs $range```
 
 ```/logs clear```
 """

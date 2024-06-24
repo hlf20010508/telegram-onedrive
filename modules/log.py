@@ -9,7 +9,7 @@ from datetime import datetime
 from traceback import print_exc
 from io import StringIO
 
-log_path = "log"
+log_path = "log.txt"
 
 
 def logger(message):

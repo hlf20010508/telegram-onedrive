@@ -58,14 +58,6 @@ A Telegram Bot to transfer files to OneDrive.
     <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/86485b4f-57b5-4a03-b74b-3bffd2800582" alt="/clear">
 </details>
 <details>
-    <summary>/logs</summary>
-    <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/db07faa8-e8a9-4c4a-ae4f-bf1c88423280" alt="/logs">
-</details>
-<details>
-    <summary>/logs $range</summary>
-    <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/b373456e-2525-45ba-9859-9580a8f93d72" alt="/logs range">
-</details>
-<details>
     <summary>/autoDelete</summary>
     <img src="https://github.com/hlf20010508/telegram-onedrive/assets/76218469/ff564f9f-66b0-4296-afe4-e8e3cdf70428" alt="/autoDelete">
 </details>
@@ -176,8 +168,7 @@ If you don't follow these steps, the bot may not works.
 - `/drive logout $index` to logout specified OneDrive account.
 - `/links $message_link $range` to transfer sequential restricted content.
 - `/url $file_url` to upload the file through url.
-- `/logs` to show all logs.
-- `/logs $range` to show the most recent logs for the specified page number.
+- `/logs` to send log file.
 - `/logs clear` to clear logs.
 - `/dir` to show current OneDrive directory.
 - `/dir $remote_path` to set OneDrive directory.
@@ -191,7 +182,6 @@ The bot support files with extension `.t2o` as scripts. You can use them to auto
 ### Example
 - `/links https://t.me/c/xxxxxxx/100 2` will transfer `https://t.me/c/xxxxxxx/100` and `https://t.me/c/xxxxxxx/101`.
 - `/url https://example.com/file.txt` will upload `file.txt`. The headers of the file response must includes `Content-Length`.
-- `/logs 2` will show 2 pages of the most recent logs. Each page contains 50 lines of logs.
 - In a file named `example.t2o`, write these lines for example:
     ```
     [link]
