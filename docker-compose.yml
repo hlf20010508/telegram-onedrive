@@ -5,32 +5,31 @@ services:
     image: hlf01/telegram-onedrive
     restart: always
     
-    # xxxx is the port you want to be reflected
+    # please read https://github.com/hlf20010508/telegram-onedrive#preparation before editing
+
     ports:
       - xxxx:8080
 
-    # volumes:
+    volumes:
+      - telegram-onedrive-session:/telegram-onedrive/session
       # if you have your own ssl files, uncomment and edit these two lines:
       # - /path/to/*.crt:/telegram-onedrive/server/ssl/server.crt
       # - /path/to/*.key:/telegram-onedrive/server/ssl/server.key
-      # if you want to save your login session, uncomment this line, no edit needed:
-      # - telegram-onedrive-session:/telegram-onedrive/session
 
     environment:
-      - server_uri=$server_uri(must be https, like https://example.com)
-      # - reverse_proxy=$reverse_proxy(optional, true or false, default to false)
-      - tg_bot_token=$tg_bot_token
-      - tg_api_id=$tg_api_id
-      - tg_api_hash=$tg_api_hash
-      - tg_user_phone=$tg_user_phone(use international format, like +xxyyyyyyyyyyy)
-      # - tg_user_password=$tg_user_password(optional, if you have two-step verification enabled)
-      # - tg_user_name=$tg_user_name(optional, no @)
-      - od_client_id=$od_client_id
-      - od_client_secret=$od_client_secret
-      - remote_root_path=$remote_root_path(like /Videos/from-telegram)
-      # - delete_flag=$delete_flag(optional, true or false, default to false)
+      - server_uri=https://xxxxxxxx.com
+      - reverse_proxy=false
+      - tg_bot_token=xxxxxxxxxx:xxxxxxxxxxxxxx_xxxxxxxxxxxxxxxxxxxx
+      - tg_api_id=xxxxxxxx
+      - tg_api_hash=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - tg_user_phone=+xxyyyyyyyyyyy
+      # - tg_user_password=xxxxxxxx
+      # - tg_user_name=xxxxxxxx
+      - od_client_id=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      - od_client_secret=xxxxx~x.xxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - remote_root_path=/xxxxxxxx
+      - delete_flag=false
     command: python main.py
 
-# if you want to save your login session, uncomment these two lines, no edit needed:
-# volumes:
-#   telegram-onedrive-session:
+volumes:
+  telegram-onedrive-session:

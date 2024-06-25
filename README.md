@@ -131,7 +131,6 @@ A Telegram Bot to transfer files to OneDrive.
     volumes:
       telegram-onedrive-session:
     ```
-    All you have to do is uncomment those lines, no edit needed.
 
 ## Usage
 ### Before Start (Important!)
