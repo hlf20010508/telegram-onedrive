@@ -1,0 +1,10 @@
+.DS_Store
+log.txt
+session
+dev.*
+devrc.*
+.env
+
+# Added by cargo
+
+/target
