@@ -27,6 +27,7 @@ impl TelegramBotClient {
                     session_path,
                     params,
                 },
+            ..
         }: &Env,
     ) -> Result<Self> {
         let session = Session::load_file_or_create(session_path).map_err(|e| {

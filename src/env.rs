@@ -42,12 +42,32 @@ fn args_contains(arg_name: &'static str) -> bool {
 
 pub struct Env {
     pub telegram_bot: TelegramBotEnv,
+    pub users: Vec<String>,
 }
 
 impl Env {
     pub fn new() -> Self {
         let telegram_bot = TelegramBotEnv::new();
-        Env { telegram_bot }
+        let users = Self::parse_users();
+
+        Env {
+            telegram_bot,
+            users,
+        }
+    }
+
+    fn parse_users() -> Vec<String> {
+        let arg: Option<String> = get_arg_value("--tg-user-name").ok();
+
+        let users = if let Some(user_names) = arg {
+            let users = user_names.split(",").map(|s| s.to_string()).collect();
+
+            users
+        } else {
+            Vec::new()
+        };
+
+        users
     }
 }
 

@@ -10,6 +10,7 @@ mod env;
 mod error;
 mod handlers;
 mod listener;
+mod macros;
 mod state;
 mod trace;
 
