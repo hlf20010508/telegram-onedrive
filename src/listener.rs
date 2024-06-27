@@ -5,52 +5,49 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::error::{Error, Result};
+use crate::state::State;
 use futures::future::BoxFuture;
+use futures::Future;
 use futures::FutureExt;
 use grammers_client::types::Message;
 use grammers_client::Update;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
-use crate::client::telegram_bot::TelegramBotClient;
-use crate::error::{Error, Result};
-use crate::extractor::{Extractor, Handler};
+type EventFn = dyn Fn(Message, Arc<State>) -> BoxFuture<'static, Result<()>>;
 
-type EventFn = dyn Fn(Message, Arc<TelegramBotClient>) -> BoxFuture<'static, Result<()>>;
-
-pub struct Listener<T> {
-    pub telegram_bot: Arc<TelegramBotClient>,
+pub struct Listener {
     pub events: HashMap<String, Box<EventFn>>,
-    pub state: Option<Arc<Mutex<T>>>,
+    pub state: Arc<State>,
 }
 
-impl<T> Listener<T> {
-    pub fn new(telegram_bot: TelegramBotClient) -> Self {
+impl Listener {
+    pub async fn new() -> Self {
+        let state = Arc::new(State::new().await);
+
         Self {
-            telegram_bot: Arc::new(telegram_bot),
             events: HashMap::new(),
-            state: None,
+            state,
         }
     }
 
-    pub fn on<'a, F, Args>(mut self, event_type: EventType, callback: &'static F) -> Self
+    pub fn on<F, Fut>(mut self, event_type: EventType, callback: F) -> Self
     where
-        F: Handler<Args>,
-        Args: Extractor,
+        F: Fn(Message, Arc<State>) -> Fut + 'static,
+        Fut: Future<Output = Result<()>> + Send + 'static,
     {
-        self.events.insert(
-            event_type.to_string(),
-            Box::new(move |message, client| callback.handle(message, client).boxed()),
-        );
+        let boxed_callback = Box::new(move |message, state| callback(message, state).boxed());
+
+        self.events.insert(event_type.to_string(), boxed_callback);
 
         self
     }
 
     async fn trigger(&self, event_name: EventType, message: Message) -> Result<()> {
         if let Some(callback) = self.events.get(event_name.to_str()) {
-            callback(message, self.telegram_bot.clone()).await?;
+            callback(message, self.state.clone()).await?;
         }
 
         Ok(())
@@ -63,15 +60,9 @@ impl<T> Listener<T> {
             .collect()
     }
 
-    pub fn with_state(mut self, state: T) -> Self {
-        self.state = Some(Arc::new(Mutex::new(state)));
-
-        self
-    }
-
     pub async fn run(&self) {
         loop {
-            if let Some(update) = self.telegram_bot.client.next_update().await.unwrap() {
+            if let Some(update) = self.state.telegram_bot.client.next_update().await.unwrap() {
                 match update {
                     Update::NewMessage(message) => {
                         self.handle_message(message).await.unwrap();

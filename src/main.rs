@@ -8,22 +8,15 @@
 mod client;
 mod env;
 mod error;
-mod extractor;
+mod handlers;
 mod listener;
-mod models;
+mod state;
 
-use client::telegram_bot::TelegramBotClient;
-use env::Env;
 use listener::Listener;
-use models::State;
 
 #[tokio::main]
 async fn main() {
-    let env = Env::new();
-    let state = State { env };
-    let telegram_bot_client = TelegramBotClient::new(&state.env).await.unwrap();
-
-    let listener = Listener::new(telegram_bot_client).with_state(state);
+    let listener = Listener::new().await;
 
     listener.run().await;
 }

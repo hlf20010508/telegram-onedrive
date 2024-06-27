@@ -5,16 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use futures::future::BoxFuture;
-use futures::FutureExt;
-use grammers_client::types::{Message, User};
-use grammers_client::{Client, Config};
-use grammers_session::Session;
-use std::sync::Arc;
-
 use crate::env::{Env, TelegramBotEnv};
 use crate::error::{Error, Result};
-use crate::extractor::Extractor;
+use grammers_client::types::User;
+use grammers_client::{Client, Config};
+use grammers_session::Session;
 
 pub struct TelegramBotClient {
     pub client: Client,
@@ -74,14 +69,5 @@ impl TelegramBotClient {
         };
 
         Ok(Self { client, user })
-    }
-}
-
-impl Extractor for Arc<TelegramBotClient> {
-    fn extract(
-        _message: Message,
-        client: Arc<TelegramBotClient>,
-    ) -> BoxFuture<'static, Result<Self>> {
-        async move { Ok(client.clone()) }.boxed()
     }
 }
