@@ -5,11 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use grammers_client::types::Message;
 use std::fmt::Display;
-
-use grammers_client::types::Chat;
-
-use crate::client::telegram_bot::TelegramBotClient;
 
 #[derive(Debug)]
 pub struct Error(pub String);
@@ -43,15 +40,14 @@ impl Error {
         tracing::debug!("{}", self.0);
     }
 
-    // pub async fn send(self, telegram_bot: &TelegramBotClient, chat: Chat) -> Self {
-    //     telegram_bot
-    //         .client
-    //         .send_message(chat, self.0.clone())
-    //         .await
-    //         .unwrap();
+    pub async fn send(self, message: Message) -> Result<Self> {
+        message
+            .reply(self.0.clone())
+            .await
+            .map_err(|e| Error::details(e, "failed to send error message", self.0.clone()))?;
 
-    //     self
-    // }
+        Ok(self)
+    }
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

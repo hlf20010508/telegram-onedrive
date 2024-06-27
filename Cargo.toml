@@ -23,4 +23,5 @@ tracing = { version = "0.1.40", default-features = false }
 tracing-appender = { version = "0.2.3", default-features = false }
 tracing-subscriber = { version = "0.3.18", default-features = false, features = [
     "env-filter",
+    "chrono",
 ] }

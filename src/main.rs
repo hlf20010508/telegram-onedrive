@@ -15,9 +15,12 @@ mod trace;
 
 use handlers::{help, start};
 use listener::{EventType, Listener};
+use trace::trace_registor;
 
 #[tokio::main]
 async fn main() {
+    let _worker_guard = trace_registor();
+
     Listener::new()
         .await
         .on(EventType::command(start::PATTERN), start::handler)

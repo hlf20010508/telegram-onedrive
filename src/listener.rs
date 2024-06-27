@@ -66,7 +66,10 @@ impl Listener {
                 Ok(update) => match update {
                     Some(update) => match update {
                         Update::NewMessage(message) if !message.outgoing() => {
-                            self.handle_message(message).await
+                            match self.handle_message(message.clone()).await {
+                                Ok(_) => Ok(()),
+                                Err(e) => Err(e.send(message).await.unwrap()),
+                            }
                         }
                         _ => Err(Error::new("Unsupported update type")),
                     },
