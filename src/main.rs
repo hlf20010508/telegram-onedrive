@@ -11,12 +11,17 @@ mod error;
 mod handlers;
 mod listener;
 mod state;
+mod trace;
 
-use listener::Listener;
+use handlers::{help, start};
+use listener::{EventType, Listener};
 
 #[tokio::main]
 async fn main() {
-    let listener = Listener::new().await;
-
-    listener.run().await;
+    Listener::new()
+        .await
+        .on(EventType::command(start::PATTERN), start::handler)
+        .on(EventType::command(help::PATTERN), help::handler)
+        .run()
+        .await;
 }

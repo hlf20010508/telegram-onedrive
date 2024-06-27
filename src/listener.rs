@@ -6,7 +6,7 @@
 */
 
 use crate::error::{Error, Result};
-use crate::state::State;
+use crate::state::{AppState, State};
 use futures::future::BoxFuture;
 use futures::Future;
 use futures::FutureExt;
@@ -16,11 +16,11 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::Arc;
 
-type EventFn = dyn Fn(Message, Arc<State>) -> BoxFuture<'static, Result<()>>;
+type EventFn = dyn Fn(Message, AppState) -> BoxFuture<'static, Result<()>>;
 
 pub struct Listener {
     pub events: HashMap<String, Box<EventFn>>,
-    pub state: Arc<State>,
+    pub state: AppState,
 }
 
 impl Listener {
@@ -62,28 +62,37 @@ impl Listener {
 
     pub async fn run(&self) {
         loop {
-            if let Some(update) = self.state.telegram_bot.client.next_update().await.unwrap() {
-                match update {
-                    Update::NewMessage(message) => {
-                        self.handle_message(message).await.unwrap();
-                    }
-                    _ => Err(Error::new("Unsupported update type")).unwrap(),
-                }
+            let result = match self.state.telegram_bot.client.next_update().await {
+                Ok(update) => match update {
+                    Some(update) => match update {
+                        Update::NewMessage(message) if !message.outgoing() => {
+                            self.handle_message(message).await
+                        }
+                        _ => Err(Error::new("Unsupported update type")),
+                    },
+                    None => Ok(()),
+                },
+                Err(e) => Err(Error::context(e, "Failed to get next update")),
+            };
+
+            if let Err(e) = result {
+                e.trace();
             }
         }
     }
 
     async fn handle_message(&self, message: Message) -> Result<()> {
-        if let Some(_) = message.media() {
-            self.handle_media(message).await?;
-        } else {
-            let text = message.text();
+        match message.media() {
+            Some(_) => self.handle_media(message).await?,
+            None => {
+                let text = message.text();
 
-            if !text.is_empty() {
-                if text.starts_with('/') {
-                    self.handle_command(message).await?;
-                } else {
-                    self.handle_text(message).await?;
+                if !text.is_empty() {
+                    if text.starts_with('/') {
+                        self.handle_command(message).await?;
+                    } else {
+                        self.handle_text(message).await?;
+                    }
                 }
             }
         }
@@ -120,6 +129,18 @@ pub enum EventType {
 }
 
 impl EventType {
+    pub fn command(pattern: &str) -> Self {
+        EventType::Command(pattern.to_string())
+    }
+
+    pub fn text() -> Self {
+        EventType::Text
+    }
+
+    pub fn media() -> Self {
+        EventType::Media
+    }
+
     pub fn to_str(&self) -> &str {
         match self {
             EventType::Command(command) => command.as_str(),

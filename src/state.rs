@@ -5,6 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use std::sync::Arc;
+
 use crate::{client::telegram_bot::TelegramBotClient, env::Env};
 
 pub struct State {
@@ -20,3 +22,5 @@ impl State {
         Self { env, telegram_bot }
     }
 }
+
+pub type AppState = Arc<State>;

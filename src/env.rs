@@ -65,11 +65,7 @@ impl TelegramBotEnv {
         let api_hash = get_arg_value("--tg-api-hash").unwrap();
         let token = get_arg_value("--tg-bot-token").unwrap();
         let session_path = TG_BOT_SESSION_PATH.to_string();
-
-        let params = grammers_client::InitParams {
-            catch_up: true,
-            ..Default::default()
-        };
+        let params = grammers_client::InitParams::default();
 
         TelegramBotEnv {
             api_id,

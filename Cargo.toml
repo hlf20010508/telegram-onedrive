@@ -17,3 +17,8 @@ tokio = { version = "1.38.0", default-features = false, features = [
     "macros",
     "rt-multi-thread",
 ] }
+tracing = { version = "0.1.40", default-features = false }
+tracing-appender = { version = "0.2.3", default-features = false }
+tracing-subscriber = { version = "0.3.18", default-features = false, features = [
+    "env-filter",
+] }
