@@ -17,7 +17,7 @@ pub const PATTERN: &str = "/help";
 
 pub async fn handler(message: Message, _state: AppState) -> Result<()> {
     message
-        .respond(InputMessage::text(docs::GREETING))
+        .respond(InputMessage::html(docs::GREETING))
         .await
         .map_err(|e| Error::context(e, "failed to respond /help"))?;
 

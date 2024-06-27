@@ -7,7 +7,9 @@ edition = "2021"
 
 [dependencies]
 futures = { version = "0.3.30", default-features = false }
-grammers-client = { version = "0.6.0", default-features = false }
+grammers-client = { version = "0.6.0", default-features = false, features = [
+    "html",
+] }
 grammers-mtsender = { version = "0.5.1", default-features = false }
 grammers-session = { version = "0.5.2", default-features = false }
 pico-args = { version = "0.5.0", default-features = false, features = [

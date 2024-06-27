@@ -13,35 +13,35 @@ pub const GREETING: &str = r#"
 - /drive to list all OneDrive accounts.
 - /dir to show current OneDrive directory.
 
-```/links $message_link $range```
+<pre><code>/links $message_link $range</code></pre>
 To transfer sequential restricted content.
-```/url $file_url```
+<pre><code>/url $file_url</code></pre>
 To upload file through url.
-```/logs clear```
+<pre><code>/logs clear</code></pre>
 To clear logs.
-```/drive add```
+<pre><code>/drive add</code></pre>
 To add a OneDrive account.
-```/drive $index```
+<pre><code>/drive $index</code></pre>
 To change the OneDrive account.
-```/drive logout```
+<pre><code>/drive logout</code></pre>
 To logout current OneDrive account.
-```/drive logout $index```
+<pre><code>/drive logout $index</code></pre>
 To logout specified OneDrive account.
-```/dir $remote_path```
+<pre><code>/dir $remote_path</code></pre>
 To set OneDrive directory.
-```/dir temp $remote_path```
+<pre><code>/dir temp $remote_path</code></pre>
 To set temporary OneDrive directory.
-```/dir temp cancel```
+<pre><code>/dir temp cancel</code></pre>
 To restore OneDrive directory to the previous one.
-```/dir reset```
+<pre><code>/dir reset</code></pre>
 To reset OneDrive directory to default.
 
 - To transfer files, forward or upload to me.
 - To transfer restricted content, right click the content, copy the message link, and send to me.
 - Tap Status on replied status message to locate current job.
-- To upload files through url, the headers of the file response must includes `Content-Length`.
+- To upload files through url, the headers of the file response must includes Content-Length.
 - Each log page contains 50 lines of logs.
 - Support files with extension .t2o as scripts.
 
-See [example](https://github.com/hlf20010508/telegram-onedrive#example).
+See <a href="https://github.com/hlf20010508/telegram-onedrive#example">example</a>.
 "#;
