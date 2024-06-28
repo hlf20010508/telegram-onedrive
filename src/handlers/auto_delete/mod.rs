@@ -8,6 +8,7 @@
 mod docs;
 
 use grammers_client::types::Message;
+use std::sync::Arc;
 
 use crate::error::{Error, Result};
 use crate::state::AppState;
@@ -15,7 +16,7 @@ use crate::{check_in_group, check_senders};
 
 pub const PATTERN: &str = "/autoDelete";
 
-pub async fn handler(message: Message, state: AppState) -> Result<()> {
+pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);
 

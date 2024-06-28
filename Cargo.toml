@@ -6,6 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+axum = { version = "0.7.5", default-features = false, features = [
+    "tokio",
+    "http1",
+    "json",
+    "macros",
+] }
 futures = { version = "0.3.30", default-features = false }
 grammers-client = { version = "0.6.0", default-features = false, features = [
     "html",
@@ -14,6 +20,12 @@ grammers-session = { version = "0.5.2", default-features = false }
 pico-args = { version = "0.5.0", default-features = false, features = [
     "short-space-opt",
 ] }
+rust_socketio = { version = "0.6.0", default-features = false, features = [
+    "async",
+] }
+serde = { version = "1.0.203", default-features = false }
+serde_json = { version = "1.0.118", default-features = false }
+socketioxide = { version = "0.14.0", default-features = false }
 tokio = { version = "1.38.0", default-features = false, features = [
     "macros",
     "rt-multi-thread",

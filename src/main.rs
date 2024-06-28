@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
+mod auth_server;
 mod client;
 mod env;
 mod error;
@@ -14,7 +15,7 @@ mod macros;
 mod state;
 mod trace;
 
-use handlers::{auto_delete, help, logs, start};
+use handlers::{auth, auto_delete, help, logs, start};
 use listener::{EventType, Listener};
 use trace::trace_registor;
 
@@ -31,6 +32,7 @@ async fn main() {
             auto_delete::handler,
         )
         .on(EventType::command(logs::PATTERN), logs::handler)
+        .on(EventType::command(auth::PATTERN), auth::handler)
         .run()
         .await;
 }

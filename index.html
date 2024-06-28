@@ -1,0 +1,77 @@
+<!--
+:project: telegram-onedrive
+:author: L-ING
+:copyright: (C) 2023 L-ING <hlf01@icloud.com>
+:license: MIT, see LICENSE for more details.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Code</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style lang="text/css">
+        #app {
+            width: 400px;
+            margin: 200px auto 0 auto;
+        }
+
+        #submit {
+            margin-top: 10px;
+            width: 90px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <el-form :model="form" ref="form" @submit.native.prevent>
+            <el-form-item label="Telegram Code">
+                <el-input v-model="form.code" @keyup.enter.native="submitForm"></el-input>
+                <el-button type="primary" @click="submitForm" id="submit">
+                    <span v-if="!submitted">Submit</span>
+                    <i v-else class="el-icon-check"></i>
+                </el-button>
+            </el-form-item>
+        </el-form>
+    </div>
+</body>
+
+<script src="https://unpkg.com/vue@2/dist/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script>
+    new Vue({
+        el: '#app',
+        data: function () {
+            return {
+                submitted: false,
+                form: {
+                    code: ''
+                }
+            }
+        },
+        methods: {
+            submitForm() {
+                let currentPath = window.location.pathname;
+                if (!currentPath.endsWith('/')) {
+                    currentPath += '/';
+                }
+                let requestUrl = currentPath + 'tg';
+                axios.post(requestUrl, {
+                    code: this.form.code
+                }).then((res) => {
+                    this.form.code = ''
+                    this.submitted = true
+                    setTimeout(() => this.submitted = false, 1000)
+                })
+
+            }
+        },
+    })
+</script>
+
+</html>

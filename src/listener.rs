@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::Arc;
 
-type EventFn = dyn Fn(Message, AppState) -> BoxFuture<'static, Result<()>>;
+type EventFn = dyn Fn(Arc<Message>, AppState) -> BoxFuture<'static, Result<()>>;
 
 pub struct Listener {
     pub events: HashMap<String, Box<EventFn>>,
@@ -35,7 +35,7 @@ impl Listener {
 
     pub fn on<F, Fut>(mut self, event_type: EventType, callback: F) -> Self
     where
-        F: Fn(Message, Arc<State>) -> Fut + 'static,
+        F: Fn(Arc<Message>, Arc<State>) -> Fut + 'static,
         Fut: Future<Output = Result<()>> + Send + 'static,
     {
         let boxed_callback = Box::new(move |message, state| callback(message, state).boxed());
@@ -45,7 +45,7 @@ impl Listener {
         self
     }
 
-    async fn trigger(&self, event_name: EventType, message: Message) -> Result<()> {
+    async fn trigger(&self, event_name: EventType, message: Arc<Message>) -> Result<()> {
         if let Some(callback) = self.events.get(event_name.to_str()) {
             callback(message, self.state.clone()).await?;
         }
@@ -66,6 +66,7 @@ impl Listener {
                 Ok(update) => match update {
                     Some(update) => match update {
                         Update::NewMessage(message) if !message.outgoing() => {
+                            let message = Arc::new(message);
                             match self.handle_message(message.clone()).await {
                                 Ok(_) => Ok(()),
                                 Err(e) => Err(e.send(message).await.unwrap()),
@@ -84,7 +85,7 @@ impl Listener {
         }
     }
 
-    async fn handle_message(&self, message: Message) -> Result<()> {
+    async fn handle_message(&self, message: Arc<Message>) -> Result<()> {
         match message.media() {
             Some(_) => self.handle_media(message).await?,
             None => {
@@ -103,7 +104,7 @@ impl Listener {
         Ok(())
     }
 
-    async fn handle_command(&self, message: Message) -> Result<()> {
+    async fn handle_command(&self, message: Arc<Message>) -> Result<()> {
         let text = message.text();
 
         for event in self.get_event_names() {
@@ -116,11 +117,11 @@ impl Listener {
         Ok(())
     }
 
-    async fn handle_text(&self, message: Message) -> Result<()> {
+    async fn handle_text(&self, message: Arc<Message>) -> Result<()> {
         self.trigger(EventType::Text, message).await
     }
 
-    async fn handle_media(&self, message: Message) -> Result<()> {
+    async fn handle_media(&self, message: Arc<Message>) -> Result<()> {
         self.trigger(EventType::Media, message).await
     }
 }

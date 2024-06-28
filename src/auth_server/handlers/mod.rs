@@ -5,9 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
-pub mod auth;
-pub mod auto_delete;
-pub mod help;
-pub mod logs;
-pub mod start;
-mod utils;
+mod models;
+pub mod telegram;
+
+use super::var::TG_CODE_EVENT;

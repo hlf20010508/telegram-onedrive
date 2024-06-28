@@ -9,6 +9,7 @@ mod docs;
 
 use grammers_client::types::Message;
 use grammers_client::InputMessage;
+use std::sync::Arc;
 use tokio::fs;
 
 use super::utils::cmd_parser;
@@ -19,7 +20,7 @@ use crate::{check_in_group, check_senders};
 
 pub const PATTERN: &str = "/logs";
 
-pub async fn handler(message: Message, state: AppState) -> Result<()> {
+pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);
 

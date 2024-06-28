@@ -8,13 +8,14 @@
 mod docs;
 
 use grammers_client::types::Message;
+use std::sync::Arc;
 
 use crate::error::{Error, Result};
 use crate::state::AppState;
 
 pub const PATTERN: &str = "/start";
 
-pub async fn handler(message: Message, _state: AppState) -> Result<()> {
+pub async fn handler(message: Arc<Message>, _state: AppState) -> Result<()> {
     message
         .respond(docs::GREETING)
         .await

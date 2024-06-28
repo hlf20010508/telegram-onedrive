@@ -5,9 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-pub mod auth;
-pub mod auto_delete;
-pub mod help;
-pub mod logs;
-pub mod start;
-mod utils;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+pub struct CodeParams {
+    pub code: String,
+}

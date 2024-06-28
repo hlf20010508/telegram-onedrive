@@ -5,8 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use grammers_client::types::Message;
 use std::fmt::Display;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Error(pub String);
@@ -40,13 +43,19 @@ impl Error {
         tracing::debug!("{}", self.0);
     }
 
-    pub async fn send(self, message: Message) -> Result<Self> {
+    pub async fn send(self, message: Arc<Message>) -> Result<Self> {
         message
             .reply(self.0.clone())
             .await
             .map_err(|e| Error::details(e, "failed to send error message", self.0.clone()))?;
 
         Ok(self)
+    }
+}
+
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        (StatusCode::INTERNAL_SERVER_ERROR, self.0).into_response()
     }
 }
 

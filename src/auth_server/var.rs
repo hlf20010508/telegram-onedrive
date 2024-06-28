@@ -5,9 +5,5 @@
 :license: MIT, see LICENSE for more details.
 */
 
-pub mod auth;
-pub mod auto_delete;
-pub mod help;
-pub mod logs;
-pub mod start;
-mod utils;
+pub const SERVER_PORT: u16 = 8080;
+pub const TG_CODE_EVENT: &str = "tg_code";
