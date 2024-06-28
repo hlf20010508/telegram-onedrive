@@ -5,6 +5,5 @@
 :license: MIT, see LICENSE for more details.
 */
 
-pub mod auto_delete;
-pub mod help;
-pub mod start;
+pub const WONT_AUTO_DELETE: &str = "Bot won't auto delete message.";
+pub const WILL_AUTO_DELETE: &str = "Bot will auto delete message.";

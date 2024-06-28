@@ -43,16 +43,19 @@ fn args_contains(arg_name: &'static str) -> bool {
 pub struct Env {
     pub telegram_bot: TelegramBotEnv,
     pub users: Vec<String>,
+    pub should_auto_delete: bool,
 }
 
 impl Env {
     pub fn new() -> Self {
         let telegram_bot = TelegramBotEnv::new();
         let users = Self::parse_users();
+        let should_auto_delete = args_contains("--auto-delete");
 
         Env {
             telegram_bot,
             users,
+            should_auto_delete,
         }
     }
 

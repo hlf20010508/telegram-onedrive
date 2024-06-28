@@ -71,7 +71,7 @@ impl Listener {
                                 Err(e) => Err(e.send(message).await.unwrap()),
                             }
                         }
-                        _ => Err(Error::new("Unsupported update type")),
+                        _ => Ok(()),
                     },
                     None => Ok(()),
                 },
