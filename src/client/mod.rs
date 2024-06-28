@@ -5,4 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
-pub mod telegram_bot;
+mod telegram_bot;
+mod telegram_user;
+
+pub use telegram_bot::TelegramBotClient;
+pub use telegram_user::TelegramUserClient;

@@ -32,7 +32,7 @@ macro_rules! check_in_group {
 #[macro_export]
 macro_rules! check_senders {
     ($message: ident, $state: ident) => {
-        let users = &$state.env.users;
+        let users = &$state.env.telegram_user.users;
 
         if let Some(sender) = $message.sender() {
             if let Some(username) = sender.username() {
