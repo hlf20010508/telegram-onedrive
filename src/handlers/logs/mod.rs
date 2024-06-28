@@ -16,13 +16,14 @@ use super::utils::cmd_parser;
 use crate::env::LOG_PATH;
 use crate::error::{Error, Result};
 use crate::state::AppState;
-use crate::{check_in_group, check_senders};
+use crate::{check_in_group, check_senders, check_tg_login};
 
 pub const PATTERN: &str = "/logs";
 
 pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);
+    check_tg_login!(message, state);
 
     {
         let metadata = fs::metadata(LOG_PATH).await;

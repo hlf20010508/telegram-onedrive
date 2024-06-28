@@ -43,3 +43,29 @@ macro_rules! check_senders {
         }
     };
 }
+
+#[macro_export]
+macro_rules! check_tg_login {
+    ($message: ident, $state: ident) => {
+        let is_authorized = $state
+            .telegram_user
+            .client
+            .is_authorized()
+            .await
+            .map_err(|e| {
+                Error::context(
+                    e,
+                    "failed to check telegram user client authorization state",
+                )
+            })?;
+
+        if !is_authorized {
+            $message
+                .respond("You haven't logined to Telegram.")
+                .await
+                .map_err(|e| Error::context(e, "failed to respond haven't login to telegram"))?;
+
+            crate::handlers::auth::handler($message.clone(), $state.clone()).await?;
+        }
+    };
+}
