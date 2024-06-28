@@ -7,13 +7,11 @@
 
 use crate::env::{Env, TelegramUserEnv};
 use crate::error::{Error, Result};
-use grammers_client::types::User;
 use grammers_client::{Client, Config, SignInError};
 use grammers_session::Session;
 
 pub struct TelegramUserClient {
     pub client: Client,
-    pub user: User,
 }
 
 impl TelegramUserClient {
@@ -23,8 +21,6 @@ impl TelegramUserClient {
                 TelegramUserEnv {
                     api_id,
                     api_hash,
-                    phone_number,
-                    password,
                     session_path,
                     params,
                     ..
@@ -50,23 +46,36 @@ impl TelegramUserClient {
             .await
             .map_err(|e| Error::context(e, "failed to create telegram user client"))?;
 
-        let user = if !client.is_authorized().await.map_err(|e| {
-            Error::context(
-                e,
-                "failed to check telegram user client authorization state",
-            )
-        })? {
-            let token = client
+        Ok(Self { client })
+    }
+
+    pub async fn login(
+        &self,
+        Env {
+            telegram_user:
+                TelegramUserEnv {
+                    phone_number,
+                    password,
+                    session_path,
+                    ..
+                },
+            ..
+        }: &Env,
+    ) -> Result<()> {
+        if !self.is_authorized().await? {
+            let token = self
+                .client
                 .request_login_code(phone_number)
                 .await
                 .map_err(|e| Error::context(e, "failed to request telegram user login code"))?;
 
-            let code = get_code().await;
+            let code = self.get_code().await;
 
-            let user = match client.sign_in(&token, &code).await {
+            match self.client.sign_in(&token, &code).await {
                 Ok(user) => user,
                 Err(SignInError::PasswordRequired(password_token)) => match password {
-                    Some(password) => client
+                    Some(password) => self
+                        .client
                         .check_password(password_token, password)
                         .await
                         .map_err(|e| Error::context(e, "failed to pass telegram user 2FA"))?,
@@ -75,22 +84,27 @@ impl TelegramUserClient {
                 Err(e) => Err(Error::context(e, "failed to sign in telegram user"))?,
             };
 
-            client.session().save_to_file(session_path).map_err(|e| {
-                Error::context(e, "failed to save session for telegram user client")
-            })?;
+            self.client
+                .session()
+                .save_to_file(session_path)
+                .map_err(|e| {
+                    Error::context(e, "failed to save session for telegram user client")
+                })?;
+        }
 
-            user
-        } else {
-            client
-                .get_me()
-                .await
-                .map_err(|e| Error::context(e, "failed to get telegram user client user"))?
-        };
-
-        Ok(Self { client, user })
+        Ok(())
     }
-}
 
-async fn get_code() -> String {
-    todo!();
+    async fn is_authorized(&self) -> Result<bool> {
+        self.client.is_authorized().await.map_err(|e| {
+            Error::context(
+                e,
+                "failed to check telegram user client authorization state",
+            )
+        })
+    }
+
+    async fn get_code(&self) -> String {
+        todo!();
+    }
 }

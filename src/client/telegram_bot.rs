@@ -5,15 +5,14 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::env::{Env, TelegramBotEnv};
-use crate::error::{Error, Result};
-use grammers_client::types::User;
 use grammers_client::{Client, Config};
 use grammers_session::Session;
 
+use crate::env::{Env, TelegramBotEnv};
+use crate::error::{Error, Result};
+
 pub struct TelegramBotClient {
     pub client: Client,
-    pub user: User,
 }
 
 impl TelegramBotClient {
@@ -48,10 +47,12 @@ impl TelegramBotClient {
             .await
             .map_err(|e| Error::context(e, "failed to create telegram bot client"))?;
 
-        let user = if !client.is_authorized().await.map_err(|e| {
+        let is_authorized = client.is_authorized().await.map_err(|e| {
             Error::context(e, "failed to check telegram bot client authorization state")
-        })? {
-            let user = client
+        })?;
+
+        if !is_authorized {
+            client
                 .bot_sign_in(token)
                 .await
                 .map_err(|e| Error::context(e, "failed to sign in telegram bot account"))?;
@@ -60,15 +61,8 @@ impl TelegramBotClient {
                 .session()
                 .save_to_file(session_path)
                 .map_err(|e| Error::context(e, "failed to save session for telegram bot client"))?;
+        }
 
-            user
-        } else {
-            client
-                .get_me()
-                .await
-                .map_err(|e| Error::context(e, "failed to get telegram bot client user"))?
-        };
-
-        Ok(Self { client, user })
+        Ok(Self { client })
     }
 }
