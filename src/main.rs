@@ -14,7 +14,7 @@ mod macros;
 mod state;
 mod trace;
 
-use handlers::{auto_delete, help, start};
+use handlers::{auto_delete, help, logs, start};
 use listener::{EventType, Listener};
 use trace::trace_registor;
 
@@ -30,6 +30,7 @@ async fn main() {
             EventType::command(auto_delete::PATTERN),
             auto_delete::handler,
         )
+        .on(EventType::command(logs::PATTERN), logs::handler)
         .run()
         .await;
 }

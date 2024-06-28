@@ -7,4 +7,6 @@
 
 pub mod auto_delete;
 pub mod help;
+pub mod logs;
 pub mod start;
+mod utils;

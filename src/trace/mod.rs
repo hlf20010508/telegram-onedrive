@@ -5,43 +5,20 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use tracing::Subscriber;
+mod formatter;
+
 use tracing_appender::non_blocking::WorkerGuard;
-use tracing_subscriber::fmt::time::{ChronoLocal, FormatTime};
-use tracing_subscriber::fmt::{self, FormatFields};
-use tracing_subscriber::fmt::{format, FormatEvent};
+use tracing_subscriber::fmt;
 use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::registry::LookupSpan;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
-struct EventFormatter;
+use formatter::EventFormatter;
 
-impl<S, N> FormatEvent<S, N> for EventFormatter
-where
-    S: Subscriber + for<'a> LookupSpan<'a>,
-    N: for<'a> FormatFields<'a> + 'static,
-{
-    fn format_event(
-        &self,
-        ctx: &fmt::FmtContext<'_, S, N>,
-        mut writer: format::Writer<'_>,
-        event: &tracing::Event<'_>,
-    ) -> std::fmt::Result {
-        if let Err(_) = ChronoLocal::new("%Y-%m-%d %H:%M:%S".to_string()).format_time(&mut writer) {
-            write!(writer, "Time error")?;
-            writeln!(writer)?;
-        }
-
-        writeln!(writer)?;
-        ctx.field_format().format_fields(writer.by_ref(), event)?;
-        writeln!(writer)?;
-        writeln!(writer)
-    }
-}
+use crate::env::LOG_PATH;
 
 pub fn trace_registor() -> WorkerGuard {
-    let file_appender = tracing_appender::rolling::never(".", "log.txt");
+    let file_appender = tracing_appender::rolling::never(".", LOG_PATH);
     let (file_writer, guard) = tracing_appender::non_blocking(file_appender);
 
     let stdout_layer = fmt::layer()

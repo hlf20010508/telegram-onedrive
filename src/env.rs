@@ -11,6 +11,8 @@ use std::str::FromStr;
 
 use crate::error::{Error, Result};
 
+pub const LOG_PATH: &str = "./log.txt";
+
 const TG_BOT_SESSION_PATH: &str = "./session/tg-bot.session";
 
 fn get_arg_value<T>(arg_name: &'static str) -> Result<T>

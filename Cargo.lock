@@ -1068,7 +1068,6 @@ version = "0.1.0"
 dependencies = [
  "futures",
  "grammers-client",
- "grammers-mtsender",
  "grammers-session",
  "pico-args",
  "tokio",
