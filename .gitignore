@@ -4,6 +4,7 @@ session
 dev.*
 devrc.*
 .env
+.vscode
 
 # Added by cargo
 
