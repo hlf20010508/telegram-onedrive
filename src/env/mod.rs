@@ -11,12 +11,15 @@ mod telegram_user;
 mod utils;
 mod var;
 
+use std::fs;
+
 pub use onedrive::OneDriveEnv;
 pub use telegram_bot::TelegramBotEnv;
 pub use telegram_user::TelegramUserEnv;
 pub use var::LOG_PATH;
 
 use utils::{args_contains, get_arg_value};
+use var::SESSION_DIR;
 
 pub struct Env {
     pub telegram_bot: TelegramBotEnv,
@@ -29,6 +32,8 @@ pub struct Env {
 
 impl Env {
     pub fn new() -> Self {
+        Self::init();
+
         let telegram_bot = TelegramBotEnv::new();
         let telegram_user = TelegramUserEnv::new();
         let onedrive = OneDriveEnv::new();
@@ -44,5 +49,9 @@ impl Env {
             use_reverse_proxy,
             should_auto_delete,
         }
+    }
+
+    fn init() {
+        fs::create_dir_all(SESSION_DIR).unwrap();
     }
 }
