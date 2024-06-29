@@ -5,18 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use futures::FutureExt;
 use grammers_client::types::Message;
 use grammers_client::{Client, Config, SignInError};
 use grammers_session::Session;
-use rust_socketio::asynchronous::{
-    Client as SocketIoClient, ClientBuilder as SocketIoClientBuilder,
-};
-use rust_socketio::Payload;
 use std::sync::Arc;
-use tokio::sync::mpsc;
 
-use crate::auth_server::{SERVER_PORT, TG_CODE_EVENT};
+use super::utils::{socketio_client, socketio_disconnect};
+use crate::auth_server::TG_CODE_EVENT;
 use crate::env::{Env, TelegramUserEnv};
 use crate::error::{Error, Result};
 
@@ -70,10 +65,17 @@ impl TelegramUserClient {
                     session_path,
                     ..
                 },
-            server_url,
+            server_uri,
+            use_reverse_proxy,
             ..
         }: &Env,
     ) -> Result<()> {
+        let respond = "Logining into Telegram...";
+        message
+            .respond(respond)
+            .await
+            .map_err(|e| Error::details(e, "failed to respond message", respond))?;
+
         if !self.is_authorized().await? {
             let token = self
                 .client
@@ -84,18 +86,19 @@ impl TelegramUserClient {
             message
                 .respond(format!(
                     "Please visit {} to input your code to login to Telegram.",
-                    server_url
+                    server_uri
                 ))
                 .await
                 .map_err(|e| Error::context(e, "failed to respond telegram code server url"))?;
 
-            let (socketio_client, mut rx) = Self::socketio_client().await?;
+            let (socketio_client, mut rx) =
+                socketio_client(TG_CODE_EVENT, use_reverse_proxy.to_owned()).await?;
 
             loop {
                 let code = rx
                     .recv()
                     .await
-                    .ok_or_else(|| Error::new("failed to receive code"))?;
+                    .ok_or_else(|| Error::new("failed to receive telegram code"))?;
 
                 message
                     .respond("Code received, logining...")
@@ -127,10 +130,7 @@ impl TelegramUserClient {
                 };
             }
 
-            socketio_client
-                .disconnect()
-                .await
-                .map_err(|e| Error::context(e, "failed to disconnect from auth server"))?;
+            socketio_disconnect(socketio_client).await?;
 
             self.client
                 .session()
@@ -150,31 +150,5 @@ impl TelegramUserClient {
                 "failed to check telegram user client authorization state",
             )
         })
-    }
-
-    async fn socketio_client() -> Result<(SocketIoClient, mpsc::Receiver<String>)> {
-        let (tx, rx) = mpsc::channel(1);
-
-        let socketio_client =
-            SocketIoClientBuilder::new(format!("http://127.0.0.1:{}/", SERVER_PORT))
-                .on(TG_CODE_EVENT, move |payload, _socket| {
-                    let tx = tx.clone();
-                    async move {
-                        if let Payload::Text(values) = payload {
-                            if let Some(value) = values.get(0) {
-                                let code =
-                                    serde_json::from_value::<String>(value.to_owned()).unwrap();
-
-                                tx.send(code).await.unwrap();
-                            }
-                        }
-                    }
-                    .boxed()
-                })
-                .connect()
-                .await
-                .map_err(|e| Error::context(e, "failed to connect to auth server"))?;
-
-        Ok((socketio_client, rx))
     }
 }

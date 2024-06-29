@@ -5,28 +5,26 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-
+use axum_server::Handle;
 use tokio::task::AbortHandle;
 
 pub struct AutoAbortHandle {
-    handle: AbortHandle,
-    shutdown_flag: Arc<AtomicBool>,
+    abort_handle: AbortHandle,
+    shutdown_handle: Handle,
 }
 
 impl AutoAbortHandle {
-    pub fn new(handle: AbortHandle, shutdown_flag: Arc<AtomicBool>) -> Self {
+    pub fn new(abort_handle: AbortHandle, shutdown_handle: Handle) -> Self {
         Self {
-            handle,
-            shutdown_flag,
+            abort_handle,
+            shutdown_handle,
         }
     }
 }
 
 impl Drop for AutoAbortHandle {
     fn drop(&mut self) {
-        self.shutdown_flag.store(true, Ordering::SeqCst);
-        self.handle.abort();
+        self.shutdown_handle.shutdown();
+        self.abort_handle.abort();
     }
 }

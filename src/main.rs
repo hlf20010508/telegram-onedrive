@@ -14,6 +14,7 @@ mod listener;
 mod macros;
 mod state;
 mod trace;
+mod utils;
 
 use handlers::{auth, auto_delete, clear, help, logs, start};
 use listener::{EventType, Listener};

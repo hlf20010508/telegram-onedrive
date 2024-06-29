@@ -18,24 +18,33 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);
 
-    let _server_abort_handle = auth_server::spawn().await?;
-
     let env = &state.env;
-    let telegram_user = &state.telegram_user;
 
-    message
-        .respond("Logining into Telegram...")
-        .await
-        .map_err(|e| Error::context(e, "failed to respond message in auth"))?;
+    let _server_abort_handle = auth_server::spawn(&env).await?;
 
-    if let Err(e) = telegram_user.login(message.clone(), env).await {
-        return Err(e);
+    {
+        let telegram_user = &state.telegram_user;
+
+        telegram_user.login(message.clone(), env).await?;
+
+        let respond = "Login to Telegram successful!";
+        message
+            .respond(respond)
+            .await
+            .map_err(|e| Error::details(e, "failed to respond message", respond))?;
     }
 
-    message
-        .respond("Login to Telegram successful!")
-        .await
-        .map_err(|e| Error::context(e, "failed to respond telegram login suscessful"))?;
+    {
+        let onedrive = &state.onedrive;
+
+        onedrive.login(message.clone(), env).await?;
+
+        let respond = "OneDrive authorization successful!";
+        message
+            .respond(respond)
+            .await
+            .map_err(|e| Error::details(e, "failed to respond message", respond))?;
+    }
 
     Ok(())
 }

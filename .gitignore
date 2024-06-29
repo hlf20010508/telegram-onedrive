@@ -1,10 +1,10 @@
 .DS_Store
 log.txt
-session
+/session
 dev.*
 devrc.*
 .env
-.vscode
+/.vscode
 
 # Added by cargo
 

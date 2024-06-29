@@ -5,9 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
-mod models;
-pub mod onedrive;
-pub mod telegram;
+use chrono::Utc;
 
-use super::var::OD_CODE_EVENT;
-use super::var::TG_CODE_EVENT;
+pub fn get_current_timestamp() -> i64 {
+    Utc::now().timestamp()
+}

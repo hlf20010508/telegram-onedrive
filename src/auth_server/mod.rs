@@ -6,25 +6,32 @@
 */
 
 mod auto_abort;
+mod cert;
 mod handlers;
 mod var;
 
 use axum::routing::{get, post};
 use axum::{Extension, Router};
+use axum_server::Handle;
 use socketioxide::extract::SocketRef;
 use socketioxide::SocketIo;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::net::TcpListener;
 use std::sync::Arc;
-use tokio::net::TcpListener;
 
-pub use var::{SERVER_PORT, TG_CODE_EVENT};
+pub use var::{OD_CODE_EVENT, SERVER_PORT, TG_CODE_EVENT};
 
 use auto_abort::AutoAbortHandle;
-use handlers::telegram;
+use cert::get_rustls_config;
+use handlers::{onedrive, telegram};
 
+use crate::env::Env;
 use crate::error::{Error, Result};
 
-pub async fn spawn() -> Result<AutoAbortHandle> {
+pub async fn spawn(
+    Env {
+        use_reverse_proxy, ..
+    }: &Env,
+) -> Result<AutoAbortHandle> {
     let (socketio_layer, socketio) = SocketIo::new_layer();
 
     socketio.ns("/", |_s: SocketRef| {});
@@ -32,29 +39,39 @@ pub async fn spawn() -> Result<AutoAbortHandle> {
     let router = Router::new()
         .route(telegram::INDEX_PATH, get(telegram::index_handler))
         .route(telegram::CODE_PATH, post(telegram::code_handler))
+        .route(onedrive::CODE_PATH, get(onedrive::code_handler))
         .layer(socketio_layer)
         .layer(Extension(Arc::new(socketio)));
 
-    let server = TcpListener::bind(format!("127.0.0.1:{}", SERVER_PORT))
-        .await
+    let server = TcpListener::bind(format!("0.0.0.0:{}", SERVER_PORT))
         .map_err(|e| Error::context(e, "failed to create tcp listener"))?;
 
-    let shutdown_flag = Arc::new(AtomicBool::new(false));
-    let shutdown_flag_clone = Arc::clone(&shutdown_flag);
+    let shutdown_handle = Handle::new();
+    let shutdown_handle_clone = shutdown_handle.clone();
 
-    let abort_handle = tokio::spawn(async move {
-        axum::serve(server, router)
-            .with_graceful_shutdown(async move {
-                while !shutdown_flag_clone.load(Ordering::SeqCst) {
-                    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                }
-            })
-            .await
-            .unwrap();
-    })
-    .abort_handle();
+    let abort_handle = if use_reverse_proxy.to_owned() {
+        tokio::spawn(async move {
+            axum_server::from_tcp(server)
+                .handle(shutdown_handle_clone)
+                .serve(router.into_make_service())
+                .await
+                .unwrap();
+        })
+        .abort_handle()
+    } else {
+        let config = get_rustls_config().await?;
 
-    let auto_abort_handle = AutoAbortHandle::new(abort_handle, shutdown_flag);
+        tokio::spawn(async move {
+            axum_server::from_tcp_rustls(server, config)
+                .handle(shutdown_handle_clone)
+                .serve(router.into_make_service())
+                .await
+                .unwrap();
+        })
+        .abort_handle()
+    };
+
+    let auto_abort_handle = AutoAbortHandle::new(abort_handle, shutdown_handle);
 
     Ok(auto_abort_handle)
 }

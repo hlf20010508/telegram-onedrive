@@ -5,9 +5,5 @@
 :license: MIT, see LICENSE for more details.
 */
 
-mod models;
-pub mod onedrive;
-pub mod telegram;
-
-use super::var::OD_CODE_EVENT;
-use super::var::TG_CODE_EVENT;
+pub mod current_user;
+pub mod session;

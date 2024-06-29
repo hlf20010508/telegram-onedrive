@@ -8,6 +8,7 @@
 mod docs;
 
 use grammers_client::types::Message;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use crate::error::{Error, Result};
@@ -20,11 +21,13 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);
 
-    let mut should_auto_delete = state.should_auto_delete.lock().await;
+    let should_auto_delete = state.should_auto_delete.load(Ordering::Acquire);
 
-    *should_auto_delete = !*should_auto_delete;
+    state
+        .should_auto_delete
+        .store(!should_auto_delete, Ordering::Release);
 
-    if *should_auto_delete {
+    if !should_auto_delete {
         message
             .respond(docs::WILL_AUTO_DELETE)
             .await
