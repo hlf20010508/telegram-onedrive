@@ -5,8 +5,6 @@
 :license: MIT, see LICENSE for more details.
 */
 
-mod docs;
-
 use grammers_client::types::Message;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -28,15 +26,17 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         .store(!should_auto_delete, Ordering::Release);
 
     if !should_auto_delete {
+        let response = "Bot will auto delete message.";
         message
-            .respond(docs::WILL_AUTO_DELETE)
+            .respond(response)
             .await
-            .map_err(|e| Error::details(e, "failed to respond message", docs::WILL_AUTO_DELETE))?;
+            .map_err(|e| Error::details(e, "failed to respond message", response))?;
     } else {
+        let response = "Bot won't auto delete message.";
         message
-            .respond(docs::WONT_AUTO_DELETE)
+            .respond(response)
             .await
-            .map_err(|e| Error::details(e, "failed to respond message", docs::WONT_AUTO_DELETE))?;
+            .map_err(|e| Error::details(e, "failed to respond message", response))?;
     }
 
     Ok(())
