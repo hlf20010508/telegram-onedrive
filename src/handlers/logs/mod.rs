@@ -5,12 +5,17 @@
 :license: MIT, see LICENSE for more details.
 */
 
+mod clear;
 mod docs;
+mod send;
 
 use grammers_client::types::Message;
 use grammers_client::InputMessage;
 use std::sync::Arc;
 use tokio::fs;
+
+use clear::clear_logs;
+use send::send_log_file;
 
 use super::utils::cmd_parser;
 use crate::env::LOG_PATH;
@@ -44,27 +49,10 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
     if cmd.len() == 1 {
         // /logs
-        let file = telegram_bot
-            .client
-            .upload_file(LOG_PATH)
-            .await
-            .map_err(|e| Error::context(e, "failed to upload log file"))?;
-
-        message
-            .respond(InputMessage::default().file(file))
-            .await
-            .map_err(|e| Error::context(e, "failed to respond log file"))?;
+        send_log_file(telegram_bot, message.clone()).await?;
     } else if cmd.len() == 2 && cmd[1] == "clear" {
         // /logs clear
-        fs::remove_file(LOG_PATH)
-            .await
-            .map_err(|e| Error::context(e, "failed to remove log file"))?;
-
-        let response = "Logs cleared.";
-        message
-            .respond(response)
-            .await
-            .map_err(|e| Error::respond_error(e, response))?;
+        clear_logs(message.clone()).await?;
     } else {
         message
             .respond(InputMessage::html(format!(

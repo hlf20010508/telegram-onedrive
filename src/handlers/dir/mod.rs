@@ -6,12 +6,18 @@
 */
 
 mod docs;
+mod reset;
+mod set;
+mod show;
 mod utils;
 
 use grammers_client::types::Message;
 use grammers_client::InputMessage;
 use std::sync::Arc;
-use utils::is_root_path_valid;
+
+use reset::{cancel_temp_dir, reset_dir};
+use set::{set_dir, set_temp_dir};
+use show::show_dir;
 
 use super::utils::cmd_parser;
 use crate::error::{Error, Result};
@@ -31,69 +37,25 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
     if cmd.len() == 1 {
         // /dir
-        let root_path = onedrive.get_root_path(false).await?;
-        let is_temp = onedrive.does_temp_root_path_exist().await;
-
-        let response = if !is_temp {
-            format!("Current directory is {}", root_path)
-        } else {
-            format!("Current directory is {}, and it's temporary.", root_path)
-        };
-        message
-            .respond(response.as_str())
-            .await
-            .map_err(|e| Error::respond_error(e, response))?;
+        show_dir(onedrive, message.clone()).await?;
     } else if cmd.len() == 2 {
         if cmd[1] == "reset" {
             // /dir reset
-            onedrive.reset_root_path().await?;
-
-            let response = format!("Directory reset to default {}", onedrive.default_root_path);
-            message
-                .respond(response.as_str())
-                .await
-                .map_err(|e| Error::respond_error(e, response))?;
+            reset_dir(onedrive, message.clone()).await?;
         } else {
             // dir $root_path
             let root_path = &cmd[1];
-
-            if is_root_path_valid(root_path, message.clone()).await? {
-                onedrive.set_root_path(&root_path).await?;
-
-                let response = format!("Directory set to {}", root_path);
-                message
-                    .respond(response.as_str())
-                    .await
-                    .map_err(|e| Error::respond_error(e, response))?;
-            }
+            set_dir(onedrive, message.clone(), root_path).await?;
         }
     } else if cmd.len() == 3 {
         if cmd[1] == "temp" {
             if cmd[2] != "cancel" {
                 // /dir temp $temp_root_path
                 let temp_root_path = &cmd[2];
-
-                if is_root_path_valid(temp_root_path, message.clone()).await? {
-                    onedrive.set_temp_root_path(temp_root_path).await?;
-
-                    let response = format!("Temporary directory set to {}", temp_root_path);
-                    message
-                        .respond(response.as_str())
-                        .await
-                        .map_err(|e| Error::respond_error(e, response))?;
-                }
+                set_temp_dir(onedrive, message.clone(), temp_root_path).await?;
             } else {
                 // /dir temp cancel
-                onedrive.clear_temp_root_path().await?;
-
-                let response = format!(
-                    "Temporary directory canceled.\nCurrent directory is {}",
-                    onedrive.get_root_path(false).await?
-                );
-                message
-                    .respond(response.as_str())
-                    .await
-                    .map_err(|e| Error::respond_error(e, response))?;
+                cancel_temp_dir(onedrive, message.clone()).await?;
             }
         } else {
             message
