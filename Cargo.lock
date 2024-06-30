@@ -2553,6 +2553,7 @@ dependencies = [
  "onedrive-api",
  "pico-args",
  "rcgen",
+ "regex",
  "rust_socketio",
  "sea-orm",
  "serde",

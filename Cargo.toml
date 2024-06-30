@@ -54,3 +54,4 @@ rcgen = { version = "0.13.1", default-features = false, features = [
     "pem",
 ] }
 native-tls = { version = "0.2.12", default-features = false }
+regex = { version = "1.10.5", default-features = false }

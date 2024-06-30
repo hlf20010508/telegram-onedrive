@@ -21,6 +21,7 @@ pub struct Model {
     pub expiration_timestamp: i64,
     pub access_token: String,
     pub refresh_token: String,
+    pub root_path: String,
 }
 
 #[derive(Clone, Debug, EnumIter, DeriveRelation)]

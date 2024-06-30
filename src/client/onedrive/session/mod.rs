@@ -28,6 +28,7 @@ pub struct OneDriveSession {
     pub expiration_timestamp: i64,
     pub access_token: String,
     pub refresh_token: String,
+    pub root_path: String,
     #[serde(skip)]
     connection: DatabaseConnection,
 }
@@ -39,6 +40,7 @@ impl OneDriveSession {
         access_token: &str,
         refresh_token: &str,
         session_path: &str,
+        root_path: &str,
     ) -> Result<Self> {
         let username = Self::get_username(client).await?;
         let expiration_timestamp = Self::get_expiration_timestamp(expires_in_secs);
@@ -49,6 +51,7 @@ impl OneDriveSession {
             expiration_timestamp,
             access_token: access_token.to_string(),
             refresh_token: refresh_token.to_string(),
+            root_path: root_path.to_string(),
             connection,
         })
     }
@@ -146,6 +149,7 @@ impl OneDriveSession {
             expiration_timestamp,
             access_token,
             refresh_token,
+            root_path,
             ..
         } = Self::get_current_session(&connection).await?;
 
@@ -154,6 +158,7 @@ impl OneDriveSession {
             expiration_timestamp,
             access_token,
             refresh_token,
+            root_path,
             connection,
         })
     }
@@ -167,6 +172,7 @@ impl OneDriveSession {
                 expiration_timestamp: Set(self.expiration_timestamp),
                 access_token: Set(self.access_token.to_string()),
                 refresh_token: Set(self.refresh_token.to_string()),
+                root_path: Set(self.root_path.to_string()),
                 ..Default::default()
             };
 
@@ -205,6 +211,7 @@ impl OneDriveSession {
                 session::Column::RefreshToken,
                 Expr::value(&self.refresh_token),
             )
+            .col_expr(session::Column::RootPath, Expr::value(&self.root_path))
             .exec(&self.connection)
             .await
             .map_err(|e| Error::context(e, "failed to update onedrive session"))?;
@@ -274,6 +281,7 @@ impl Default for OneDriveSession {
             expiration_timestamp: Default::default(),
             access_token: Default::default(),
             refresh_token: Default::default(),
+            root_path: Default::default(),
             connection: Default::default(),
         }
     }

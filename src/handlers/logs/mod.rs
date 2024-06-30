@@ -67,7 +67,10 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
             .map_err(|e| Error::respond_error(e, response))?;
     } else {
         message
-            .respond(InputMessage::html(docs::LOGS_FORMAT_WRONG))
+            .respond(InputMessage::html(format!(
+                "Unknown command for /logs\n{}",
+                docs::USAGE
+            )))
             .await
             .map_err(|e| Error::context(e, "failed to respond command error for logs"))?;
     }

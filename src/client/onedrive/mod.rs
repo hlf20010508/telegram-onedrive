@@ -25,6 +25,8 @@ pub struct OneDriveClient {
     client: RwLock<Client>,
     session: RwLock<OneDriveSession>,
     auth_provider: Auth,
+    pub default_root_path: String,
+    temp_root_path: RwLock<String>,
 }
 
 impl OneDriveClient {
@@ -35,6 +37,7 @@ impl OneDriveClient {
                     client_id,
                     client_secret,
                     session_path,
+                    root_path,
                     ..
                 },
             server_uri,
@@ -54,6 +57,8 @@ impl OneDriveClient {
             client,
             session,
             auth_provider,
+            default_root_path: root_path.to_string(),
+            temp_root_path: RwLock::new("".to_string()),
         };
 
         let _ = onedrive_client
@@ -71,6 +76,7 @@ impl OneDriveClient {
                 OneDriveEnv {
                     client_secret,
                     session_path,
+                    root_path,
                     ..
                 },
             port,
@@ -136,6 +142,7 @@ impl OneDriveClient {
             &access_token,
             &refresh_token,
             session_path,
+            root_path,
         )
         .await?;
 
@@ -185,5 +192,57 @@ impl OneDriveClient {
 
     pub async fn is_authorized(&self) -> bool {
         self.client.read().await.get_drive().await.is_ok()
+    }
+
+    pub async fn get_root_path(&self, should_consume_temp: bool) -> Result<String> {
+        let temp_root_path_read = self.temp_root_path.read().await;
+        let temp_root_path_exists = self.does_temp_root_path_exist().await;
+
+        let root_path = if should_consume_temp && temp_root_path_exists {
+            let temp_root_path = temp_root_path_read.clone();
+            self.clear_temp_root_path().await?;
+
+            temp_root_path
+        } else if !should_consume_temp && temp_root_path_exists {
+            temp_root_path_read.clone()
+        } else {
+            self.session.read().await.root_path.clone()
+        };
+
+        Ok(root_path)
+    }
+
+    pub async fn does_temp_root_path_exist(&self) -> bool {
+        !self.temp_root_path.read().await.is_empty()
+    }
+
+    pub async fn set_root_path(&self, path: &str) -> Result<()> {
+        self.clear_temp_root_path().await?;
+
+        let mut session = self.session.write().await;
+        session.root_path = path.to_string();
+        session.save().await?;
+
+        Ok(())
+    }
+
+    pub async fn reset_root_path(&self) -> Result<()> {
+        self.clear_temp_root_path().await?;
+
+        let mut session = self.session.write().await;
+        session.root_path = self.default_root_path.clone();
+        session.save().await?;
+
+        Ok(())
+    }
+
+    pub async fn set_temp_root_path(&self, path: &str) -> Result<()> {
+        *self.temp_root_path.write().await = path.to_string();
+
+        Ok(())
+    }
+
+    pub async fn clear_temp_root_path(&self) -> Result<()> {
+        self.set_temp_root_path("").await
     }
 }
