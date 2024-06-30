@@ -75,7 +75,7 @@ impl TelegramUserClient {
         message
             .respond(response)
             .await
-            .map_err(|e| Error::details(e, "failed to respond message", response))?;
+            .map_err(|e| Error::respond_error(e, response))?;
 
         if !self.is_authorized().await? {
             let token = self
@@ -91,7 +91,7 @@ impl TelegramUserClient {
             message
                 .respond(response.as_str())
                 .await
-                .map_err(|e| Error::details(e, "failed to respond message", response))?;
+                .map_err(|e| Error::respond_error(e, response))?;
 
             let (socketio_client, mut rx) =
                 socketio_client(TG_CODE_EVENT, port.to_owned(), use_reverse_proxy.to_owned())
@@ -107,7 +107,7 @@ impl TelegramUserClient {
                 message
                     .respond(response)
                     .await
-                    .map_err(|e| Error::details(e, "failed to respond message", response))?;
+                    .map_err(|e| Error::respond_error(e, response))?;
 
                 match self.client.sign_in(&token, &code).await {
                     Ok(_) => {}

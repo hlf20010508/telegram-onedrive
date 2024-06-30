@@ -39,6 +39,14 @@ impl Error {
         Self(format!("{}: {}\ndetails:{}", message, e, details))
     }
 
+    pub fn respond_error<T, U>(e: T, response: U) -> Self
+    where
+        T: Display,
+        U: Display,
+    {
+        Self::details(e, "failed to respond message", response)
+    }
+
     pub fn trace(self) {
         tracing::debug!("{}", self.0);
     }

@@ -30,13 +30,13 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         message
             .respond(response)
             .await
-            .map_err(|e| Error::details(e, "failed to respond message", response))?;
+            .map_err(|e| Error::respond_error(e, response))?;
     } else {
         let response = "Bot won't auto delete message.";
         message
             .respond(response)
             .await
-            .map_err(|e| Error::details(e, "failed to respond message", response))?;
+            .map_err(|e| Error::respond_error(e, response))?;
     }
 
     Ok(())

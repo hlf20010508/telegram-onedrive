@@ -65,7 +65,7 @@ macro_rules! check_tg_login {
             $message
                 .respond(response)
                 .await
-                .map_err(|e| Error::details(e, "failed to respond message", response))?;
+                .map_err(|e| Error::respond_error(e, response))?;
 
             crate::handlers::auth::handler($message.clone(), $state.clone()).await?;
         }
@@ -82,7 +82,7 @@ macro_rules! check_od_login {
             $message
                 .respond(response)
                 .await
-                .map_err(|e| Error::details(e, "failed to respond message", response))?;
+                .map_err(|e| Error::respond_error(e, response))?;
 
             crate::handlers::auth::handler($message.clone(), $state.clone()).await?;
         }

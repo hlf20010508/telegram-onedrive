@@ -90,7 +90,7 @@ impl OneDriveClient {
         message
             .respond(response.as_str())
             .await
-            .map_err(|e| Error::details(e, "failed to respond message", response))?;
+            .map_err(|e| Error::respond_error(e, response))?;
 
         let (socketio_client, mut rx) =
             socketio_client(OD_CODE_EVENT, port.to_owned(), use_reverse_proxy.to_owned()).await?;
@@ -106,7 +106,7 @@ impl OneDriveClient {
         message
             .respond(response)
             .await
-            .map_err(|e| Error::details(e, "failed to respond message", response))?;
+            .map_err(|e| Error::respond_error(e, response))?;
 
         let TokenResponse {
             expires_in_secs,

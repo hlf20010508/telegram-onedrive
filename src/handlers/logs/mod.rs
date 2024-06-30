@@ -32,7 +32,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
             message
                 .respond(response)
                 .await
-                .map_err(|e| Error::details(e, "failed to respond message", response))?;
+                .map_err(|e| Error::respond_error(e, response))?;
 
             return Ok(());
         }
@@ -64,7 +64,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         message
             .respond(response)
             .await
-            .map_err(|e| Error::details(e, "failed to respond message", response))?;
+            .map_err(|e| Error::respond_error(e, response))?;
     } else {
         message
             .respond(InputMessage::html(docs::LOGS_FORMAT_WRONG))
