@@ -69,3 +69,19 @@ macro_rules! check_tg_login {
         }
     };
 }
+
+#[macro_export]
+macro_rules! check_od_login {
+    ($message: ident, $state: ident) => {
+        let is_authorized = $state.onedrive.is_authorized().await;
+
+        if !is_authorized {
+            $message
+                .respond("You haven't authorize OneDrive.")
+                .await
+                .map_err(|e| Error::context(e, "failed to respond haven't authorize onedrive"))?;
+
+            crate::handlers::auth::handler($message.clone(), $state.clone()).await?;
+        }
+    };
+}
