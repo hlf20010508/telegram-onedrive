@@ -29,7 +29,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         let metadata = fs::metadata(LOG_PATH).await;
         if metadata.is_err() || (metadata.is_ok() && metadata.unwrap().len() == 0) {
             message.respond(docs::LOGS_NOT_FOUND).await.map_err(|e| {
-                Error::context(e, "failed to respond message in logs for logs not found")
+                Error::details(e, "failed to respond message", docs::LOGS_NOT_FOUND)
             })?;
 
             return Ok(());
@@ -61,14 +61,12 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         message
             .respond(docs::LOGS_CLEARED)
             .await
-            .map_err(|e| Error::context(e, "failed to respond message in logs for logs cleared"))?;
+            .map_err(|e| Error::details(e, "failed to respond message", docs::LOGS_CLEARED))?;
     } else {
         message
             .respond(InputMessage::html(docs::LOGS_FORMAT_WRONG))
             .await
-            .map_err(|e| {
-                Error::context(e, "failed to respond message in logs for unknown command")
-            })?;
+            .map_err(|e| Error::context(e, "failed to respond command error for logs"))?;
     }
 
     Ok(())

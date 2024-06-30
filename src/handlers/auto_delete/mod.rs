@@ -31,12 +31,12 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         message
             .respond(docs::WILL_AUTO_DELETE)
             .await
-            .map_err(|e| Error::context(e, "failed to respond message in auto_delete"))?;
+            .map_err(|e| Error::details(e, "failed to respond message", docs::WILL_AUTO_DELETE))?;
     } else {
         message
             .respond(docs::WONT_AUTO_DELETE)
             .await
-            .map_err(|e| Error::context(e, "failed to respond message in auto_delete"))?;
+            .map_err(|e| Error::details(e, "failed to respond message", docs::WONT_AUTO_DELETE))?;
     }
 
     Ok(())

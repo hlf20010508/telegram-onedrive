@@ -27,11 +27,11 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
         telegram_user.login(message.clone(), env).await?;
 
-        let respond = "Login to Telegram successful!";
+        let response = "Login to Telegram successful!";
         message
-            .respond(respond)
+            .respond(response)
             .await
-            .map_err(|e| Error::details(e, "failed to respond message", respond))?;
+            .map_err(|e| Error::details(e, "failed to respond message", response))?;
     }
 
     {
@@ -39,11 +39,11 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
         onedrive.login(message.clone(), env).await?;
 
-        let respond = "OneDrive authorization successful!";
+        let response = "OneDrive authorization successful!";
         message
-            .respond(respond)
+            .respond(response)
             .await
-            .map_err(|e| Error::details(e, "failed to respond message", respond))?;
+            .map_err(|e| Error::details(e, "failed to respond message", response))?;
     }
 
     Ok(())

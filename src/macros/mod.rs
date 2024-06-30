@@ -17,9 +17,10 @@ macro_rules! check_in_group {
                     .respond(crate::macros::docs::CHECK_IN_GROUP_FAILED)
                     .await
                     .map_err(|e| {
-                        crate::error::Error::context(
+                        crate::error::Error::details(
                             e,
-                            "failed to respond message in check_in_group",
+                            "failed to respond message",
+                            crate::macros::docs::CHECK_IN_GROUP_FAILED,
                         )
                     })?;
 
@@ -59,11 +60,12 @@ macro_rules! check_tg_login {
                 )
             })?;
 
+        let response = "You haven't logined to Telegram.";
         if !is_authorized {
             $message
-                .respond("You haven't logined to Telegram.")
+                .respond(response)
                 .await
-                .map_err(|e| Error::context(e, "failed to respond haven't login to telegram"))?;
+                .map_err(|e| Error::details(e, "failed to respond message", response))?;
 
             crate::handlers::auth::handler($message.clone(), $state.clone()).await?;
         }
@@ -75,11 +77,12 @@ macro_rules! check_od_login {
     ($message: ident, $state: ident) => {
         let is_authorized = $state.onedrive.is_authorized().await;
 
+        let response = "You haven't authorize OneDrive.";
         if !is_authorized {
             $message
-                .respond("You haven't authorize OneDrive.")
+                .respond(response)
                 .await
-                .map_err(|e| Error::context(e, "failed to respond haven't authorize onedrive"))?;
+                .map_err(|e| Error::details(e, "failed to respond message", response))?;
 
             crate::handlers::auth::handler($message.clone(), $state.clone()).await?;
         }

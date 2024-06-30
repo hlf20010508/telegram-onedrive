@@ -19,7 +19,7 @@ pub async fn handler(message: Arc<Message>, _state: AppState) -> Result<()> {
     message
         .respond(docs::GREETING)
         .await
-        .map_err(|e| Error::context(e, "failed to respond /start"))?;
+        .map_err(|e| Error::details(e, "failed to respond message", docs::GREETING))?;
 
     Ok(())
 }

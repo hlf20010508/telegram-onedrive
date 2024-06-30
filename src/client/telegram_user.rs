@@ -71,11 +71,11 @@ impl TelegramUserClient {
             ..
         }: &Env,
     ) -> Result<()> {
-        let respond = "Logining into Telegram...";
+        let response = "Logining into Telegram...";
         message
-            .respond(respond)
+            .respond(response)
             .await
-            .map_err(|e| Error::details(e, "failed to respond message", respond))?;
+            .map_err(|e| Error::details(e, "failed to respond message", response))?;
 
         if !self.is_authorized().await? {
             let token = self
@@ -84,13 +84,14 @@ impl TelegramUserClient {
                 .await
                 .map_err(|e| Error::context(e, "failed to request telegram user login code"))?;
 
+            let response = format!(
+                "Please visit {} to input your code to login to Telegram.",
+                server_uri
+            );
             message
-                .respond(format!(
-                    "Please visit {} to input your code to login to Telegram.",
-                    server_uri
-                ))
+                .respond(response.as_str())
                 .await
-                .map_err(|e| Error::context(e, "failed to respond telegram code server url"))?;
+                .map_err(|e| Error::details(e, "failed to respond message", response))?;
 
             let (socketio_client, mut rx) =
                 socketio_client(TG_CODE_EVENT, port.to_owned(), use_reverse_proxy.to_owned())
@@ -102,10 +103,11 @@ impl TelegramUserClient {
                     .await
                     .ok_or_else(|| Error::new("failed to receive telegram code"))?;
 
+                let response = "Code received, logining...";
                 message
-                    .respond("Code received, logining...")
+                    .respond(response)
                     .await
-                    .map_err(|e| Error::context(e, "failed to respond telegram code received"))?;
+                    .map_err(|e| Error::details(e, "failed to respond message", response))?;
 
                 match self.client.sign_in(&token, &code).await {
                     Ok(_) => {}

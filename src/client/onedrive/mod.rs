@@ -83,14 +83,14 @@ impl OneDriveClient {
             return Ok(());
         }
 
-        let respond = format!(
+        let response = format!(
             "Here are the authorization url of OneDrive:\n\n{}",
             self.get_auth_url()
         );
         message
-            .respond(respond.as_str())
+            .respond(response.as_str())
             .await
-            .map_err(|e| Error::details(e, "failed to respond message", respond))?;
+            .map_err(|e| Error::details(e, "failed to respond message", response))?;
 
         let (socketio_client, mut rx) =
             socketio_client(OD_CODE_EVENT, port.to_owned(), use_reverse_proxy.to_owned()).await?;
@@ -102,10 +102,11 @@ impl OneDriveClient {
 
         socketio_disconnect(socketio_client).await?;
 
+        let response = "Code received, Authorizing...";
         message
-            .respond("Code received, Authorizing...")
+            .respond(response)
             .await
-            .map_err(|e| Error::context(e, "failed to respond telegram code received"))?;
+            .map_err(|e| Error::details(e, "failed to respond message", response))?;
 
         let TokenResponse {
             expires_in_secs,

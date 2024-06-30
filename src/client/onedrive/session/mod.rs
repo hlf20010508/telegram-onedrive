@@ -97,7 +97,7 @@ impl OneDriveSession {
     async fn connect_db(path: &str) -> Result<DatabaseConnection> {
         let connection = sea_orm::Database::connect(format!("sqlite://{}?mode=rwc", path))
             .await
-            .map_err(|e| Error::context(e, "failed to connect to onedrive session Sqlite"))?;
+            .map_err(|e| Error::context(e, "failed to connect to onedrive session"))?;
 
         Self::create_table_if_not_exists(&connection, session::Entity).await?;
         Self::create_table_if_not_exists(&connection, current_user::Entity).await?;

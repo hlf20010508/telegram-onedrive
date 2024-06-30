@@ -55,7 +55,7 @@ impl TelegramBotClient {
             client
                 .bot_sign_in(token)
                 .await
-                .map_err(|e| Error::context(e, "failed to sign in telegram bot account"))?;
+                .map_err(|e| Error::context(e, "failed to sign in telegram bot"))?;
 
             client
                 .session()
