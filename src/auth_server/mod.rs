@@ -18,7 +18,7 @@ use socketioxide::SocketIo;
 use std::net::TcpListener;
 use std::sync::Arc;
 
-pub use var::{OD_CODE_EVENT, SERVER_PORT, TG_CODE_EVENT};
+pub use var::{OD_CODE_EVENT, TG_CODE_EVENT};
 
 use auto_abort::AutoAbortHandle;
 use cert::get_rustls_config;
@@ -29,7 +29,9 @@ use crate::error::{Error, Result};
 
 pub async fn spawn(
     Env {
-        use_reverse_proxy, ..
+        port,
+        use_reverse_proxy,
+        ..
     }: &Env,
 ) -> Result<AutoAbortHandle> {
     let (socketio_layer, socketio) = SocketIo::new_layer();
@@ -43,7 +45,7 @@ pub async fn spawn(
         .layer(socketio_layer)
         .layer(Extension(Arc::new(socketio)));
 
-    let server = TcpListener::bind(format!("0.0.0.0:{}", SERVER_PORT))
+    let server = TcpListener::bind(format!("0.0.0.0:{}", port))
         .map_err(|e| Error::context(e, "failed to create tcp listener"))?;
 
     let shutdown_handle = Handle::new();

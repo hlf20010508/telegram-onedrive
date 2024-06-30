@@ -65,6 +65,7 @@ impl TelegramUserClient {
                     session_path,
                     ..
                 },
+            port,
             server_uri,
             use_reverse_proxy,
             ..
@@ -92,7 +93,8 @@ impl TelegramUserClient {
                 .map_err(|e| Error::context(e, "failed to respond telegram code server url"))?;
 
             let (socketio_client, mut rx) =
-                socketio_client(TG_CODE_EVENT, use_reverse_proxy.to_owned()).await?;
+                socketio_client(TG_CODE_EVENT, port.to_owned(), use_reverse_proxy.to_owned())
+                    .await?;
 
             loop {
                 let code = rx

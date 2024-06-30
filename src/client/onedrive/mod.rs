@@ -30,7 +30,6 @@ pub struct OneDriveClient {
 impl OneDriveClient {
     pub async fn new(
         Env {
-            server_uri,
             onedrive:
                 OneDriveEnv {
                     client_id,
@@ -38,6 +37,7 @@ impl OneDriveClient {
                     session_path,
                     ..
                 },
+            server_uri,
             ..
         }: &Env,
     ) -> Self {
@@ -73,6 +73,7 @@ impl OneDriveClient {
                     session_path,
                     ..
                 },
+            port,
             use_reverse_proxy,
             ..
         }: &Env,
@@ -92,7 +93,7 @@ impl OneDriveClient {
             .map_err(|e| Error::details(e, "failed to respond message", respond))?;
 
         let (socketio_client, mut rx) =
-            socketio_client(OD_CODE_EVENT, use_reverse_proxy.to_owned()).await?;
+            socketio_client(OD_CODE_EVENT, port.to_owned(), use_reverse_proxy.to_owned()).await?;
 
         let code = rx
             .recv()

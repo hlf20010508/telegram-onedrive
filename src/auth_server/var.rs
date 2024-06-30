@@ -5,6 +5,5 @@
 :license: MIT, see LICENSE for more details.
 */
 
-pub const SERVER_PORT: u16 = 8080;
 pub const TG_CODE_EVENT: &str = "tg_code";
 pub const OD_CODE_EVENT: &str = "od_code";
