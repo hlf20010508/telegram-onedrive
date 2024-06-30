@@ -14,9 +14,7 @@ use sea_orm::{
 #[derive(Clone, Debug, DeriveEntityModel)]
 #[sea_orm(table_name = "session")]
 pub struct Model {
-    #[sea_orm(primary_key)]
-    pub id: i64,
-    #[sea_orm(unique)]
+    #[sea_orm(primary_key, auto_increment = false)]
     pub username: String,
     pub expiration_timestamp: i64,
     pub access_token: String,

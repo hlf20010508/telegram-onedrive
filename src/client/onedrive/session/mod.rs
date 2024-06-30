@@ -11,8 +11,8 @@ use axum::http::header;
 use onedrive_api::OneDrive;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
-    ColumnTrait, ConnectionTrait, DatabaseConnection, EntityName, EntityTrait, ModelTrait,
-    QueryFilter, Schema, Set,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityName, EntityTrait,
+    IntoActiveModel, ModelTrait, QueryFilter, Schema, Set,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -237,37 +237,30 @@ impl OneDriveSession {
     }
 
     pub async fn set_current_user(&self) -> Result<()> {
-        let id = session::Entity::find()
-            .filter(session::Column::Username.eq(&self.username))
+        let current_user_col = current_user::Entity::find()
             .one(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to query onedrive session for current user"))?
-            .ok_or_else(|| {
-                Error::new("failed to find onedrive session current user through username")
-            })?
-            .id;
+            .map_err(|e| Error::context(e, "failed to query onedrive current user"))?;
 
-        if current_user::Entity::find()
-            .one(&self.connection)
-            .await
-            .map_err(|e| Error::context(e, "failed to query onedrive current user"))?
-            .is_some()
-        {
-            current_user::Entity::update_many()
-                .col_expr(current_user::Column::UserId, Expr::value(id))
-                .exec(&self.connection)
-                .await
-                .map_err(|e| Error::context(e, "failed to update onedrive current user id"))?;
+        if let Some(current_user_col) = current_user_col {
+            if current_user_col.username != self.username {
+                let mut current_user_col = current_user_col.into_active_model();
+                current_user_col.username = Set(self.username.clone());
+                current_user_col
+                    .update(&self.connection)
+                    .await
+                    .map_err(|e| Error::context(e, "failed to update onedrive current user"))?;
+            }
         } else {
             let insert_item = current_user::ActiveModel {
-                user_id: Set(id),
+                username: Set(self.username.clone()),
                 ..Default::default()
             };
 
             current_user::Entity::insert(insert_item)
                 .exec(&self.connection)
                 .await
-                .map_err(|e| Error::context(e, "failed to insert onedrive current user id"))?;
+                .map_err(|e| Error::context(e, "failed to insert onedrive current user"))?;
         }
 
         Ok(())

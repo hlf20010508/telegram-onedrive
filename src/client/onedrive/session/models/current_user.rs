@@ -14,16 +14,16 @@ use sea_orm::{
 #[derive(Clone, Debug, DeriveEntityModel)]
 #[sea_orm(table_name = "current_user")]
 pub struct Model {
-    #[sea_orm(primary_key)]
-    pub user_id: i64,
+    #[sea_orm(primary_key, auto_increment = false)]
+    pub username: String,
 }
 
 #[derive(Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::session::Entity",
-        from = "Column::UserId",
-        to = "super::session::Column::Id"
+        from = "Column::Username",
+        to = "super::session::Column::Username"
     )]
     Session,
 }
