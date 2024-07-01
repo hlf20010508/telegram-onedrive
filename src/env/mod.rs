@@ -16,7 +16,7 @@ use std::fs;
 pub use onedrive::OneDriveEnv;
 pub use telegram_bot::TelegramBotEnv;
 pub use telegram_user::TelegramUserEnv;
-pub use var::{LOG_PATH, WORKER_NUM};
+pub use var::LOG_PATH;
 
 use utils::{args_contains, get_arg_value, get_arg_value_option};
 use var::SESSION_DIR;

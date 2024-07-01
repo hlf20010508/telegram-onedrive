@@ -7,7 +7,6 @@
 
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 use crate::client::{OneDriveClient, TelegramBotClient, TelegramUserClient};
 use crate::env::Env;
@@ -18,7 +17,6 @@ pub struct State {
     pub telegram_user: TelegramUserClient,
     pub onedrive: OneDriveClient,
     pub should_auto_delete: AtomicBool,
-    pub lock: Arc<RwLock<()>>,
 }
 
 impl State {
@@ -28,7 +26,6 @@ impl State {
         let telegram_user = TelegramUserClient::new(&env).await.unwrap();
         let onedrive = OneDriveClient::new(&env).await;
         let should_auto_delete = AtomicBool::new(env.should_auto_delete);
-        let lock = Arc::new(RwLock::new(()));
 
         Self {
             env,
@@ -36,7 +33,6 @@ impl State {
             telegram_user,
             onedrive,
             should_auto_delete,
-            lock,
         }
     }
 }

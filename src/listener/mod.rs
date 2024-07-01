@@ -10,14 +10,12 @@ mod handler;
 
 use grammers_client::Update;
 use std::sync::Arc;
-use tokio::sync::Semaphore;
 
 pub use events::{EventType, HashMapExt};
 
 use events::Events;
 use handler::Handler;
 
-use crate::env::WORKER_NUM;
 use crate::error::Error;
 use crate::state::{AppState, State};
 
@@ -35,8 +33,6 @@ impl Listener {
     }
 
     pub async fn run(self) {
-        let semaphore = Arc::new(Semaphore::new(WORKER_NUM));
-
         loop {
             let handler = Handler::new(self.events.clone(), self.state.clone());
 
@@ -44,18 +40,12 @@ impl Listener {
                 Ok(update) => match update {
                     Some(update) => match update {
                         Update::NewMessage(message) if !message.outgoing() => {
-                            let semaphore_clone = semaphore.clone();
+                            let message = Arc::new(message);
 
-                            tokio::spawn(async move {
-                                let _permit = semaphore_clone.acquire().await.unwrap();
-
-                                let message = Arc::new(message);
-                                if let Err(e) = handler.handle_message(message.clone()).await {
-                                    e.send(message).await.unwrap().trace();
-                                }
-                            });
-
-                            Ok(())
+                            match handler.handle_message(message.clone()).await {
+                                Ok(_) => Ok(()),
+                                Err(e) => Err(e.send(message).await.unwrap()),
+                            }
                         }
                         _ => Ok(()),
                     },

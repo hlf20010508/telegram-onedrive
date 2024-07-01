@@ -32,14 +32,10 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
     if cmd.len() == 1 {
         // /drive
-        let _wait = state.lock.read().await;
-
         show_drive(onedrive, message).await?;
     } else if cmd.len() == 2 {
         if cmd[1] == "add" {
             // /drive add
-            let _lock = state.lock.write().await;
-
             add_drive(message, state.clone()).await?;
         }
     }

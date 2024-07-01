@@ -37,12 +37,8 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
     if cmd.len() == 1 {
         // /dir
-        let _wait = state.lock.read().await;
-
         show_dir(onedrive, message).await?;
     } else if cmd.len() == 2 {
-        let _lock = state.lock.write().await;
-
         if cmd[1] == "reset" {
             // /dir reset
             reset_dir(onedrive, message).await?;
@@ -53,8 +49,6 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         }
     } else if cmd.len() == 3 {
         if cmd[1] == "temp" {
-            let _lock = state.lock.write().await;
-
             if cmd[2] != "cancel" {
                 // /dir temp $temp_root_path
                 let temp_root_path = &cmd[2];

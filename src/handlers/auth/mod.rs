@@ -21,8 +21,6 @@ use crate::{auth_server, check_in_group, check_senders};
 pub const PATTERN: &str = "/auth";
 
 pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
-    let _lock = state.lock.write().await;
-
     check_in_group!(message);
     check_senders!(message, state);
 
