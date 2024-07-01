@@ -49,10 +49,10 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
     if cmd.len() == 1 {
         // /logs
-        send_log_file(telegram_bot, message.clone()).await?;
+        send_log_file(telegram_bot, message).await?;
     } else if cmd.len() == 2 && cmd[1] == "clear" {
         // /logs clear
-        clear_logs(message.clone()).await?;
+        clear_logs(message).await?;
     } else {
         message
             .respond(InputMessage::html(format!(

@@ -5,6 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+mod dir;
+mod drive;
 mod session;
 
 use grammers_client::types::Message;
@@ -83,8 +85,11 @@ impl OneDriveClient {
             use_reverse_proxy,
             ..
         }: &Env,
+        should_add: bool,
     ) -> Result<()> {
-        if self.is_authorized().await || self.auto_login(session_path, client_secret).await.is_ok()
+        if !should_add
+            && (self.is_authorized().await
+                || self.auto_login(session_path, client_secret).await.is_ok())
         {
             return Ok(());
         }
@@ -148,9 +153,9 @@ impl OneDriveClient {
 
         session.save().await?;
 
-        session.set_current_user().await?;
-
-        *self.session.write().await = session;
+        if self.get_current_username().await? == session.username {
+            *self.session.write().await = session;
+        }
 
         Ok(())
     }
@@ -194,55 +199,7 @@ impl OneDriveClient {
         self.client.read().await.get_drive().await.is_ok()
     }
 
-    pub async fn get_root_path(&self, should_consume_temp: bool) -> Result<String> {
-        let temp_root_path_read = self.temp_root_path.read().await;
-        let temp_root_path_exists = self.does_temp_root_path_exist().await;
-
-        let root_path = if should_consume_temp && temp_root_path_exists {
-            let temp_root_path = temp_root_path_read.clone();
-            self.clear_temp_root_path().await?;
-
-            temp_root_path
-        } else if !should_consume_temp && temp_root_path_exists {
-            temp_root_path_read.clone()
-        } else {
-            self.session.read().await.root_path.clone()
-        };
-
-        Ok(root_path)
-    }
-
-    pub async fn does_temp_root_path_exist(&self) -> bool {
-        !self.temp_root_path.read().await.is_empty()
-    }
-
-    pub async fn set_root_path(&self, path: &str) -> Result<()> {
-        self.clear_temp_root_path().await?;
-
-        let mut session = self.session.write().await;
-        session.root_path = path.to_string();
-        session.save().await?;
-
-        Ok(())
-    }
-
-    pub async fn reset_root_path(&self) -> Result<()> {
-        self.clear_temp_root_path().await?;
-
-        let mut session = self.session.write().await;
-        session.root_path = self.default_root_path.clone();
-        session.save().await?;
-
-        Ok(())
-    }
-
-    pub async fn set_temp_root_path(&self, path: &str) -> Result<()> {
-        *self.temp_root_path.write().await = path.to_string();
-
-        Ok(())
-    }
-
-    pub async fn clear_temp_root_path(&self) -> Result<()> {
-        self.set_temp_root_path("").await
+    pub async fn set_current_user(&self) -> Result<()> {
+        self.session.write().await.set_current_user().await
     }
 }

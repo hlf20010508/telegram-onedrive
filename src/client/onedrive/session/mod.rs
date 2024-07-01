@@ -12,7 +12,7 @@ use onedrive_api::OneDrive;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityName, EntityTrait,
-    IntoActiveModel, ModelTrait, QueryFilter, Schema, Set,
+    IntoActiveModel, ModelTrait, QueryFilter, QuerySelect, Schema, Set,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -264,6 +264,36 @@ impl OneDriveSession {
         }
 
         Ok(())
+    }
+
+    pub async fn get_usernames(&self) -> Result<Vec<String>> {
+        let result = session::Entity::find()
+            .column(session::Column::Username)
+            .all(&self.connection)
+            .await
+            .map_err(|e| Error::context(e, "failed to query onedrive usernames"))?;
+
+        if result.is_empty() {
+            return Err(Error::new("no onedrive username found"));
+        }
+
+        let usernames = result
+            .into_iter()
+            .map(|row| row.username)
+            .collect::<Vec<String>>();
+
+        Ok(usernames)
+    }
+
+    pub async fn get_current_username(&self) -> Result<String> {
+        let username = current_user::Entity::find()
+            .one(&self.connection)
+            .await
+            .map_err(|e| Error::context(e, "failed to query onedrive current username"))?
+            .ok_or_else(|| Error::new("current user not found"))?
+            .username;
+
+        Ok(username)
     }
 }
 

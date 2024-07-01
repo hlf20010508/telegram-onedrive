@@ -39,17 +39,17 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         // /dir
         let _wait = state.lock.read().await;
 
-        show_dir(onedrive, message.clone()).await?;
+        show_dir(onedrive, message).await?;
     } else if cmd.len() == 2 {
         let _lock = state.lock.write().await;
 
         if cmd[1] == "reset" {
             // /dir reset
-            reset_dir(onedrive, message.clone()).await?;
+            reset_dir(onedrive, message).await?;
         } else {
             // dir $root_path
             let root_path = &cmd[1];
-            set_dir(onedrive, message.clone(), root_path).await?;
+            set_dir(onedrive, message, root_path).await?;
         }
     } else if cmd.len() == 3 {
         if cmd[1] == "temp" {
@@ -58,10 +58,10 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
             if cmd[2] != "cancel" {
                 // /dir temp $temp_root_path
                 let temp_root_path = &cmd[2];
-                set_temp_dir(onedrive, message.clone(), temp_root_path).await?;
+                set_temp_dir(onedrive, message, temp_root_path).await?;
             } else {
                 // /dir temp cancel
-                cancel_temp_dir(onedrive, message.clone()).await?;
+                cancel_temp_dir(onedrive, message).await?;
             }
         } else {
             message

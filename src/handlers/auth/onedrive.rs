@@ -11,11 +11,15 @@ use std::sync::Arc;
 use crate::error::{Error, Result};
 use crate::state::AppState;
 
-pub async fn authorize_onedrive(message: Arc<Message>, state: AppState) -> Result<()> {
+pub async fn authorize_onedrive(
+    message: Arc<Message>,
+    state: AppState,
+    should_add: bool,
+) -> Result<()> {
     let onedrive = &state.onedrive;
     let env = &state.env;
 
-    onedrive.login(message.clone(), env).await?;
+    onedrive.login(message.clone(), env, should_add).await?;
 
     let response = "OneDrive authorization successful!";
     message

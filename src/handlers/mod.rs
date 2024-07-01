@@ -9,6 +9,7 @@ pub mod auth;
 pub mod auto_delete;
 pub mod clear;
 pub mod dir;
+pub mod drive;
 pub mod help;
 pub mod logs;
 pub mod start;

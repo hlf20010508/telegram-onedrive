@@ -32,7 +32,10 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
     login_to_telegram(message.clone(), state.clone()).await?;
 
-    authorize_onedrive(message.clone(), state.clone()).await?;
+    authorize_onedrive(message, state.clone(), false).await?;
+
+    let onedrive = &state.onedrive;
+    onedrive.set_current_user().await?;
 
     Ok(())
 }

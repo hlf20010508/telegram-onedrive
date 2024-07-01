@@ -18,7 +18,7 @@ mod utils;
 
 use std::collections::HashMap;
 
-use handlers::{auth, auto_delete, clear, dir, help, logs, start};
+use handlers::{auth, auto_delete, clear, dir, drive, help, logs, start};
 use listener::{EventType, HashMapExt, Listener};
 use trace::trace_registor;
 
@@ -36,7 +36,8 @@ async fn main() {
         .on(EventType::command(logs::PATTERN), logs::handler)
         .on(EventType::command(auth::PATTERN), auth::handler)
         .on(EventType::command(clear::PATTERN), clear::handler)
-        .on(EventType::command(dir::PATTERN), dir::handler);
+        .on(EventType::command(dir::PATTERN), dir::handler)
+        .on(EventType::command(drive::PATTERN), drive::handler);
 
     Listener::new(events).await.run().await;
 }

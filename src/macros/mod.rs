@@ -100,7 +100,8 @@ macro_rules! check_od_login {
 
             let env = &$state.env;
             let _server_abort_handle = crate::auth_server::spawn(env).await?;
-            crate::handlers::auth::authorize_onedrive($message.clone(), $state.clone()).await?;
+            crate::handlers::auth::authorize_onedrive($message.clone(), $state.clone(), false)
+                .await?;
         }
     };
 }
