@@ -16,16 +16,17 @@ mod state;
 mod trace;
 mod utils;
 
+use std::collections::HashMap;
+
 use handlers::{auth, auto_delete, clear, dir, help, logs, start};
-use listener::{EventType, Listener};
+use listener::{EventType, HashMapExt, Listener};
 use trace::trace_registor;
 
 #[tokio::main]
 async fn main() {
     let _worker_guard = trace_registor();
 
-    Listener::new()
-        .await
+    let events = HashMap::new()
         .on(EventType::command(start::PATTERN), start::handler)
         .on(EventType::command(help::PATTERN), help::handler)
         .on(
@@ -35,7 +36,7 @@ async fn main() {
         .on(EventType::command(logs::PATTERN), logs::handler)
         .on(EventType::command(auth::PATTERN), auth::handler)
         .on(EventType::command(clear::PATTERN), clear::handler)
-        .on(EventType::command(dir::PATTERN), dir::handler)
-        .run()
-        .await;
+        .on(EventType::command(dir::PATTERN), dir::handler);
+
+    Listener::new(events).await.run().await;
 }

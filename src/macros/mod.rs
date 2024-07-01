@@ -48,20 +48,26 @@ macro_rules! check_senders {
 #[macro_export]
 macro_rules! check_tg_login {
     ($message: ident, $state: ident) => {
-        let is_authorized = $state
-            .telegram_user
-            .client
-            .is_authorized()
-            .await
-            .map_err(|e| {
-                Error::context(
-                    e,
-                    "failed to check telegram user client authorization state",
-                )
-            })?;
+        let is_authorized = {
+            let _wait = $state.lock.read().await;
 
-        let response = "You haven't logined to Telegram.";
+            $state
+                .telegram_user
+                .client
+                .is_authorized()
+                .await
+                .map_err(|e| {
+                    Error::context(
+                        e,
+                        "failed to check telegram user client authorization state",
+                    )
+                })?
+        };
+
         if !is_authorized {
+            let _lock = $state.lock.write().await;
+
+            let response = "You haven't logined to Telegram.";
             $message
                 .respond(response)
                 .await
@@ -77,10 +83,16 @@ macro_rules! check_tg_login {
 #[macro_export]
 macro_rules! check_od_login {
     ($message: ident, $state: ident) => {
-        let is_authorized = $state.onedrive.is_authorized().await;
+        let is_authorized = {
+            let _wait = $state.lock.read().await;
 
-        let response = "You haven't authorize OneDrive.";
+            $state.onedrive.is_authorized().await
+        };
+
         if !is_authorized {
+            let _lock = $state.lock.write().await;
+
+            let response = "You haven't authorize OneDrive.";
             $message
                 .respond(response)
                 .await
