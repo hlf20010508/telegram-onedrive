@@ -108,6 +108,12 @@ impl OneDriveSession {
         Ok(connection)
     }
 
+    pub async fn set_connection(mut self, session_path: &str) -> Result<Self> {
+        self.connection = Self::connect_db(session_path).await?;
+
+        Ok(self)
+    }
+
     async fn is_table_exists<E>(connection: &DatabaseConnection) -> bool
     where
         E: EntityTrait,
@@ -181,6 +187,26 @@ impl OneDriveSession {
                 .await
                 .map_err(|e| Error::context(e, "failed to insert onedrive session"))?;
         }
+
+        Ok(())
+    }
+
+    pub async fn overwrite(
+        &mut self,
+        Self {
+            username,
+            expiration_timestamp,
+            access_token,
+            refresh_token,
+            root_path,
+            ..
+        }: Self,
+    ) -> Result<()> {
+        self.username = username;
+        self.expiration_timestamp = expiration_timestamp;
+        self.access_token = access_token;
+        self.refresh_token = refresh_token;
+        self.root_path = root_path;
 
         Ok(())
     }
@@ -273,10 +299,6 @@ impl OneDriveSession {
             .await
             .map_err(|e| Error::context(e, "failed to query onedrive usernames"))?;
 
-        if result.is_empty() {
-            return Err(Error::new("no onedrive username found"));
-        }
-
         let usernames = result
             .into_iter()
             .map(|row| row.username)
@@ -285,15 +307,59 @@ impl OneDriveSession {
         Ok(usernames)
     }
 
-    pub async fn get_current_username(&self) -> Result<String> {
-        let username = current_user::Entity::find()
+    pub async fn get_current_username(&self) -> Result<Option<String>> {
+        match current_user::Entity::find()
             .one(&self.connection)
             .await
             .map_err(|e| Error::context(e, "failed to query onedrive current username"))?
-            .ok_or_else(|| Error::new("current user not found"))?
-            .username;
+        {
+            Some(model) => Ok(Some(model.username)),
+            None => Ok(None),
+        }
+    }
 
-        Ok(username)
+    pub async fn remove_user(&mut self, username: Option<String>) -> Result<()> {
+        let username = match username {
+            Some(username) => username,
+            None => self.username.clone(),
+        };
+
+        if username == self.username {
+            current_user::Entity::delete_many()
+                .exec(&self.connection)
+                .await
+                .map_err(|e| Error::context(e, "failed to delete onedrive current user"))?;
+        }
+
+        session::Entity::delete_many()
+            .filter(session::Column::Username.eq(&username))
+            .exec(&self.connection)
+            .await
+            .map_err(|e| Error::context(e, "failed to delete onedrive session"))?;
+
+        if username != self.username {
+            return Ok(());
+        }
+
+        match session::Entity::find().one(&self.connection).await {
+            Ok(Some(session)) => {
+                self.username = session.username.clone();
+                self.expiration_timestamp = session.expiration_timestamp;
+                self.access_token = session.access_token.clone();
+                self.refresh_token = session.refresh_token.clone();
+                self.root_path = session.root_path.clone();
+
+                self.set_current_user().await?;
+            }
+            Ok(None) => {
+                let session = Self::default();
+
+                self.overwrite(session).await?;
+            }
+            Err(e) => return Err(Error::context(e, "failed to query onedrive session")),
+        }
+
+        Ok(())
     }
 }
 

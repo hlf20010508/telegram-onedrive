@@ -61,7 +61,7 @@ macro_rules! check_tg_login {
             })?;
 
         if !is_authorized {
-            let response = "You haven't logined to Telegram.";
+            let response = "You haven't logged in to Telegram.";
             $message
                 .respond(response)
                 .await

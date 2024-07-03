@@ -6,12 +6,14 @@
 */
 
 mod add;
+mod logout;
 mod show;
 
 use grammers_client::types::Message;
 use std::sync::Arc;
 
 use add::add_drive;
+use logout::logout_current_drive;
 use show::show_drive;
 
 use super::utils::cmd_parser;
@@ -37,6 +39,9 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         if cmd[1] == "add" {
             // /drive add
             add_drive(message, state.clone()).await?;
+        } else if cmd[1] == "logout" {
+            // /drive logout
+            logout_current_drive(onedrive, message).await?;
         }
     }
 

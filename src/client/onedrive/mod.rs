@@ -45,9 +45,13 @@ impl OneDriveClient {
             server_uri,
             ..
         }: &Env,
-    ) -> Self {
+    ) -> Result<Self> {
         let client = RwLock::new(Client::new("", DriveLocation::me()));
-        let session = RwLock::new(OneDriveSession::default());
+        let session = RwLock::new(
+            OneDriveSession::default()
+                .set_connection(session_path)
+                .await?,
+        );
         let auth_provider = Auth::new(
             client_id,
             Permission::new_read().write(true).offline_access(true),
@@ -67,7 +71,7 @@ impl OneDriveClient {
             .auto_login(session_path, client_secret)
             .await;
 
-        onedrive_client
+        Ok(onedrive_client)
     }
 
     pub async fn login(
@@ -135,14 +139,14 @@ impl OneDriveClient {
                 )
             })?;
 
-        *self.client.write().await = Client::new(&access_token, DriveLocation::me());
-
         let refresh_token = refresh_token.ok_or_else(|| {
             Error::new("failed to receive onedrive refresh token when login with code")
         })?;
 
+        let client = Client::new(&access_token, DriveLocation::me());
+
         let session = OneDriveSession::new(
-            &*self.client.read().await,
+            &client,
             expires_in_secs,
             &access_token,
             &refresh_token,
@@ -153,8 +157,18 @@ impl OneDriveClient {
 
         session.save().await?;
 
-        if self.get_current_username().await? == session.username {
-            *self.session.write().await = session;
+        match self.get_current_username().await? {
+            Some(username) => {
+                if username == session.username {
+                    self.session.write().await.overwrite(session).await?;
+                    *self.client.write().await = client;
+                }
+            }
+            None => {
+                session.set_current_user().await?;
+                self.session.write().await.overwrite(session).await?;
+                *self.client.write().await = client;
+            }
         }
 
         Ok(())
@@ -177,16 +191,17 @@ impl OneDriveClient {
                 )
             })?;
 
+        let access_token = token_response.access_token;
+        *self.client.write().await = Client::new(&access_token, DriveLocation::me());
+
         session.refresh_token = token_response.refresh_token.ok_or_else(|| {
             Error::new("failed to receive onedrive refresh token when login with refresh token")
         })?;
-        session.access_token = token_response.access_token;
+        session.access_token = access_token;
         session.set_expiration_timestamp(token_response.expires_in_secs);
         session.save().await?;
 
-        *self.session.write().await = session;
-        *self.client.write().await =
-            Client::new(&self.session.read().await.access_token, DriveLocation::me());
+        self.session.write().await.overwrite(session).await?;
 
         Ok(())
     }
@@ -201,5 +216,14 @@ impl OneDriveClient {
 
     pub async fn set_current_user(&self) -> Result<()> {
         self.session.write().await.set_current_user().await
+    }
+
+    pub async fn logout(&self, username: Option<String>) -> Result<()> {
+        let mut session = self.session.write().await;
+        session.remove_user(username).await?;
+
+        *self.client.write().await = Client::new(&session.access_token, DriveLocation::me());
+
+        Ok(())
     }
 }

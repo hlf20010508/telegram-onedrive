@@ -13,22 +13,32 @@ use crate::error::{Error, Result};
 
 pub async fn show_drive(onedrive: &OneDriveClient, message: Arc<Message>) -> Result<()> {
     let usernames = onedrive.get_usernames().await?;
-    let current_username = onedrive.get_current_username().await?;
+    if let Some(current_username) = onedrive.get_current_username().await? {
+        if usernames.len() > 0 {
+            let response = {
+                let mut response = format!("Current account is {}", current_username);
 
-    let response = {
-        let mut response = format!("Current account is {}", current_username);
+                if usernames.len() > 1 {
+                    response.insert_str(0, "\n");
+                    for i in (1..=usernames.len()).rev() {
+                        response.insert_str(0, &format!("{}. {}\n", i, usernames[i - 1]));
+                    }
+                }
 
-        if usernames.len() > 1 {
-            response.insert_str(0, "\n");
-            for i in (1..=usernames.len()).rev() {
-                response.insert_str(0, &format!("{}. {}\n", i, usernames[i - 1]));
-            }
+                response
+            };
+            message
+                .respond(response.as_str())
+                .await
+                .map_err(|e| Error::respond_error(e, response))?;
+
+            return Ok(());
         }
+    }
 
-        response
-    };
+    let response = "No account found.";
     message
-        .respond(response.as_str())
+        .respond(response)
         .await
         .map_err(|e| Error::respond_error(e, response))?;
 

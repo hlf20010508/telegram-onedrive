@@ -24,7 +24,7 @@ impl State {
         let env = Env::new();
         let telegram_bot = TelegramBotClient::new(&env).await.unwrap();
         let telegram_user = TelegramUserClient::new(&env).await.unwrap();
-        let onedrive = OneDriveClient::new(&env).await;
+        let onedrive = OneDriveClient::new(&env).await.unwrap();
         let should_auto_delete = AtomicBool::new(env.should_auto_delete);
 
         Self {

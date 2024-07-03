@@ -15,7 +15,7 @@ impl OneDriveClient {
         session.get_usernames().await
     }
 
-    pub async fn get_current_username(&self) -> Result<String> {
+    pub async fn get_current_username(&self) -> Result<Option<String>> {
         let session = self.session.read().await;
 
         session.get_current_username().await
