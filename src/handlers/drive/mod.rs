@@ -7,6 +7,7 @@
 
 mod add;
 mod logout;
+mod set;
 mod show;
 
 use grammers_client::types::Message;
@@ -14,6 +15,7 @@ use std::sync::Arc;
 
 use add::add_drive;
 use logout::logout_current_drive;
+use set::set_drive;
 use show::show_drive;
 
 use super::utils::cmd_parser;
@@ -42,6 +44,14 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         } else if cmd[1] == "logout" {
             // /drive logout
             logout_current_drive(onedrive, message).await?;
+        } else {
+            // /drive $index
+            let index = cmd[1]
+                .parse::<usize>()
+                .map_err(|e| Error::context(e, "account index should be integer"))?
+                - 1;
+
+            set_drive(onedrive, message, index).await?;
         }
     }
 

@@ -5,19 +5,28 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use onedrive_api::{DriveLocation, OneDrive};
+
 use super::OneDriveClient;
 use crate::error::Result;
 
 impl OneDriveClient {
     pub async fn get_usernames(&self) -> Result<Vec<String>> {
-        let session = self.session.read().await;
-
-        session.get_usernames().await
+        self.session.read().await.get_usernames().await
     }
 
     pub async fn get_current_username(&self) -> Result<Option<String>> {
-        let session = self.session.read().await;
+        self.session.read().await.get_current_username().await
+    }
 
-        session.get_current_username().await
+    pub async fn change_account(&self, username: &str) -> Result<()> {
+        let mut session = self.session.write().await;
+
+        session.change_session(username).await?;
+
+        *self.client.write().await =
+            OneDrive::new(session.access_token.clone(), DriveLocation::me());
+
+        Ok(())
     }
 }

@@ -11,8 +11,8 @@ use axum::http::header;
 use onedrive_api::OneDrive;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityName, EntityTrait,
-    IntoActiveModel, ModelTrait, QueryFilter, QuerySelect, Schema, Set,
+    ColumnTrait, ConnectionTrait, DatabaseConnection, EntityName, EntityTrait, ModelTrait,
+    QueryFilter, QuerySelect, Schema, Set,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -150,23 +150,11 @@ impl OneDriveSession {
     pub async fn load(path: &str) -> Result<Self> {
         let connection = Self::connect_db(path).await?;
 
-        let session::Model {
-            username,
-            expiration_timestamp,
-            access_token,
-            refresh_token,
-            root_path,
-            ..
-        } = Self::get_current_session(&connection).await?;
+        let mut session = Self::from(Self::get_current_session(&connection).await?);
 
-        Ok(Self {
-            username,
-            expiration_timestamp,
-            access_token,
-            refresh_token,
-            root_path,
-            connection,
-        })
+        session.connection = connection;
+
+        Ok(session)
     }
 
     pub async fn save(&self) -> Result<()> {
@@ -270,24 +258,24 @@ impl OneDriveSession {
 
         if let Some(current_user_col) = current_user_col {
             if current_user_col.username != self.username {
-                let mut current_user_col = current_user_col.into_active_model();
-                current_user_col.username = Set(self.username.clone());
-                current_user_col
-                    .update(&self.connection)
+                current_user::Entity::delete_many()
+                    .exec(&self.connection)
                     .await
-                    .map_err(|e| Error::context(e, "failed to update onedrive current user"))?;
+                    .map_err(|e| Error::context(e, "failed to delete onedrive current user"))?;
+            } else {
+                return Ok(());
             }
-        } else {
-            let insert_item = current_user::ActiveModel {
-                username: Set(self.username.clone()),
-                ..Default::default()
-            };
-
-            current_user::Entity::insert(insert_item)
-                .exec(&self.connection)
-                .await
-                .map_err(|e| Error::context(e, "failed to insert onedrive current user"))?;
         }
+
+        let insert_item = current_user::ActiveModel {
+            username: Set(self.username.clone()),
+            ..Default::default()
+        };
+
+        current_user::Entity::insert(insert_item)
+            .exec(&self.connection)
+            .await
+            .map_err(|e| Error::context(e, "failed to insert onedrive current user"))?;
 
         Ok(())
     }
@@ -343,11 +331,7 @@ impl OneDriveSession {
 
         match session::Entity::find().one(&self.connection).await {
             Ok(Some(session)) => {
-                self.username = session.username.clone();
-                self.expiration_timestamp = session.expiration_timestamp;
-                self.access_token = session.access_token.clone();
-                self.refresh_token = session.refresh_token.clone();
-                self.root_path = session.root_path.clone();
+                self.overwrite(Self::from(session)).await?;
 
                 self.set_current_user().await?;
             }
@@ -361,6 +345,25 @@ impl OneDriveSession {
 
         Ok(())
     }
+
+    pub async fn change_session(&mut self, username: &str) -> Result<()> {
+        if username == self.username {
+            return Ok(());
+        }
+
+        let session = session::Entity::find()
+            .filter(session::Column::Username.eq(username))
+            .one(&self.connection)
+            .await
+            .map_err(|e| Error::context(e, "failed to query onedrive session"))?
+            .ok_or_else(|| Error::new("onedrive session not found"))?;
+
+        self.overwrite(Self::from(session)).await?;
+
+        self.set_current_user().await?;
+
+        Ok(())
+    }
 }
 
 impl Default for OneDriveSession {
@@ -371,6 +374,19 @@ impl Default for OneDriveSession {
             access_token: Default::default(),
             refresh_token: Default::default(),
             root_path: Default::default(),
+            connection: Default::default(),
+        }
+    }
+}
+
+impl From<session::Model> for OneDriveSession {
+    fn from(model: session::Model) -> Self {
+        Self {
+            username: model.username,
+            expiration_timestamp: model.expiration_timestamp,
+            access_token: model.access_token,
+            refresh_token: model.refresh_token,
+            root_path: model.root_path,
             connection: Default::default(),
         }
     }

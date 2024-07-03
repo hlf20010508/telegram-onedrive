@@ -117,7 +117,7 @@ impl OneDriveClient {
 
         socketio_disconnect(socketio_client).await?;
 
-        let response = "Code received, Authorizing...";
+        let response = "Code received, authorizing...";
         message
             .respond(response)
             .await
