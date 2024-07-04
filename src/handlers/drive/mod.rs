@@ -6,11 +6,13 @@
 */
 
 mod add;
+mod docs;
 mod logout;
 mod set;
 mod show;
 
 use grammers_client::types::Message;
+use grammers_client::InputMessage;
 use std::sync::Arc;
 
 use add::add_drive;
@@ -53,14 +55,32 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
             set_drive(onedrive, message, index).await?;
         }
-    } else if cmd.len() == 3 && cmd[1] == "logout" {
-        // /drive logout $index
-        let index = cmd[2]
-            .parse::<usize>()
-            .map_err(|e| Error::context(e, "account index should be integer"))?
-            - 1;
+    } else if cmd.len() == 3 {
+        if cmd[1] == "logout" {
+            // /drive logout $index
+            let index = cmd[2]
+                .parse::<usize>()
+                .map_err(|e| Error::context(e, "account index should be integer"))?
+                - 1;
 
-        logout_drive(onedrive, message, index).await?;
+            logout_drive(onedrive, message, index).await?;
+        } else {
+            message
+                .respond(InputMessage::html(format!(
+                    "Unknown sub command for /drive\n{}",
+                    docs::USAGE
+                )))
+                .await
+                .map_err(|e| Error::context(e, "failed to respond sub command error for /drive"))?;
+        }
+    } else {
+        message
+            .respond(InputMessage::html(format!(
+                "Unknown command for /drive\n{}",
+                docs::USAGE
+            )))
+            .await
+            .map_err(|e| Error::context(e, "failed to respond command error for /drive"))?;
     }
 
     Ok(())
