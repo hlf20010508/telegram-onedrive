@@ -12,9 +12,9 @@ use crate::error::{Error, Result};
 
 pub async fn is_root_path_valid(root_path: &str, message: Arc<Message>) -> Result<bool> {
     if !root_path.starts_with('/') {
-        let response = "Directory path should start with /";
+        let response = "directory path should start with /";
         message
-            .respond(response)
+            .reply(response)
             .await
             .map_err(|e| Error::respond_error(e, response))?;
 

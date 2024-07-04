@@ -55,7 +55,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         clear_logs(message).await?;
     } else {
         message
-            .respond(InputMessage::html(format!(
+            .reply(InputMessage::html(format!(
                 "Unknown command for /logs\n{}",
                 docs::USAGE
             )))

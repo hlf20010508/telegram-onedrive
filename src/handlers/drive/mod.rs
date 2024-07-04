@@ -66,7 +66,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
             logout_drive(onedrive, message, index).await?;
         } else {
             message
-                .respond(InputMessage::html(format!(
+                .reply(InputMessage::html(format!(
                     "Unknown sub command for /drive\n{}",
                     docs::USAGE
                 )))
@@ -75,7 +75,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         }
     } else {
         message
-            .respond(InputMessage::html(format!(
+            .reply(InputMessage::html(format!(
                 "Unknown command for /drive\n{}",
                 docs::USAGE
             )))

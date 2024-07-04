@@ -45,11 +45,6 @@ pub async fn logout_drive(
     message: Arc<Message>,
     index: usize,
 ) -> Result<()> {
-    let current_username = onedrive
-        .get_current_username()
-        .await?
-        .ok_or_else(|| Error::new("no onedrive account is logged in"))?;
-
     let usernames = onedrive.get_usernames().await?;
 
     let selected_username = usernames
