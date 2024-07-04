@@ -38,5 +38,7 @@ pub async fn code_handler(
         .emit(TG_CODE_EVENT, code)
         .map_err(|e| Error::context(e, "failed to emit tg_code"))?;
 
+    tracing::debug!("tg code emitted");
+
     Ok(StatusCode::OK.into_response())
 }

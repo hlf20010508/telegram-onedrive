@@ -26,5 +26,7 @@ impl Drop for AutoAbortHandle {
     fn drop(&mut self) {
         self.shutdown_handle.shutdown();
         self.abort_handle.abort();
+
+        tracing::debug!("auth server auto aborted");
     }
 }

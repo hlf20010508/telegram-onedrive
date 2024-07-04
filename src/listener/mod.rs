@@ -33,6 +33,8 @@ impl Listener {
     }
 
     pub async fn run(self) {
+        tracing::debug!("listener started");
+
         loop {
             let handler = Handler::new(self.events.clone(), self.state.clone());
 

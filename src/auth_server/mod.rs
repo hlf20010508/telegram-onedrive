@@ -52,6 +52,8 @@ pub async fn spawn(
     let shutdown_handle_clone = shutdown_handle.clone();
 
     let abort_handle = if use_reverse_proxy.to_owned() {
+        tracing::debug!("auth server listening on http://0.0.0.0:{}", port);
+
         tokio::spawn(async move {
             axum_server::from_tcp(server)
                 .handle(shutdown_handle_clone)
@@ -62,6 +64,8 @@ pub async fn spawn(
         .abort_handle()
     } else {
         let config = get_rustls_config().await?;
+
+        tracing::debug!("auth server listening on https://0.0.0.0:{}", port);
 
         tokio::spawn(async move {
             axum_server::from_tcp_rustls(server, config)
