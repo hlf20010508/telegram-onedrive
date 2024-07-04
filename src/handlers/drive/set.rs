@@ -23,29 +23,27 @@ pub async fn set_drive(
 
     let usernames = onedrive.get_usernames().await?;
 
-    if index < usernames.len() {
-        let selected_username = &usernames[index];
+    let selected_username = usernames
+        .get(index)
+        .ok_or_else(|| Error::new("account index out of range"))?;
 
-        onedrive.change_account(selected_username).await?;
+    onedrive.change_account(selected_username).await?;
 
-        if current_username != *selected_username {
-            let response = format!(
-                "Changed account from\n{}\nto\n{}",
-                current_username, selected_username
-            );
-            message
-                .respond(response.as_str())
-                .await
-                .map_err(|e| Error::respond_error(e, response))?;
-        } else {
-            let response = "Same account, nothing to change.";
-            message
-                .respond(response)
-                .await
-                .map_err(|e| Error::respond_error(e, response))?;
-        }
+    if current_username != *selected_username {
+        let response = format!(
+            "Changed account from\n{}\nto\n{}",
+            current_username, selected_username
+        );
+        message
+            .respond(response.as_str())
+            .await
+            .map_err(|e| Error::respond_error(e, response))?;
     } else {
-        return Err(Error::new("account index out of range"));
+        let response = "Same account, nothing to change.";
+        message
+            .respond(response)
+            .await
+            .map_err(|e| Error::respond_error(e, response))?;
     }
 
     Ok(())

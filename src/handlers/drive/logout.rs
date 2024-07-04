@@ -39,3 +39,42 @@ pub async fn logout_current_drive(onedrive: &OneDriveClient, message: Arc<Messag
 
     Ok(())
 }
+
+pub async fn logout_drive(
+    onedrive: &OneDriveClient,
+    message: Arc<Message>,
+    index: usize,
+) -> Result<()> {
+    let current_username = onedrive
+        .get_current_username()
+        .await?
+        .ok_or_else(|| Error::new("no onedrive account is logged in"))?;
+
+    let usernames = onedrive.get_usernames().await?;
+
+    let selected_username = usernames
+        .get(index)
+        .ok_or_else(|| Error::new("account index out of range"))?;
+
+    onedrive.logout(Some(selected_username.clone())).await?;
+
+    let response = {
+        let mut response = format!(
+            "OneDrive account {} logged out successfully.",
+            selected_username
+        );
+
+        if let Some(current_username) = onedrive.get_current_username().await? {
+            response.push_str(&format!("\n\nCurrent account is {}", current_username));
+        }
+
+        response
+    };
+
+    message
+        .respond(response.as_str())
+        .await
+        .map_err(|e| Error::respond_error(e, response))?;
+
+    Ok(())
+}
