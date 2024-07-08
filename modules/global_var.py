@@ -5,7 +5,7 @@
 :license: MIT, see LICENSE for more details.
 """
 
-from env import reverse_proxy
+from modules.env import reverse_proxy
 
 TG_LOGIN_MAX_ATTEMPTS = 3
 
