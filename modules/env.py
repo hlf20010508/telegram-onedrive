@@ -9,6 +9,7 @@ import os
 
 # auth server
 server_uri = os.environ["server_uri"]
+reverse_proxy = True if os.environ.get("reverse_proxy", "false") == "true" else False
 # telegram api
 tg_api_id = int(os.environ["tg_api_id"])
 tg_api_hash = os.environ["tg_api_hash"]

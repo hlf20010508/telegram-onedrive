@@ -5,6 +5,8 @@
 :license: MIT, see LICENSE for more details.
 """
 
+from env import reverse_proxy
+
 TG_LOGIN_MAX_ATTEMPTS = 3
 
 PART_SIZE = 2 * 1024 * 1024
@@ -52,5 +54,7 @@ INVALID_NAME = [
     "desktop.ini",
 ]
 
-TG_CODE_URL = "https://127.0.0.1:8080/tg"
-OD_CODE_URL = "https://127.0.0.1:8080/auth"
+protocol = "http" if reverse_proxy else "https"
+
+TG_CODE_URL = f"{protocol}://127.0.0.1:8080/tg"
+OD_CODE_URL = f"{protocol}://127.0.0.1:8080/auth"
