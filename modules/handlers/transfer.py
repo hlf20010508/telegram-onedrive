@@ -62,6 +62,8 @@ async def transfer_handler(event):
                 await status_message.finish(
                     path=os.path.join(last_remote_root_path, name), size=event.file.size
                 )
+        except KeyError as e:
+            await event.reply(logger("Error: %s\nresponse: %s" % (e, response_dict)))
         except Exception as e:
             await event.reply("Error: %s" % logger(e))
 
@@ -118,6 +120,10 @@ async def transfer_handler(event):
                             path=os.path.join(last_remote_root_path, name),
                             size=message.file.size,
                         )
+                except KeyError as e:
+                    await event.reply(
+                        logger("Error: %s\nresponse: %s" % (e, response_dict))
+                    )
                 except Exception as e:
                     await event.reply("Error: %s" % logger(e))
             else:

@@ -70,6 +70,8 @@ async def url_handler(event):
             path=os.path.join(last_remote_root_path, response_dict["name"]),
             size=total_length,
         )
+    except KeyError as e:
+        await event.reply(logger("Error: %s\nresponse: %s" % (e, response_dict)))
     except Exception as e:
         logger(e)
         await status_message.report_error(e)
