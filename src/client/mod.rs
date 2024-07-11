@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
+pub mod ext;
 mod onedrive;
 mod telegram_bot;
 mod telegram_user;

@@ -16,8 +16,9 @@ pub use events::{EventType, HashMapExt};
 use events::Events;
 use handler::Handler;
 
-use crate::error::Error;
+use crate::error::{Error, ResultExt};
 use crate::state::{AppState, State};
+use crate::tasker::Tasker;
 
 pub struct Listener {
     pub events: Arc<Events>,
@@ -35,6 +36,11 @@ impl Listener {
     pub async fn run(self) {
         tracing::debug!("listener started");
 
+        let tasker = Tasker::new(self.state.clone()).await.unwrap();
+        tokio::spawn(async move {
+            tasker.run().await;
+        });
+
         loop {
             let handler = Handler::new(self.events.clone(), self.state.clone());
 
@@ -46,7 +52,7 @@ impl Listener {
 
                             match handler.handle_message(message.clone()).await {
                                 Ok(_) => Ok(()),
-                                Err(e) => Err(e.send(message).await.unwrap()),
+                                Err(e) => Err(e.send(message).await.unwrap_both()),
                             }
                         }
                         _ => Ok(()),

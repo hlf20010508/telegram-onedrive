@@ -364,6 +364,10 @@ impl OneDriveSession {
 
         Ok(())
     }
+
+    pub fn is_expired(&self) -> bool {
+        self.expiration_timestamp < get_current_timestamp() + 60
+    }
 }
 
 impl Default for OneDriveSession {

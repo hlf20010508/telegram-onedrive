@@ -10,6 +10,7 @@ use std::sync::Arc;
 
 use crate::client::{OneDriveClient, TelegramBotClient, TelegramUserClient};
 use crate::env::Env;
+use crate::tasker::TaskSession;
 
 pub struct State {
     pub env: Env,
@@ -17,6 +18,7 @@ pub struct State {
     pub telegram_user: TelegramUserClient,
     pub onedrive: OneDriveClient,
     pub should_auto_delete: AtomicBool,
+    pub task_session: Arc<TaskSession>,
 }
 
 impl State {
@@ -26,6 +28,7 @@ impl State {
         let telegram_user = TelegramUserClient::new(&env).await.unwrap();
         let onedrive = OneDriveClient::new(&env).await.unwrap();
         let should_auto_delete = AtomicBool::new(env.should_auto_delete);
+        let task_session = Arc::new(TaskSession::new(&env.tasker_session_path).await.unwrap());
 
         Self {
             env,
@@ -33,6 +36,7 @@ impl State {
             telegram_user,
             onedrive,
             should_auto_delete,
+            task_session,
         }
     }
 }

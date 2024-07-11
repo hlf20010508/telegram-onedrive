@@ -16,7 +16,7 @@ use std::fs;
 pub use onedrive::OneDriveEnv;
 pub use telegram_bot::TelegramBotEnv;
 pub use telegram_user::TelegramUserEnv;
-pub use var::LOG_PATH;
+pub use var::{LOG_PATH, WORKER_NUM};
 
 use utils::{args_contains, get_arg_value, get_arg_value_option};
 use var::SESSION_DIR;
@@ -29,6 +29,7 @@ pub struct Env {
     pub server_uri: String,
     pub use_reverse_proxy: bool,
     pub should_auto_delete: bool,
+    pub tasker_session_path: String,
 }
 
 impl Env {
@@ -42,6 +43,7 @@ impl Env {
         let server_uri = get_arg_value("--server-uri").unwrap();
         let use_reverse_proxy = args_contains("--reverse-proxy");
         let should_auto_delete = args_contains("--auto-delete");
+        let tasker_session_path = var::TASKER_SESSION_PATH.to_string();
 
         Env {
             telegram_bot,
@@ -51,6 +53,7 @@ impl Env {
             server_uri,
             use_reverse_proxy,
             should_auto_delete,
+            tasker_session_path,
         }
     }
 

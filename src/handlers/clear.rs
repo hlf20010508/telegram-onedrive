@@ -8,6 +8,7 @@
 use grammers_client::types::Message;
 use std::sync::Arc;
 
+use crate::client::ext::TelegramExt;
 use crate::error::{Error, Result};
 use crate::state::AppState;
 use crate::{check_in_group, check_senders, check_tg_login};
@@ -21,24 +22,11 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
     let telegram_user = &state.telegram_user;
 
-    let mut dialogs = telegram_user.client.iter_dialogs();
-
-    let chat = {
-        let bot_chat = message.chat();
-
-        loop {
-            if let Some(dialog) = dialogs
-                .next()
-                .await
-                .map_err(|e| Error::context(e, "failed to get dialog"))?
-            {
-                let user_chat = dialog.chat();
-                if user_chat.id() == bot_chat.id() {
-                    break user_chat.to_owned();
-                }
-            }
-        }
-    };
+    let chat = telegram_user
+        .client
+        .get_chat(message)
+        .await?
+        .ok_or_else(|| Error::new("failed to get user chat"))?;
 
     loop {
         let mut messages = telegram_user.client.iter_messages(&chat).limit(100);

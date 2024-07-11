@@ -5,14 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
-pub mod auth;
-pub mod auto_delete;
-pub mod clear;
-pub mod dir;
-pub mod drive;
-pub mod help;
-pub mod logs;
-pub mod start;
 pub mod url;
-mod utils;
-mod var;
+
+use super::tasks;
+use super::transfer;
+use super::Progress;
