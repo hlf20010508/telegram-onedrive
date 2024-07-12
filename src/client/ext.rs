@@ -27,7 +27,7 @@ impl TelegramExt for grammers_client::Client {
         let message = self
             .get_messages_by_id(chat, &[message_id])
             .await
-            .map_err(|e| Error::context(e, "failed to get bot message by id"))?
+            .map_err(|e| Error::context(e, "failed to get message by id"))?
             .get(0)
             .ok_or_else(|| Error::new("message vec is empty"))?
             .to_owned()
@@ -54,4 +54,9 @@ impl TelegramExt for grammers_client::Client {
 
         Ok(None)
     }
+}
+
+pub fn chat_from_hex(chat_hex: &str) -> Result<PackedChat> {
+    PackedChat::from_hex(chat_hex)
+        .map_err(|_| Error::new("failed to parse chat hex to packed chat"))
 }

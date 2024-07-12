@@ -6,15 +6,15 @@
 */
 
 use grammers_client::InputMessage;
-use grammers_session::PackedChat;
 use path_slash::PathBufExt;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
+use super::session::{ChatHex, ChatTasks};
 use super::{tasks, TaskSession};
-use crate::client::ext::TelegramExt;
+use crate::client::ext::{chat_from_hex, TelegramExt};
 use crate::error::{Error, Result, ResultExt};
 use crate::state::AppState;
 
@@ -39,217 +39,229 @@ impl Progress {
 
         let mut chat_progress_message_id = HashMap::new();
 
-        let telegram_bot = &self.state.telegram_bot;
-        let telegram_user = &self.state.telegram_user;
-
         loop {
-            match self.session.get_chats_tasks().await {
-                Ok(chats_tasks) => {
-                    for (
-                        (chat_bot_hex, chat_user_hex),
-                        (current_tasks, completed_tasks, failed_tasks),
-                    ) in chats_tasks
-                    {
-                        if chat_progress_message_id.get(&chat_bot_hex).is_none() {
-                            chat_progress_message_id.insert(chat_bot_hex.clone(), None);
-                        }
-
-                        if !current_tasks.is_empty() {
-                            let result = self
-                                .sync_chat_progress(
-                                    &chat_bot_hex,
-                                    &chat_user_hex,
-                                    &current_tasks,
-                                    &mut chat_progress_message_id,
-                                )
-                                .await;
-
-                            if let Err(e) = result {
-                                match PackedChat::from_hex(&chat_bot_hex).map_err(|_| {
-                                    Error::new("failed to parse chat bot hex to packed chat")
-                                }) {
-                                    Ok(chat) => {
-                                        e.send_chat(&telegram_bot.client, chat)
-                                            .await
-                                            .unwrap_both()
-                                            .trace();
-                                    }
-                                    Err(e) => e.trace(),
-                                }
-                            }
-                        }
-
-                        for task in completed_tasks {
-                            match PackedChat::from_hex(&chat_user_hex).map_err(|_| {
-                                Error::new("failed to parse chat user hex to packed chat")
-                            }) {
-                                Ok(chat) => {
-                                    match telegram_user
-                                        .client
-                                        .get_message(chat, task.message_id)
-                                        .await
-                                    {
-                                        Ok(message_user) => {
-                                            let file_path_raw =
-                                                Path::new(&task.root_path).join(task.filename);
-                                            let file_path = file_path_raw.to_slash_lossy();
-
-                                            let response = format!(
-                                                "{}\n\nDone.\nFile uploaded to {}",
-                                                message_user.text(),
-                                                file_path
-                                            );
-                                            if let Err(e) = telegram_user
-                                                .client
-                                                .edit_message(
-                                                    chat,
-                                                    task.message_id,
-                                                    response.as_str(),
-                                                )
-                                                .await
-                                                .map_err(|e| Error::respond_error(e, response))
-                                            {
-                                                match PackedChat::from_hex(&chat_bot_hex).map_err(|_| {
-                                                    Error::new("failed to parse chat bot hex to packed chat")
-                                                }) {
-                                                    Ok(chat) => {
-                                                        e.send_chat(&telegram_bot.client, chat)
-                                                            .await
-                                                            .unwrap_both()
-                                                            .trace();
-                                                    }
-                                                    Err(e) => e.trace(),
-                                                }
-                                            }
-                                        }
-                                        Err(e) => e.trace(),
-                                    }
-                                }
-                                Err(e) => e.trace(),
-                            }
-
-                            if let Err(e) = self.session.delete_task(task.id).await {
-                                e.trace();
-                            }
-                        }
-
-                        for task in failed_tasks {
-                            match PackedChat::from_hex(&chat_user_hex).map_err(|_| {
-                                Error::new("failed to parse chat user hex to packed chat")
-                            }) {
-                                Ok(chat) => {
-                                    match telegram_user
-                                        .client
-                                        .get_message(chat, task.message_id)
-                                        .await
-                                    {
-                                        Ok(message_user) => {
-                                            let response =
-                                                format!("{}\n\nFailed.", message_user.text());
-                                            if let Err(e) = telegram_user
-                                                .client
-                                                .edit_message(
-                                                    chat,
-                                                    task.message_id,
-                                                    response.as_str(),
-                                                )
-                                                .await
-                                                .map_err(|e| Error::respond_error(e, response))
-                                            {
-                                                match PackedChat::from_hex(&chat_bot_hex).map_err(|_| {
-                                                    Error::new("failed to parse chat bot hex to packed chat")
-                                                }) {
-                                                    Ok(chat) => {
-                                                        e.send_chat(&telegram_bot.client, chat)
-                                                            .await
-                                                            .unwrap_both()
-                                                            .trace();
-                                                    }
-                                                    Err(e) => e.trace(),
-                                                }
-                                            }
-                                        }
-                                        Err(e) => e.trace(),
-                                    }
-                                }
-                                Err(e) => e.trace(),
-                            }
-
-                            if let Err(e) = self.session.delete_task(task.id).await {
-                                e.trace();
-                            }
-                        }
-                    }
-
-                    let mut chat_to_be_removed = Vec::new();
-
-                    for (chat_bot_hex, progress_message_id) in &chat_progress_message_id {
-                        match self
-                            .session
-                            .does_chat_has_started_tasks(&chat_bot_hex)
-                            .await
-                        {
-                            Ok(has_started_tasks) => {
-                                if !has_started_tasks {
-                                    match PackedChat::from_hex(&chat_bot_hex).map_err(|_| {
-                                        Error::new("failed to parse chat bot hex to packed chat")
-                                    }) {
-                                        Ok(chat) => {
-                                            if let Some(progress_message_id) = progress_message_id {
-                                                if let Err(e) = telegram_bot
-                                                    .client
-                                                    .delete_messages(
-                                                        chat,
-                                                        &[progress_message_id.to_owned()],
-                                                    )
-                                                    .await
-                                                    .map_err(|e| {
-                                                        Error::context(
-                                                            e,
-                                                            "failed to delete progress message",
-                                                        )
-                                                    })
-                                                {
-                                                    e.send_chat(&telegram_bot.client, chat)
-                                                        .await
-                                                        .unwrap_both()
-                                                        .trace();
-                                                }
-                                            }
-                                        }
-                                        Err(e) => e.trace(),
-                                    }
-
-                                    chat_to_be_removed.push(chat_bot_hex.clone());
-                                }
-                            }
-                            Err(e) => e.trace(),
-                        }
-                    }
-
-                    for chat_bot_hex in chat_to_be_removed {
-                        chat_progress_message_id.remove(&chat_bot_hex);
-                    }
-                }
-                Err(e) => e.trace(),
+            if let Err(e) = self
+                .handle_chat_tasks_progress(&mut chat_progress_message_id)
+                .await
+            {
+                e.trace();
             }
 
             tokio::time::sleep(Duration::from_secs(5)).await;
         }
     }
 
+    async fn handle_chat_tasks_progress(
+        &self,
+        chat_progress_message_id: &mut HashMap<String, Option<i32>>,
+    ) -> Result<()> {
+        let chat_tasks = self.session.get_chats_tasks().await?;
+
+        for (
+            ChatHex {
+                chat_bot_hex,
+                chat_user_hex,
+            },
+            ChatTasks {
+                current_tasks,
+                completed_tasks,
+                failed_tasks,
+            },
+        ) in chat_tasks
+        {
+            if chat_progress_message_id.get(&chat_bot_hex).is_none() {
+                chat_progress_message_id.insert(chat_bot_hex.clone(), None);
+            }
+
+            self.handle_chat_current_tasks(
+                current_tasks,
+                &chat_bot_hex,
+                &chat_user_hex,
+                chat_progress_message_id,
+            )
+            .await?;
+
+            self.handle_chat_completed_tasks(completed_tasks, &chat_user_hex)
+                .await?;
+
+            self.handle_chat_failed_tasks(failed_tasks, &chat_bot_hex, &chat_user_hex)
+                .await?;
+        }
+
+        self.remove_chats_without_tasks(chat_progress_message_id)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn handle_chat_current_tasks(
+        &self,
+        current_tasks: Vec<tasks::Model>,
+        chat_bot_hex: &str,
+        chat_user_hex: &str,
+        chat_progress_message_id: &mut HashMap<String, Option<i32>>,
+    ) -> Result<()> {
+        let telegram_bot = &self.state.telegram_bot;
+
+        if !current_tasks.is_empty() {
+            let result = self
+                .sync_chat_progress(
+                    chat_bot_hex,
+                    chat_user_hex,
+                    current_tasks,
+                    chat_progress_message_id,
+                )
+                .await;
+
+            if let Err(e) = result {
+                let chat = chat_from_hex(chat_bot_hex)?;
+
+                e.send_chat(&telegram_bot.client, chat)
+                    .await
+                    .unwrap_both()
+                    .trace();
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn handle_chat_completed_tasks(
+        &self,
+        completed_tasks: Vec<tasks::Model>,
+        chat_user_hex: &str,
+    ) -> Result<()> {
+        let telegram_bot = &self.state.telegram_bot;
+        let telegram_user = &self.state.telegram_user;
+
+        for task in completed_tasks {
+            let chat = chat_from_hex(chat_user_hex)?;
+
+            let message_user = telegram_user
+                .client
+                .get_message(chat, task.message_id)
+                .await?;
+
+            let file_path_raw = Path::new(&task.root_path).join(task.filename);
+            let file_path = file_path_raw.to_slash_lossy();
+
+            let response = format!(
+                "{}\n\nDone.\nFile uploaded to {}\nSize {:.2}MB.",
+                message_user.text(),
+                file_path,
+                task.total_length as f64 / 1024.0 / 1024.0
+            );
+            if let Err(e) = telegram_user
+                .client
+                .edit_message(chat, task.message_id, response.as_str())
+                .await
+                .map_err(|e| Error::respond_error(e, response))
+            {
+                let chat = chat_from_hex(chat_user_hex)?;
+
+                e.send_chat(&telegram_bot.client, chat)
+                    .await
+                    .unwrap_both()
+                    .trace();
+            }
+
+            self.session.delete_task(task.id).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn handle_chat_failed_tasks(
+        &self,
+        failed_tasks: Vec<tasks::Model>,
+        chat_bot_hex: &str,
+        chat_user_hex: &str,
+    ) -> Result<()> {
+        let telegram_bot = &self.state.telegram_bot;
+        let telegram_user = &self.state.telegram_user;
+
+        for task in failed_tasks {
+            let chat = chat_from_hex(chat_user_hex)?;
+
+            let message_user = telegram_user
+                .client
+                .get_message(chat, task.message_id)
+                .await?;
+
+            let response = format!("{}\n\nFailed.", message_user.text());
+            if let Err(e) = telegram_user
+                .client
+                .edit_message(chat, task.message_id, response.as_str())
+                .await
+                .map_err(|e| Error::respond_error(e, response))
+            {
+                let chat = chat_from_hex(chat_bot_hex)?;
+
+                e.send_chat(&telegram_bot.client, chat)
+                    .await
+                    .unwrap_both()
+                    .trace();
+            }
+
+            self.session.delete_task(task.id).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn remove_chats_without_tasks(
+        &self,
+        chat_progress_message_id: &mut HashMap<String, Option<i32>>,
+    ) -> Result<()> {
+        let telegram_bot = &self.state.telegram_bot;
+
+        let mut chat_to_be_removed = Vec::new();
+
+        for (chat_bot_hex, progress_message_id) in chat_progress_message_id.iter() {
+            let has_started_tasks = self
+                .session
+                .does_chat_has_started_tasks(chat_bot_hex)
+                .await?;
+
+            if !has_started_tasks {
+                let chat = chat_from_hex(chat_bot_hex)?;
+
+                if let Some(progress_message_id) = progress_message_id {
+                    if let Err(e) = telegram_bot
+                        .client
+                        .delete_messages(chat, &[progress_message_id.to_owned()])
+                        .await
+                        .map_err(|e| Error::context(e, "failed to delete progress message"))
+                    {
+                        e.send_chat(&telegram_bot.client, chat)
+                            .await
+                            .unwrap_both()
+                            .trace();
+                    }
+                }
+
+                chat_to_be_removed.push(chat_bot_hex.clone());
+            }
+        }
+
+        for chat_bot_hex in chat_to_be_removed {
+            chat_progress_message_id.remove(&chat_bot_hex);
+        }
+
+        Ok(())
+    }
+
     async fn sync_chat_progress(
         &self,
         chat_bot_hex: &str,
         chat_user_hex: &str,
-        current_tasks: &Vec<tasks::Model>,
+        current_tasks: Vec<tasks::Model>,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
     ) -> Result<()> {
         let telegram_bot = &self.state.telegram_bot;
         let telegram_user = &self.state.telegram_user;
 
-        let chat = PackedChat::from_hex(chat_bot_hex)
-            .map_err(|_| Error::new("failed to parse chat bot hex to packed chat"))?;
+        let chat = chat_from_hex(chat_bot_hex)?;
 
         let mut response = "Progress:\n".to_string();
 
@@ -259,8 +271,8 @@ impl Progress {
                 chat.id,
                 task_progress.message_id,
                 task_progress.filename,
-                task_progress.current_length / 1024 / 1024,
-                task_progress.total_length / 1024 / 1024
+                task_progress.current_length as f64 / 1024. / 1024.,
+                task_progress.total_length as f64 / 1024. / 1024.
             );
         }
 
@@ -273,12 +285,13 @@ impl Progress {
             response += &format!("\n\n{} more tasks pending...", pending_tasks_number);
         }
 
-        let progress_message_id = chat_progress_message_id.get_mut(chat_bot_hex).unwrap();
+        let progress_message_id = chat_progress_message_id
+            .get_mut(chat_bot_hex)
+            .ok_or_else(|| Error::new("chat_bot_hex not in chat_progress_message_id"))?;
 
         match progress_message_id {
             Some(progress_message_id) => {
-                let chat_user = PackedChat::from_hex(chat_user_hex)
-                    .map_err(|_| Error::new("failed to parse chat user hex to packed chat"))?;
+                let chat_user = chat_from_hex(chat_user_hex)?;
 
                 let latest_message = telegram_user
                     .client
@@ -314,11 +327,8 @@ impl Progress {
                             .await
                         {
                             match e {
-                                grammers_client::client::bots::InvocationError::Rpc(e) => {
-                                    if e.code != 400 {
-                                        Err(Error::respond_error(e, response))?
-                                    }
-                                }
+                                grammers_client::client::bots::InvocationError::Rpc(e)
+                                    if e.code == 400 => {}
                                 _ => Err(Error::respond_error(e, response))?,
                             }
                         }

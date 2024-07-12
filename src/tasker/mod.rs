@@ -12,7 +12,7 @@ mod tasks;
 mod transfer;
 mod var;
 
-use grammers_session::PackedChat;
+use grammers_client::types::Message;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Semaphore;
@@ -22,9 +22,9 @@ use progress::Progress;
 pub use session::TaskSession;
 pub use tasks::CmdType;
 
-use crate::client::ext::TelegramExt;
+use crate::client::ext::{chat_from_hex, TelegramExt};
 use crate::env::WORKER_NUM;
-use crate::error::{Error, Result, ResultExt};
+use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 
 pub struct Tasker {
@@ -58,118 +58,89 @@ impl Tasker {
         let semaphore = Arc::new(Semaphore::new(WORKER_NUM));
 
         loop {
-            let result = match self.session.fetch_task().await {
-                Ok(task) => match task {
-                    Some(task) => match task.cmd_type {
-                        CmdType::Url => {
-                            match PackedChat::from_hex(&task.chat_bot_hex).map_err(|_| {
-                                Error::new("failed to parse chat bot hex to packed chat")
-                            }) {
-                                Ok(chat) => {
-                                    match self
-                                        .state
-                                        .telegram_bot
-                                        .client
-                                        .get_message(chat, task.message_id)
-                                        .await
-                                    {
-                                        Ok(message) => {
-                                            let message = Arc::new(message);
-
-                                            match PackedChat::from_hex(&task.chat_user_hex).map_err(|_| {
-                                                Error::new("failed to parse chat user hex to packed chat")
-                                            }) {
-                                                Ok(chat) => {
-                                                    match self.state.telegram_user.client.get_message(chat, task.message_id).await {
-                                                        Ok(message_user) => {
-                                                            let semaphore_clone = semaphore.clone();
-                                                            let session_clone = self.session.clone();
-                                                            let progress_clone = self.progress.clone();
-
-                                                            tokio::spawn(async move {
-                                                                let _permit =
-                                                                    semaphore_clone.acquire().await.unwrap();
-
-                                                                let task_id = task.id;
-
-                                                                match session_clone
-                                                                    .set_task_status(
-                                                                        task_id,
-                                                                        tasks::TaskStatus::Started,
-                                                                    )
-                                                                    .await
-                                                                {
-                                                                    Ok(_) => {
-                                                                        match handlers::url::handler(
-                                                                            task,
-                                                                            message_user,
-                                                                            progress_clone,
-                                                                        )
-                                                                        .await
-                                                                        {
-                                                                            Ok(_) => {
-                                                                                if let Err(e) = session_clone
-                                                                                    .set_task_status(
-                                                                                        task_id,
-                                                                                        tasks::TaskStatus::Completed,
-                                                                                    )
-                                                                                    .await
-                                                                                {
-                                                                                    e.send(message).await.unwrap_both().trace()
-                                                                                }
-                                                                            }
-                                                                            Err(e) => {
-                                                                                e.send(message.clone())
-                                                                                    .await
-                                                                                    .unwrap_both()
-                                                                                    .trace();
-
-                                                                                if let Err(e) = session_clone
-                                                                                    .set_task_status(
-                                                                                        task_id,
-                                                                                        tasks::TaskStatus::Failed,
-                                                                                    )
-                                                                                    .await
-                                                                                {
-                                                                                    e.send(message).await.unwrap_both().trace()
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                    Err(e) => {
-                                                                        e.send(message).await.unwrap_both().trace()
-                                                                    }
-                                                                }
-                                                            });
-                                                            
-                                                            Ok(())
-                                                        },
-                                                        Err(e) => Err(e),
-                                                    }
-                                                },
-                                                Err(e) => Err(e),
-                                            }
-                                        }
-                                        Err(e) => Err(e),
-                                    }
-                                }
-                                Err(e) => Err(e),
-                            }
-                        }
-                        CmdType::File => todo!(),
-                        CmdType::Photo => todo!(),
-                        CmdType::Link => todo!(),
-                    },
-                    None => Ok(()),
-                },
-                Err(e) => Err(e),
-            };
-
-            if let Err(e) = result {
+            if let Err(e) = self.handle_tasks(semaphore.clone()).await {
                 e.trace();
             }
 
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
+    }
+
+    async fn handle_tasks(&self, semaphore: Arc<Semaphore>) -> Result<()> {
+        let task = self.session.fetch_task().await?;
+
+        if let Some(task) = task {
+            let chat = chat_from_hex(&task.chat_bot_hex)?;
+
+            let message = {
+                let message = self
+                    .state
+                    .telegram_bot
+                    .client
+                    .get_message(chat, task.message_id)
+                    .await?;
+
+                Arc::new(message)
+            };
+
+            let semaphore_clone = semaphore.clone();
+            let session_clone = self.session.clone();
+            let progress_clone = self.progress.clone();
+
+            macro_rules! handle_task {
+                ($handler_type: ident) => {
+                    tokio::spawn(async move {
+                        async fn handler(
+                            task: tasks::Model,
+                            message: Arc<Message>,
+                            session_clone: Arc<TaskSession>,
+                            progress_clone: Arc<Progress>,
+                        ) -> Result<()> {
+                            let task_id = task.id;
+
+                            session_clone
+                                .set_task_status(task_id, tasks::TaskStatus::Started)
+                                .await?;
+
+                            match handlers::$handler_type::handler(task, progress_clone).await {
+                                Ok(_) => {
+                                    session_clone
+                                        .set_task_status(task_id, tasks::TaskStatus::Completed)
+                                        .await?;
+                                }
+                                Err(e) => {
+                                    e.send(message.clone()).await.unwrap_both().trace();
+
+                                    session_clone
+                                        .set_task_status(task_id, tasks::TaskStatus::Failed)
+                                        .await?;
+                                }
+                            }
+
+                            Ok(())
+                        }
+
+                        let _permit = semaphore_clone.acquire().await.unwrap();
+
+                        if let Err(e) =
+                            handler(task, message.clone(), session_clone, progress_clone).await
+                        {
+                            e.send(message).await.unwrap_both().trace();
+                        }
+                    });
+                };
+            }
+
+            match task.cmd_type {
+                CmdType::Url => {
+                    handle_task!(url);
+                }
+                CmdType::File => todo!(),
+                CmdType::Photo => todo!(),
+                CmdType::Link => todo!(),
+            }
+        }
+
+        Ok(())
     }
 }

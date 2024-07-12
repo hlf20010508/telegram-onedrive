@@ -48,7 +48,7 @@ pub async fn multi_parts_uploader_from_url(
 
     let mut buffer = Vec::with_capacity(PART_SIZE);
 
-    let mut upload_response = None;
+    let mut _upload_response = None;
 
     let mut response = http_client
         .get(url)
@@ -58,74 +58,63 @@ pub async fn multi_parts_uploader_from_url(
 
     let max_retries = 5;
 
-    while let Some(chunk) = response
-        .chunk()
-        .await
-        .map_err(|e| Error::context(e, "failed to get chunk"))?
-    {
-        buffer.extend_from_slice(&chunk);
+    loop {
+        while let Some(chunk) = response
+            .chunk()
+            .await
+            .map_err(|e| Error::context(e, "failed to get chunk"))?
+        {
+            buffer.extend_from_slice(&chunk);
 
-        if buffer.len() >= PART_SIZE {
-            let buffer_length = buffer.len() as u64;
-
-            let mut tries = 0;
-
-            loop {
-                tries += 1;
-
-                let result = upload_buffer(
-                    &upload_session,
-                    &mut buffer,
-                    current_length,
-                    total_length.to_owned() as u64,
-                    &http_client,
-                )
-                .await;
-
-                match result {
-                    Ok(response) => {
-                        upload_response = response;
-
-                        break;
-                    }
-                    Err(e) => {
-                        if tries >= max_retries {
-                            return Err(Error::context(e, "failed to upload part"));
-                        }
-
-                        tokio::time::sleep(Duration::from_secs(1)).await;
-                    }
-                }
+            if buffer.len() >= PART_SIZE {
+                break;
             }
-
-            current_length += buffer_length;
-            progress
-                .set_current_length(id.to_owned(), current_length)
-                .await?;
-            buffer.clear();
         }
-    }
 
-    if !buffer.is_empty() {
         let buffer_length = buffer.len() as u64;
 
-        upload_response = upload_buffer(
-            &upload_session,
-            &mut buffer,
-            current_length,
-            total_length.to_owned() as u64,
-            &http_client,
-        )
-        .await?;
+        let mut tries = 0;
+
+        loop {
+            tries += 1;
+
+            let result = upload_buffer(
+                &upload_session,
+                &mut buffer,
+                current_length,
+                total_length.to_owned() as u64,
+                &http_client,
+            )
+            .await;
+
+            match result {
+                Ok(response) => {
+                    _upload_response = response;
+
+                    break;
+                }
+                Err(e) => {
+                    if tries >= max_retries {
+                        return Err(Error::context(e, "failed to upload part"));
+                    }
+
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+            }
+        }
 
         current_length += buffer_length;
         progress
             .set_current_length(id.to_owned(), current_length)
             .await?;
         buffer.clear();
+
+        if current_length >= total_length.to_owned() as u64 {
+            break;
+        }
     }
 
-    let filename = upload_response
+    let filename = _upload_response
         .ok_or_else(|| Error::new("failed to get drive item after upload"))?
         .name
         .ok_or_else(|| Error::new("drive item name not found"))?;

@@ -152,53 +152,37 @@ impl TaskSession {
         Ok(())
     }
 
-    pub async fn get_chats_tasks(
-        &self,
-    ) -> Result<HashMap<(String, String), (Vec<tasks::Model>, Vec<tasks::Model>, Vec<tasks::Model>)>>
-    {
-        let current_tasks = tasks::Entity::find()
-            .filter(tasks::Column::Status.eq(TaskStatus::Started))
-            .all(&self.connection)
-            .await
-            .map_err(|e| Error::context(e, "failed to get chat current tasks"))?;
-
-        let completed_tasks = tasks::Entity::find()
-            .filter(tasks::Column::Status.eq(TaskStatus::Completed))
-            .all(&self.connection)
-            .await
-            .map_err(|e| Error::context(e, "failed to get chat completed tasks"))?;
-
-        let failed_tasks = tasks::Entity::find()
-            .filter(tasks::Column::Status.eq(TaskStatus::Failed))
-            .all(&self.connection)
-            .await
-            .map_err(|e| Error::context(e, "failed to get chat failed tasks"))?;
-
+    pub async fn get_chats_tasks(&self) -> Result<HashMap<ChatHex, ChatTasks>> {
         let mut chats = HashMap::new();
 
-        for task in current_tasks {
-            chats
-                .entry((task.chat_bot_hex.clone(), task.chat_user_hex.clone()))
-                .or_insert((Vec::new(), Vec::new(), Vec::new()))
-                .0
-                .push(task);
+        macro_rules! insert_chat_tasks {
+            ($status: ident, $task_type: ident) => {
+                let tasks = tasks::Entity::find()
+                    .filter(tasks::Column::Status.eq(TaskStatus::$status))
+                    .all(&self.connection)
+                    .await
+                    .map_err(|e| Error::context(e, "failed to get chat current tasks"))?;
+
+                for task in tasks {
+                    chats
+                        .entry(ChatHex {
+                            chat_bot_hex: task.chat_bot_hex.clone(),
+                            chat_user_hex: task.chat_user_hex.clone(),
+                        })
+                        .or_insert(ChatTasks {
+                            current_tasks: Vec::new(),
+                            completed_tasks: Vec::new(),
+                            failed_tasks: Vec::new(),
+                        })
+                        .$task_type
+                        .push(task);
+                }
+            };
         }
 
-        for task in completed_tasks {
-            chats
-                .entry((task.chat_bot_hex.clone(), task.chat_user_hex.clone()))
-                .or_insert((Vec::new(), Vec::new(), Vec::new()))
-                .1
-                .push(task);
-        }
-
-        for task in failed_tasks {
-            chats
-                .entry((task.chat_bot_hex.clone(), task.chat_user_hex.clone()))
-                .or_insert((Vec::new(), Vec::new(), Vec::new()))
-                .2
-                .push(task);
-        }
+        insert_chat_tasks!(Started, current_tasks);
+        insert_chat_tasks!(Completed, completed_tasks);
+        insert_chat_tasks!(Failed, failed_tasks);
 
         Ok(chats)
     }
@@ -249,4 +233,16 @@ impl TaskSession {
 
         Ok(())
     }
+}
+
+#[derive(Eq, PartialEq, Hash)]
+pub struct ChatHex {
+    pub chat_bot_hex: String,
+    pub chat_user_hex: String,
+}
+
+pub struct ChatTasks {
+    pub current_tasks: Vec<tasks::Model>,
+    pub completed_tasks: Vec<tasks::Model>,
+    pub failed_tasks: Vec<tasks::Model>,
 }
