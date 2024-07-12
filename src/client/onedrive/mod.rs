@@ -90,8 +90,26 @@ impl OneDriveClient {
         }: &Env,
         should_add: bool,
     ) -> Result<()> {
-        if !should_add && (self.is_authorized().await || self.auto_login().await.is_ok()) {
-            return Ok(());
+        if !should_add {
+            if !self.is_authorized().await {
+                let response = "Auto logging in to OneDrive...";
+                message
+                    .respond(response)
+                    .await
+                    .map_err(|e| Error::respond_error(e, response))?;
+
+                if self.auto_login().await.is_ok() {
+                    return Ok(());
+                } else {
+                    let response = "Auto login to OneDrive failed, login manually.";
+                    message
+                        .respond(response)
+                        .await
+                        .map_err(|e| Error::respond_error(e, response))?;
+                }
+            } else {
+                return Ok(());
+            }
         }
 
         let response = format!(
