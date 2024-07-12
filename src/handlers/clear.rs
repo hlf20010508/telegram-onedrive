@@ -21,6 +21,9 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
     check_tg_login!(message, state);
 
     let telegram_user = &state.telegram_user;
+    let task_session = state.task_session.clone();
+
+    task_session.clear().await?;
 
     let chat = telegram_user
         .client

@@ -48,7 +48,7 @@ impl Tasker {
     pub async fn run(&self) {
         tracing::debug!("tasker started");
 
-        self.session.prune_tasks().await.unwrap();
+        self.session.clear().await.unwrap();
 
         let progress_clone = self.progress.clone();
         tokio::spawn(async move {

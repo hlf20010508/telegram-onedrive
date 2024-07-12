@@ -122,23 +122,6 @@ impl TaskSession {
         Ok(())
     }
 
-    pub async fn prune_tasks(&self) -> Result<()> {
-        tasks::Entity::update_many()
-            .filter(
-                Condition::all()
-                    .add(tasks::Column::CmdType.eq(CmdType::Url))
-                    .add(tasks::Column::Status.eq(TaskStatus::Started)),
-            )
-            .col_expr(tasks::Column::Status, Expr::value(TaskStatus::Failed))
-            .exec(&self.connection)
-            .await
-            .map_err(|e| Error::context(e, "failed to prune tasks"))?;
-
-        tracing::debug!("tasks pruned");
-
-        Ok(())
-    }
-
     pub async fn set_current_length(&self, id: i64, current_length: u64) -> Result<()> {
         tasks::Entity::update_many()
             .filter(tasks::Column::Id.eq(id))
@@ -231,6 +214,15 @@ impl TaskSession {
             .exec(&self.connection)
             .await
             .map_err(|e| Error::context(e, "failed to delete task"))?;
+
+        Ok(())
+    }
+
+    pub async fn clear(&self) -> Result<()> {
+        tasks::Entity::delete_many()
+            .exec(&self.connection)
+            .await
+            .map_err(|e| Error::context(e, "failed to clear tasks"))?;
 
         Ok(())
     }

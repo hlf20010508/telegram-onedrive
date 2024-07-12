@@ -33,12 +33,11 @@ pub async fn multi_parts_uploader_from_url(
     let upload_session = UploadSession::from_upload_url(upload_url);
 
     let mut current_length = current_length.to_owned() as u64;
+    let total_length = total_length.to_owned() as u64;
 
     progress
         .set_current_length(id.to_owned(), current_length)
         .await?;
-
-    let mut buffer = Vec::with_capacity(PART_SIZE);
 
     let mut _upload_response = None;
 
@@ -51,6 +50,8 @@ pub async fn multi_parts_uploader_from_url(
     let max_retries = 5;
 
     loop {
+        let mut buffer = Vec::with_capacity(PART_SIZE);
+
         while let Some(chunk) = response
             .chunk()
             .await
@@ -70,14 +71,17 @@ pub async fn multi_parts_uploader_from_url(
         loop {
             tries += 1;
 
-            let result = upload_buffer(
-                &upload_session,
-                &mut buffer,
-                current_length,
-                total_length.to_owned() as u64,
-                &http_client,
-            )
-            .await;
+            let result = upload_session
+                .upload_part(
+                    buffer.clone(),
+                    Range {
+                        start: current_length,
+                        end: current_length + buffer_length,
+                    },
+                    total_length,
+                    &http_client,
+                )
+                .await;
 
             match result {
                 Ok(response) => {
@@ -86,11 +90,31 @@ pub async fn multi_parts_uploader_from_url(
                     break;
                 }
                 Err(e) => {
-                    if tries >= max_retries {
-                        return Err(Error::context(e, "failed to upload part"));
+                    if let Some(status_code) = e.status_code() {
+                        match status_code.as_u16() {
+                            // 408: Request Timeout
+                            // 500: Internal Server Error
+                            // 502: Bad Gateway
+                            // 503: Service Unavailable
+                            // 504: Gateway Timeout
+                            408 | 500 | 502 | 503 | 504 if tries < max_retries => {}
+                            // 409: Conflict, probably caused by rename, too many files with the same name uploaded at once
+                            // 404: Not Found, probably because the item has already been uploaded
+                            // 416: Requested Range Not Satisfiable, probably because the fragment has already been received
+                            409 | 404 | 416 => {
+                                break;
+                            }
+                            _ => {}
+                        }
                     }
 
-                    tokio::time::sleep(Duration::from_secs(1)).await;
+                    if tries < max_retries {
+                        tokio::time::sleep(Duration::from_secs(2)).await;
+
+                        continue;
+                    } else {
+                        return Err(Error::context(e, "failed to upload part"));
+                    }
                 }
             }
         }
@@ -99,9 +123,8 @@ pub async fn multi_parts_uploader_from_url(
         progress
             .set_current_length(id.to_owned(), current_length)
             .await?;
-        buffer.clear();
 
-        if current_length >= total_length.to_owned() as u64 {
+        if current_length >= total_length {
             break;
         }
     }
@@ -112,27 +135,4 @@ pub async fn multi_parts_uploader_from_url(
         .ok_or_else(|| Error::new("drive item name not found"))?;
 
     Ok(filename)
-}
-
-async fn upload_buffer(
-    upload_session: &UploadSession,
-    buffer: &Vec<u8>,
-    start_offset: u64,
-    total_length: u64,
-    http_client: &reqwest::Client,
-) -> Result<Option<DriveItem>> {
-    let upload_response = upload_session
-        .upload_part(
-            buffer.clone(),
-            Range {
-                start: start_offset,
-                end: start_offset + buffer.len() as u64,
-            },
-            total_length,
-            http_client,
-        )
-        .await
-        .map_err(|e| Error::context(e, "failed to upload part"))?;
-
-    Ok(upload_response)
 }
