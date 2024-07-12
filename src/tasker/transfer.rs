@@ -5,12 +5,10 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use onedrive_api::UploadSession;
 use std::ops::Range;
 use std::sync::Arc;
 use std::time::Duration;
-
-use onedrive_api::resource::DriveItem;
-use onedrive_api::UploadSession;
 
 use super::{tasks, Progress};
 use crate::error::{Error, Result};
@@ -102,7 +100,9 @@ pub async fn multi_parts_uploader_from_url(
                             // 404: Not Found, probably because the item has already been uploaded
                             // 416: Requested Range Not Satisfiable, probably because the fragment has already been received
                             409 | 404 | 416 => {
-                                break;
+                                if !_upload_response.is_none() {
+                                    break;
+                                }
                             }
                             _ => {}
                         }
