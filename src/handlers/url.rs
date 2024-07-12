@@ -60,9 +60,16 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
             let root_path = onedrive.get_root_path(true).await?;
 
-            let (upload_session, _) = onedrive
+            let (upload_session, upload_session_meta) = onedrive
                 .multipart_upload_session_builder(&root_path, &filename)
                 .await?;
+
+            let current_length = {
+                match upload_session_meta.next_expected_ranges.get(0) {
+                    Some(range) => range.start,
+                    None => 0,
+                }
+            };
 
             let chat_bot_hex = message.chat().pack().to_hex();
             let chat_user_hex = telegram_user
@@ -80,6 +87,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
                     &root_path,
                     &url,
                     upload_session.upload_url(),
+                    current_length,
                     total_length,
                     &chat_bot_hex,
                     &chat_user_hex,

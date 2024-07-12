@@ -22,6 +22,7 @@ pub async fn multi_parts_uploader_from_url(
         id,
         url,
         upload_url,
+        current_length,
         total_length,
         ..
     }: &tasks::Model,
@@ -30,17 +31,8 @@ pub async fn multi_parts_uploader_from_url(
     let http_client = get_http_client().await?;
 
     let upload_session = UploadSession::from_upload_url(upload_url);
-    let upload_session_meta = upload_session
-        .get_meta(&http_client)
-        .await
-        .map_err(|e| Error::context(e, "failed to get upload session meta"))?;
 
-    let mut current_length = {
-        match upload_session_meta.next_expected_ranges.get(0) {
-            Some(range) => range.start,
-            None => 0,
-        }
-    };
+    let mut current_length = current_length.to_owned() as u64;
 
     progress
         .set_current_length(id.to_owned(), current_length)
