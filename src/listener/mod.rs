@@ -16,7 +16,7 @@ pub use events::{EventType, HashMapExt};
 use events::Events;
 use handler::Handler;
 
-use crate::error::{Error, ResultExt};
+use crate::error::{Error, Result, ResultExt};
 use crate::state::{AppState, State};
 use crate::tasker::Tasker;
 
@@ -42,29 +42,33 @@ impl Listener {
         });
 
         loop {
-            let handler = Handler::new(self.events.clone(), self.state.clone());
-
-            let result = match handler.state.telegram_bot.client.next_update().await {
-                Ok(update) => match update {
-                    Some(update) => match update {
-                        Update::NewMessage(message) if !message.outgoing() => {
-                            let message = Arc::new(message);
-
-                            match handler.handle_message(message.clone()).await {
-                                Ok(_) => Ok(()),
-                                Err(e) => Err(e.send(message).await.unwrap_both()),
-                            }
-                        }
-                        _ => Ok(()),
-                    },
-                    None => Ok(()),
-                },
-                Err(e) => Err(Error::context(e, "Failed to get next update")),
-            };
-
-            if let Err(e) = result {
+            if let Err(e) = self.handle_message().await {
                 e.trace();
             }
         }
+    }
+
+    async fn handle_message(&self) -> Result<()> {
+        let handler = Handler::new(self.events.clone(), self.state.clone());
+
+        let update = handler
+            .state
+            .telegram_bot
+            .client
+            .next_update()
+            .await
+            .map_err(|e| Error::context(e, "Failed to get next update"))?;
+
+        if let Some(Update::NewMessage(message)) = update {
+            if !message.outgoing() {
+                let message = Arc::new(message);
+
+                if let Err(e) = handler.handle_message(message.clone()).await {
+                    e.send(message).await.unwrap_both().trace()
+                }
+            }
+        }
+
+        Ok(())
     }
 }
