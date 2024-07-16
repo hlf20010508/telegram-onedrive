@@ -7,8 +7,7 @@
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use grammers_client::types::Message;
-use grammers_session::PackedChat;
+use grammers_client::types::{Message, PackedChat};
 use std::fmt::Display;
 use std::sync::Arc;
 

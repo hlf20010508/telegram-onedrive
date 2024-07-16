@@ -5,7 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Message;
+use grammers_client::types::{Media, Message};
 use std::sync::Arc;
 
 use super::{EventType, Events};
@@ -24,7 +24,12 @@ impl Handler {
 
     pub async fn handle_message(&self, message: Arc<Message>) -> Result<()> {
         match message.media() {
-            Some(_) => self.handle_media(message).await?,
+            Some(media) => match media {
+                Media::Photo(_) | Media::Document(_) | Media::Sticker(_) => {
+                    self.handle_media(message).await?
+                }
+                _ => {}
+            },
             None => {
                 let text = message.text();
 

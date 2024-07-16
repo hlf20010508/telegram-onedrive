@@ -5,8 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use grammers_client::session::Session;
 use grammers_client::{Client, Config};
-use grammers_session::Session;
 
 use crate::env::{Env, TelegramBotEnv};
 use crate::error::{Error, Result};

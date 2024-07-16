@@ -21,13 +21,14 @@ pub struct Model {
     pub cmd_type: CmdType,
     pub filename: String,
     pub root_path: String,
-    pub url: String,
+    pub url: Option<String>,
     pub upload_url: String,
     pub current_length: i64,
     pub total_length: i64,
     pub chat_bot_hex: String,
     pub chat_user_hex: String,
     pub message_id: i32,
+    pub message_id_forward: Option<i32>,
     pub status: TaskStatus,
 }
 

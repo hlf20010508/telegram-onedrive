@@ -85,13 +85,14 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
                     CmdType::Url,
                     &filename,
                     &root_path,
-                    &url,
+                    Some(url),
                     upload_session.upload_url(),
                     current_length,
                     total_length,
                     &chat_bot_hex,
                     &chat_user_hex,
                     message.id(),
+                    None,
                 )
                 .await
         } else {

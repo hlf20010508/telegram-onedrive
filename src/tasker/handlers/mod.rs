@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
+pub mod file;
 pub mod url;
 
 use super::tasks;

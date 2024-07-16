@@ -10,7 +10,6 @@ mod progress;
 mod session;
 mod tasks;
 mod transfer;
-mod var;
 
 use grammers_client::types::Message;
 use std::sync::Arc;
@@ -84,6 +83,7 @@ impl Tasker {
             };
 
             let semaphore_clone = semaphore.clone();
+            let state_clone = self.state.clone();
             let session_clone = self.session.clone();
             let progress_clone = self.progress.clone();
 
@@ -93,25 +93,26 @@ impl Tasker {
                         async fn handler(
                             task: tasks::Model,
                             message: Arc<Message>,
-                            session_clone: Arc<TaskSession>,
-                            progress_clone: Arc<Progress>,
+                            session: Arc<TaskSession>,
+                            progress: Arc<Progress>,
+                            state: AppState,
                         ) -> Result<()> {
                             let task_id = task.id;
 
-                            session_clone
+                            session
                                 .set_task_status(task_id, tasks::TaskStatus::Started)
                                 .await?;
 
-                            match handlers::$handler_type::handler(task, progress_clone).await {
+                            match handlers::$handler_type::handler(task, progress, state).await {
                                 Ok(_) => {
-                                    session_clone
+                                    session
                                         .set_task_status(task_id, tasks::TaskStatus::Completed)
                                         .await?;
                                 }
                                 Err(e) => {
                                     e.send(message.clone()).await.unwrap_both().trace();
 
-                                    session_clone
+                                    session
                                         .set_task_status(task_id, tasks::TaskStatus::Failed)
                                         .await?;
                                 }
@@ -122,8 +123,14 @@ impl Tasker {
 
                         let _permit = semaphore_clone.acquire().await.unwrap();
 
-                        if let Err(e) =
-                            handler(task, message.clone(), session_clone, progress_clone).await
+                        if let Err(e) = handler(
+                            task,
+                            message.clone(),
+                            session_clone,
+                            progress_clone,
+                            state_clone,
+                        )
+                        .await
                         {
                             e.send(message).await.unwrap_both().trace();
                         }
@@ -135,7 +142,9 @@ impl Tasker {
                 CmdType::Url => {
                     handle_task!(url);
                 }
-                CmdType::File => todo!(),
+                CmdType::File => {
+                    handle_task!(file);
+                }
                 CmdType::Photo => todo!(),
                 CmdType::Link => todo!(),
             }

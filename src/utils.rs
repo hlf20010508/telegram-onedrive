@@ -36,3 +36,7 @@ pub async fn get_http_client() -> Result<reqwest::Client> {
         .build()
         .map_err(|e| Error::context(e, "failed to build http client"))
 }
+
+pub fn get_ext(filename: &str) -> String {
+    filename.split('.').last().unwrap().to_lowercase()
+}

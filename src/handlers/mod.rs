@@ -10,6 +10,7 @@ pub mod auto_delete;
 pub mod clear;
 pub mod dir;
 pub mod drive;
+pub mod file;
 pub mod help;
 pub mod logs;
 pub mod start;

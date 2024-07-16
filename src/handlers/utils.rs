@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use grammers_client::types::media::{Document, Media};
 use mime_guess::get_mime_extensions_str;
 use percent_encoding::percent_decode_str;
 use regex::Regex;
@@ -15,7 +16,7 @@ use url::Url;
 
 use super::var::{INVALID_COMPONENT, INVALID_NAME};
 use crate::error::{Error, Result};
-use crate::utils::get_current_timestamp;
+use crate::utils::{get_current_timestamp, get_ext};
 
 pub fn cmd_parser<T>(cmd: T) -> Vec<String>
 where
@@ -99,10 +100,7 @@ pub async fn get_filename(url: &str, response: &Response) -> Result<String> {
             let mut filename = filename;
 
             if exts.len() > 0 && content_type != "application/octet-stream" {
-                let origin_ext = match filename.split('.').last() {
-                    Some(ext) => ext.to_lowercase(),
-                    None => return Err(Error::new("filename ext vec is empty")),
-                };
+                let origin_ext = get_ext(&filename);
 
                 if filename.len() < 100 {
                     if !exts.contains(&origin_ext) {
@@ -271,4 +269,49 @@ fn preprocess_url_file_name(filename: &str) -> String {
             get_current_timestamp().to_string()
         }
     }
+}
+
+pub fn preprocess_tg_file_name(media: &Media) -> String {
+    let (filename, id) = match media {
+        Media::Photo(file) => return file.id().to_string() + ".jpg",
+        Media::Document(file) => get_tg_document_name_and_id(&file),
+        Media::Sticker(file) => get_tg_document_name_and_id(&file.document),
+        _ => Default::default(),
+    };
+
+    if validate_filename(&filename) {
+        filename.trim().trim_start_matches("~$").to_string()
+    } else {
+        let ext = get_ext(&filename);
+
+        id.to_string() + "." + &ext
+    }
+}
+
+fn get_tg_document_name_and_id(document: &Document) -> (String, i64) {
+    let mut filename = document.name().to_string();
+    let file_id = document.id();
+    if filename.is_empty() {
+        if let Some(mime) = document.mime_type() {
+            let exts = guess_exts(mime);
+
+            if !exts.is_empty() {
+                filename = file_id.to_string() + "." + &exts[0];
+            } else {
+                filename = file_id.to_string();
+            }
+        }
+    }
+
+    (filename, file_id)
+}
+
+pub fn get_tg_file_size(media: &Media) -> u64 {
+    let size = match media {
+        Media::Document(file) => file.size(),
+        Media::Sticker(file) => file.document.size(),
+        _ => Default::default(),
+    };
+
+    size as u64
 }

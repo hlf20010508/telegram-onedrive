@@ -25,10 +25,9 @@ axum-server = { version = "0.6.0", default-features = false, features = [
 ] }
 chrono = { version = "0.4.38", default-features = false }
 futures = { version = "0.3.30", default-features = false }
-grammers-client = { version = "0.6.0", default-features = false, features = [
+grammers-client = { git = "https://github.com/hlf20010508/grammers.git", default-features = false, features = [
     "html",
 ] }
-grammers-session = { version = "0.5.2", default-features = false }
 onedrive-api = { version = "0.10.0", default-features = false }
 pico-args = { version = "0.5.0", default-features = false, features = [
     "short-space-opt",

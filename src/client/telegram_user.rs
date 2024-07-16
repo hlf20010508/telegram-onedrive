@@ -5,9 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use grammers_client::session::Session;
 use grammers_client::types::Message;
 use grammers_client::{Client, Config, SignInError};
-use grammers_session::Session;
 use std::sync::Arc;
 
 use super::utils::{socketio_client, socketio_disconnect};

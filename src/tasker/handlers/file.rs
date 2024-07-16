@@ -7,13 +7,13 @@
 
 use std::sync::Arc;
 
-use super::transfer::multi_parts_uploader_from_url;
+use super::transfer::multi_parts_uploader_from_tg_file;
 use super::{tasks, Progress};
 use crate::error::Result;
 use crate::state::AppState;
 
-pub async fn handler(task: tasks::Model, progress: Arc<Progress>, _: AppState) -> Result<()> {
-    let filename = multi_parts_uploader_from_url(&task, progress.clone()).await?;
+pub async fn handler(task: tasks::Model, progress: Arc<Progress>, state: AppState) -> Result<()> {
+    let filename = multi_parts_uploader_from_tg_file(&task, progress.clone(), state).await?;
 
     progress.update_filename(task.id, &filename).await?;
 

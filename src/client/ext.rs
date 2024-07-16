@@ -5,8 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::{Chat, Message};
-use grammers_session::PackedChat;
+use grammers_client::types::{Chat, Message, PackedChat};
 use std::sync::Arc;
 
 use crate::error::{Error, Result};
