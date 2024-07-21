@@ -6,6 +6,6 @@ name = "pypi"
 [packages]
 onedrivesdk = "==1.1.8"
 flask = "*"
-telethon = "*"
+telethon = {ref = "946f803", git = "git+https://github.com/LonamiWebs/Telethon.git"}
 requests = "*"
 cryptg = "==0.4.0"
