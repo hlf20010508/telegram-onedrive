@@ -69,8 +69,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
     let chat_user_hex = chat_user.pack().to_hex();
 
     let cmd_type = match media {
-        Media::Photo(_) => CmdType::Photo,
-        Media::Document(_) | Media::Sticker(_) => CmdType::File,
+        Media::Photo(_) | Media::Document(_) | Media::Sticker(_) => CmdType::File,
         _ => Err(Error::new(
             "media type is not one of photo, document and sticker",
         ))?,

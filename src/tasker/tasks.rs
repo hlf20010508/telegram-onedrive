@@ -40,7 +40,6 @@ impl ActiveModelBehavior for ActiveModel {}
 #[derive(Debug, Clone, PartialEq)]
 pub enum CmdType {
     File,
-    Photo,
     Link,
     Url,
 }
@@ -50,7 +49,6 @@ impl ValueType for CmdType {
         match v {
             Value::String(Some(value)) => match value.as_str() {
                 "file" => Ok(Self::File),
-                "photo" => Ok(Self::Photo),
                 "link" => Ok(Self::Link),
                 "url" => Ok(Self::Url),
                 _ => Err(ValueTypeErr),
@@ -76,7 +74,6 @@ impl Into<Value> for CmdType {
     fn into(self) -> Value {
         match self {
             Self::File => Value::String(Some(Box::new(self.to_string()))),
-            Self::Photo => Value::String(Some(Box::new(self.to_string()))),
             Self::Link => Value::String(Some(Box::new(self.to_string()))),
             Self::Url => Value::String(Some(Box::new(self.to_string()))),
         }
@@ -89,7 +86,6 @@ impl TryGetable for CmdType {
 
         match value.as_str() {
             "file" => Ok(Self::File),
-            "photo" => Ok(Self::Photo),
             "link" => Ok(Self::Link),
             "url" => Ok(Self::Url),
             _ => Err(TryGetError::DbErr(DbErr::Type(format!(
@@ -104,7 +100,6 @@ impl Display for CmdType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::File => write!(f, "file"),
-            Self::Photo => write!(f, "photo"),
             Self::Link => write!(f, "link"),
             Self::Url => write!(f, "url"),
         }

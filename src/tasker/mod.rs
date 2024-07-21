@@ -145,7 +145,6 @@ impl Tasker {
                 CmdType::File => {
                     handle_task!(file);
                 }
-                CmdType::Photo => todo!(),
                 CmdType::Link => todo!(),
             }
         }
