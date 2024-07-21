@@ -14,3 +14,5 @@ pub const OD_SESSION_PATH: &str = "./session/od.session";
 pub const TASKER_SESSION_PATH: &str = "./session/tasker.session";
 
 pub const WORKER_NUM: usize = 5;
+
+pub const BYPASS_PREFIX: &str = "\u{200B}";

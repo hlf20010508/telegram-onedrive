@@ -16,6 +16,7 @@ pub use events::{EventType, HashMapExt};
 use events::Events;
 use handler::Handler;
 
+use crate::env::BYPASS_PREFIX;
 use crate::error::{Error, Result, ResultExt};
 use crate::state::{AppState, State};
 use crate::tasker::Tasker;
@@ -60,7 +61,7 @@ impl Listener {
             .map_err(|e| Error::context(e, "Failed to get next update"))?;
 
         if let Some(Update::NewMessage(message)) = update {
-            if !message.outgoing() && !message.text().starts_with("\u{200B}") {
+            if !message.outgoing() && !message.text().starts_with(BYPASS_PREFIX) {
                 let message = Arc::new(message);
 
                 if let Err(e) = handler.handle_message(message.clone()).await {

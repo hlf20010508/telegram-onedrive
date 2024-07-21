@@ -6,7 +6,6 @@
 */
 
 use grammers_client::types::media::{Document, Media};
-use grammers_client::types::photo_sizes::PhotoSize;
 use mime_guess::get_mime_extensions_str;
 use percent_encoding::percent_decode_str;
 use regex::Regex;
@@ -309,29 +308,7 @@ fn get_tg_document_name_and_id(document: &Document) -> (String, i64) {
 
 pub fn get_tg_file_size(media: &Media) -> u64 {
     let size = match media {
-        Media::Photo(file) => {
-            let size = match file.thumbs().last() {
-                Some(thumb) => match thumb {
-                    PhotoSize::Empty(_) => 0,
-                    PhotoSize::Size(size) => size.size as usize,
-                    PhotoSize::Cached(size) => size.bytes.len(),
-                    PhotoSize::Stripped(size) => {
-                        let bytes = &size.bytes;
-                        if bytes.len() < 3 || bytes[0] != 0x01 {
-                            return 0;
-                        }
-                        size.bytes.len() + 622
-                    }
-                    PhotoSize::Progressive(size) => {
-                        size.sizes.iter().max().unwrap_or(&0).to_owned() as usize
-                    }
-                    PhotoSize::Path(size) => size.bytes.len(),
-                },
-                None => Default::default(),
-            };
-
-            size as i64
-        }
+        Media::Photo(file) => file.size(),
         Media::Document(file) => file.size(),
         Media::Sticker(file) => file.document.size(),
         _ => Default::default(),

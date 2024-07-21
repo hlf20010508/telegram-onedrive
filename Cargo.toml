@@ -28,7 +28,7 @@ axum-server = { version = "0.6.0", default-features = false, features = [
 ] }
 chrono = { version = "0.4.38", default-features = false }
 futures = { version = "0.3.30", default-features = false }
-grammers-client = { git = "https://github.com/hlf20010508/grammers.git", default-features = false, features = [
+grammers-client = { git = "https://github.com/Lonami/grammers.git", ref = "d1aa69c", default-features = false, features = [
     "html",
 ] }
 onedrive-api = { version = "0.10.0", default-features = false }
