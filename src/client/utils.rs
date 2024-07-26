@@ -26,7 +26,7 @@ pub async fn socketio_client(
         .danger_accept_invalid_certs(true)
         .danger_accept_invalid_hostnames(true)
         .build()
-        .map_err(|e| Error::context(e, "failed to create tls connector for socketio client"))?;
+        .map_err(|e| Error::new_tls(e, "failed to create tls connector for socketio client"))?;
 
     let protocol = if use_reverse_proxy { "http" } else { "https" };
 
@@ -47,7 +47,7 @@ pub async fn socketio_client(
         })
         .connect()
         .await
-        .map_err(|e| Error::context(e, "failed to connect to auth server"))?;
+        .map_err(|e| Error::new_socket_io_client(e, "failed to connect to auth server"))?;
 
     Ok((socketio_client, rx))
 }
@@ -56,7 +56,7 @@ pub async fn socketio_disconnect(socketio_client: SocketIoClient) -> Result<()> 
     socketio_client
         .disconnect()
         .await
-        .map_err(|e| Error::context(e, "failed to disconnect from auth server"))?;
+        .map_err(|e| Error::new_socket_io_client(e, "failed to disconnect from auth server"))?;
 
     Ok(())
 }

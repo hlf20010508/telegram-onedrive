@@ -58,7 +58,7 @@ impl Listener {
             .client
             .next_update()
             .await
-            .map_err(|e| Error::context(e, "Failed to get next update"))?;
+            .map_err(|e| Error::new_telegram_invocation(e, "Failed to get next update"))?;
 
         if let Some(Update::NewMessage(message)) = update {
             if !message.outgoing() && !message.text().starts_with(BYPASS_PREFIX) {

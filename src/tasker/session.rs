@@ -29,7 +29,7 @@ impl TaskSession {
     async fn connect_db(path: &str) -> Result<DatabaseConnection> {
         let connection = sea_orm::Database::connect(format!("sqlite://{}?mode=rwc", path))
             .await
-            .map_err(|e| Error::context(e, "failed to connect to task session"))?;
+            .map_err(|e| Error::new_database(e, "failed to connect to task session"))?;
 
         Self::create_table_if_not_exists(&connection).await?;
 
@@ -47,7 +47,7 @@ impl TaskSession {
                 .execute(backend.build(&table_create_statement))
                 .await
                 .map_err(|e| {
-                    Error::context(
+                    Error::new_database(
                         e,
                         format!("failed to create table {}", tasks::Entity.table_name()),
                     )
@@ -72,7 +72,7 @@ impl TaskSession {
             .filter(tasks::Column::Status.eq(TaskStatus::Waiting))
             .one(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to get a task"))
+            .map_err(|e| Error::new_database(e, "failed to get a task"))
     }
 
     pub async fn insert_task(
@@ -108,7 +108,7 @@ impl TaskSession {
         tasks::Entity::insert(insert_item)
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to insert url task"))?;
+            .map_err(|e| Error::new_database(e, "failed to insert url task"))?;
 
         Ok(())
     }
@@ -119,7 +119,7 @@ impl TaskSession {
             .col_expr(tasks::Column::Status, Expr::value(status))
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to update task status"))?;
+            .map_err(|e| Error::new_database(e, "failed to update task status"))?;
 
         Ok(())
     }
@@ -133,7 +133,7 @@ impl TaskSession {
             )
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to update current length"))?;
+            .map_err(|e| Error::new_database(e, "failed to update current length"))?;
 
         Ok(())
     }
@@ -147,7 +147,7 @@ impl TaskSession {
                     .filter(tasks::Column::Status.eq(TaskStatus::$status))
                     .all(&self.connection)
                     .await
-                    .map_err(|e| Error::context(e, "failed to get chat current tasks"))?;
+                    .map_err(|e| Error::new_database(e, "failed to get chat current tasks"))?;
 
                 for task in tasks {
                     chats
@@ -182,7 +182,7 @@ impl TaskSession {
             )
             .count(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to get pending tasks number"))
+            .map_err(|e| Error::new_database(e, "failed to get pending tasks number"))
     }
 
     pub async fn does_chat_has_started_tasks(&self, chat_bot_hex: &str) -> Result<bool> {
@@ -194,7 +194,7 @@ impl TaskSession {
             )
             .count(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to get chat started tasks number"))?
+            .map_err(|e| Error::new_database(e, "failed to get chat started tasks number"))?
             > 0;
 
         Ok(has_started_tasks)
@@ -206,7 +206,7 @@ impl TaskSession {
             .col_expr(tasks::Column::Filename, Expr::value(filename))
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to update filename"))?;
+            .map_err(|e| Error::new_database(e, "failed to update filename"))?;
 
         Ok(())
     }
@@ -215,7 +215,7 @@ impl TaskSession {
         tasks::Entity::delete_by_id(id)
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to delete task"))?;
+            .map_err(|e| Error::new_database(e, "failed to delete task"))?;
 
         Ok(())
     }
@@ -224,7 +224,7 @@ impl TaskSession {
         tasks::Entity::delete_many()
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to clear tasks"))?;
+            .map_err(|e| Error::new_database(e, "failed to clear tasks"))?;
 
         Ok(())
     }

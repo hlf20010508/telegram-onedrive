@@ -30,7 +30,7 @@ impl TelegramBotClient {
         }: &Env,
     ) -> Result<Self> {
         let session = Session::load_file_or_create(session_path).map_err(|e| {
-            Error::context(
+            Error::new_sys_io(
                 e,
                 "failed to load or create session for telegram bot client",
             )
@@ -43,24 +43,25 @@ impl TelegramBotClient {
             params: params.clone(),
         };
 
-        let client = Client::connect(config)
-            .await
-            .map_err(|e| Error::context(e, "failed to create telegram bot client"))?;
+        let client = Client::connect(config).await.map_err(|e| {
+            Error::new_telegram_authorization(e, "failed to create telegram bot client")
+        })?;
 
         let is_authorized = client.is_authorized().await.map_err(|e| {
-            Error::context(e, "failed to check telegram bot client authorization state")
+            Error::new_telegram_invocation(
+                e,
+                "failed to check telegram bot client authorization state",
+            )
         })?;
 
         if !is_authorized {
-            client
-                .bot_sign_in(token)
-                .await
-                .map_err(|e| Error::context(e, "failed to sign in telegram bot"))?;
+            client.bot_sign_in(token).await.map_err(|e| {
+                Error::new_telegram_authorization(e, "failed to sign in telegram bot")
+            })?;
 
-            client
-                .session()
-                .save_to_file(session_path)
-                .map_err(|e| Error::context(e, "failed to save session for telegram bot client"))?;
+            client.session().save_to_file(session_path).map_err(|e| {
+                Error::new_sys_io(e, "failed to save session for telegram bot client")
+            })?;
         }
 
         Ok(Self { client })

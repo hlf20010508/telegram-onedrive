@@ -18,12 +18,12 @@ pub async fn send_log_file(telegram_bot: &TelegramBotClient, message: Arc<Messag
         .client
         .upload_file(LOG_PATH)
         .await
-        .map_err(|e| Error::context(e, "failed to upload log file"))?;
+        .map_err(|e| Error::new_sys_io(e, "failed to upload log file"))?;
 
     message
         .respond(InputMessage::default().file(file))
         .await
-        .map_err(|e| Error::context(e, "failed to respond log file"))?;
+        .map_err(|e| Error::new_telegram_invocation(e, "failed to respond log file"))?;
 
     Ok(())
 }

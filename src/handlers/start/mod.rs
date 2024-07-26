@@ -19,7 +19,7 @@ pub async fn handler(message: Arc<Message>, _state: AppState) -> Result<()> {
     message
         .respond(docs::GREETING)
         .await
-        .map_err(|e| Error::context(e, "failed to respond greating message"))?;
+        .map_err(|e| Error::new_telegram_invocation(e, "failed to respond greating message"))?;
 
     Ok(())
 }

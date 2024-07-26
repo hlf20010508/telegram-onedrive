@@ -22,7 +22,7 @@ pub const INDEX_PATH: &str = "/";
 pub async fn index_handler() -> Result<Html<String>> {
     let html = fs::read_to_string("./index.html")
         .await
-        .map_err(|e| Error::context(e, "failed to read index.html"))?;
+        .map_err(|e| Error::new_sys_io(e, "failed to read index.html"))?;
 
     Ok(Html(html))
 }
@@ -36,7 +36,7 @@ pub async fn code_handler(
 ) -> Result<Response> {
     socketio
         .emit(TG_CODE_EVENT, code)
-        .map_err(|e| Error::context(e, "failed to emit tg_code"))?;
+        .map_err(|e| Error::new_socket_io_server_broadcast(e, "failed to emit tg_code"))?;
 
     tracing::debug!("tg code emitted");
 

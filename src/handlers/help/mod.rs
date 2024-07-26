@@ -20,7 +20,7 @@ pub async fn handler(message: Arc<Message>, _state: AppState) -> Result<()> {
     message
         .respond(InputMessage::html(docs::GREETING))
         .await
-        .map_err(|e| Error::context(e, "failed to respond help docs"))?;
+        .map_err(|e| Error::new_telegram_invocation(e, "failed to respond help docs"))?;
 
     Ok(())
 }

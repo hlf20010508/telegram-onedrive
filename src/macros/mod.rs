@@ -17,9 +17,8 @@ macro_rules! check_in_group {
                     .respond(crate::macros::docs::CHECK_IN_GROUP_FAILED)
                     .await
                     .map_err(|e| {
-                        crate::error::Error::details(
+                        crate::error::Error::respond_error(
                             e,
-                            "failed to respond message",
                             crate::macros::docs::CHECK_IN_GROUP_FAILED,
                         )
                     })?;
@@ -54,7 +53,7 @@ macro_rules! check_tg_login {
             .is_authorized()
             .await
             .map_err(|e| {
-                Error::context(
+                Error::new_telegram_invocation(
                     e,
                     "failed to check telegram user client authorization state",
                 )

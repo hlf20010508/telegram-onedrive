@@ -23,7 +23,7 @@ pub async fn code_handler(
 ) -> Result<String> {
     socketio
         .emit(OD_CODE_EVENT, code)
-        .map_err(|e| Error::context(e, "failed to emit od_code"))?;
+        .map_err(|e| Error::new_socket_io_server_broadcast(e, "failed to emit od_code"))?;
 
     tracing::debug!("od code emitted");
 

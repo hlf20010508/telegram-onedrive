@@ -48,7 +48,7 @@ pub async fn multi_parts_uploader_from_url(
         .get(url)
         .send()
         .await
-        .map_err(|e| Error::context(e, "failed to send head request for /url"))?;
+        .map_err(|e| Error::new_http_request(e, "failed to send head request for /url"))?;
 
     let max_retries = 5;
 
@@ -60,7 +60,7 @@ pub async fn multi_parts_uploader_from_url(
         while let Some(chunk) = response
             .chunk()
             .await
-            .map_err(|e| Error::context(e, "failed to get chunk"))?
+            .map_err(|e| Error::new_http_request(e, "failed to get chunk"))?
         {
             buffer.extend_from_slice(&chunk);
 
@@ -143,11 +143,9 @@ pub async fn multi_parts_uploader_from_tg_file(
 
     let max_retries = 5;
 
-    while let Some(chunk) = download
-        .next()
-        .await
-        .map_err(|e| Error::context(e, "failed to get next chunk from tg file downloader"))?
-    {
+    while let Some(chunk) = download.next().await.map_err(|e| {
+        Error::new_telegram_invocation(e, "failed to get next chunk from tg file downloader")
+    })? {
         upload_response = upload_file(
             &upload_session,
             &chunk,
@@ -177,7 +175,7 @@ pub async fn multi_parts_uploader_from_tg_file(
         message
             .delete()
             .await
-            .map_err(|e| Error::context(e, "failed to delete forwarded message"))?;
+            .map_err(|e| Error::new_telegram_invocation(e, "failed to delete forwarded message"))?;
     }
 
     Ok(filename)
@@ -242,7 +240,7 @@ async fn upload_file(
 
                     continue;
                 } else {
-                    return Err(Error::context(e, "failed to upload part"));
+                    return Err(Error::new_onedrive(e, "failed to upload part"));
                 }
             }
         }

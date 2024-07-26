@@ -37,20 +37,19 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         if url.starts_with("http://") || url.starts_with("https://") {
             let http_client = get_http_client().await?;
 
-            let response = http_client
-                .head(&url)
-                .send()
-                .await
-                .map_err(|e| Error::context(e, "failed to send head request for /url"))?;
+            let response =
+                http_client.head(&url).send().await.map_err(|e| {
+                    Error::new_http_request(e, "failed to send head request for /url")
+                })?;
 
             let filename = get_filename(&url, &response).await?;
 
             let total_length = match response.headers().get(header::CONTENT_LENGTH) {
                 Some(content_length) => content_length
                     .to_str()
-                    .map_err(|e| Error::context(e, "header Content-Length has invisible ASCII chars"))?
+                    .map_err(|e| Error::new_http_header_to_str(e, "header Content-Length has invisible ASCII chars"))?
                     .parse::<u64>()
-                    .map_err(|e| Error::context(e, "failed to parse header Content-Length to u64"))?,
+                    .map_err(|e| Error::new_parse_int(e, "failed to parse header Content-Length to u64"))?,
                 None => return Err(Error::new(format!(
                     "Content-Length not found in response headers.\nStatus code:\n{}\nResponse headers:\n{:#?}",
                     response.status(),

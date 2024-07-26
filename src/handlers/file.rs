@@ -92,7 +92,9 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
                     .client
                     .send_message(chat_user, InputMessage::text(response).photo(uploaded))
                     .await
-                    .map_err(|e| Error::context(e, "failed to send message for forwarded"))?
+                    .map_err(|e| {
+                        Error::new_telegram_invocation(e, "failed to send message for forwarded")
+                    })?
                     .id();
             }
             None => {
@@ -100,7 +102,9 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
                     .client
                     .send_message(chat_user, response)
                     .await
-                    .map_err(|e| Error::context(e, "failed to send message for forwarded"))?
+                    .map_err(|e| {
+                        Error::new_telegram_invocation(e, "failed to send message for forwarded")
+                    })?
                     .id()
             }
         }
@@ -132,11 +136,9 @@ async fn upload_thumb(client: &Client, thumbs: Vec<PhotoSize>) -> Result<Option<
             let mut download = client.iter_download(&downloadable);
 
             let mut buffer = Vec::new();
-            while let Some(chunk) = download
-                .next()
-                .await
-                .map_err(|e| Error::context(e, "failed to download chunk for thumb"))?
-            {
+            while let Some(chunk) = download.next().await.map_err(|e| {
+                Error::new_telegram_invocation(e, "failed to download chunk for thumb")
+            })? {
                 buffer.extend(chunk);
             }
 
@@ -145,7 +147,7 @@ async fn upload_thumb(client: &Client, thumbs: Vec<PhotoSize>) -> Result<Option<
             let uploaded = client
                 .upload_stream(&mut stream, size, "thumb.jpg".to_string())
                 .await
-                .map_err(|e| Error::context(e, "failed to upload thumb"))?;
+                .map_err(|e| Error::new_sys_io(e, "failed to upload thumb"))?;
 
             Some(uploaded)
         }

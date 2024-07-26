@@ -60,7 +60,9 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
                 docs::USAGE
             )))
             .await
-            .map_err(|e| Error::context(e, "failed to respond command error for logs"))?;
+            .map_err(|e| {
+                Error::new_telegram_invocation(e, "failed to respond command error for logs")
+            })?;
     }
 
     Ok(())

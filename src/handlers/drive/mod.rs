@@ -50,7 +50,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
             // /drive $index
             let index = cmd[1]
                 .parse::<usize>()
-                .map_err(|e| Error::context(e, "account index should be integer"))?
+                .map_err(|e| Error::new_parse_int(e, "account index should be integer"))?
                 - 1;
 
             set_drive(onedrive, message, index).await?;
@@ -60,7 +60,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
             // /drive logout $index
             let index = cmd[2]
                 .parse::<usize>()
-                .map_err(|e| Error::context(e, "account index should be integer"))?
+                .map_err(|e| Error::new_parse_int(e, "account index should be integer"))?
                 - 1;
 
             logout_drive(onedrive, message, index).await?;
@@ -71,7 +71,12 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
                     docs::USAGE
                 )))
                 .await
-                .map_err(|e| Error::context(e, "failed to respond sub command error for /drive"))?;
+                .map_err(|e| {
+                    Error::new_telegram_invocation(
+                        e,
+                        "failed to respond sub command error for /drive",
+                    )
+                })?;
         }
     } else {
         message
@@ -80,7 +85,9 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
                 docs::USAGE
             )))
             .await
-            .map_err(|e| Error::context(e, "failed to respond command error for /drive"))?;
+            .map_err(|e| {
+                Error::new_telegram_invocation(e, "failed to respond command error for /drive")
+            })?;
     }
 
     Ok(())

@@ -231,7 +231,9 @@ impl Progress {
                         .client
                         .delete_messages(chat, &[progress_message_id.to_owned()])
                         .await
-                        .map_err(|e| Error::context(e, "failed to delete progress message"))
+                        .map_err(|e| {
+                            Error::new_telegram_invocation(e, "failed to delete progress message")
+                        })
                     {
                         e.send_chat(&telegram_bot.client, chat)
                             .await
@@ -299,7 +301,12 @@ impl Progress {
                     .limit(1)
                     .next()
                     .await
-                    .map_err(|e| Error::context(e, "failed to iter messages for latest message"))?;
+                    .map_err(|e| {
+                        Error::new_telegram_invocation(
+                            e,
+                            "failed to iter messages for latest message",
+                        )
+                    })?;
 
                 if let Some(latest_message) = latest_message {
                     if latest_message.id() != progress_message_id.to_owned() {
@@ -307,7 +314,12 @@ impl Progress {
                             .client
                             .delete_messages(chat, &[progress_message_id.to_owned()])
                             .await
-                            .map_err(|e| Error::context(e, "failed to delete progress message"))?;
+                            .map_err(|e| {
+                                Error::new_telegram_invocation(
+                                    e,
+                                    "failed to delete progress message",
+                                )
+                            })?;
 
                         let message = telegram_bot
                             .client

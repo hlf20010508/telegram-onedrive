@@ -39,7 +39,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         while let Some(message) = messages
             .next()
             .await
-            .map_err(|e| Error::context(e, "failed to get next message"))?
+            .map_err(|e| Error::new_telegram_invocation(e, "failed to get next message"))?
         {
             let id = message.id();
             // id 1 message is a service message that always exists when the group was created and it cannot be deleted
@@ -56,7 +56,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
             .client
             .delete_messages(&chat, &message_ids)
             .await
-            .map_err(|e| Error::context(e, "failed to delete messages"))?;
+            .map_err(|e| Error::new_telegram_invocation(e, "failed to delete messages"))?;
     }
 
     Ok(())

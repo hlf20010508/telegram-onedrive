@@ -23,7 +23,7 @@ pub async fn get_http_client() -> Result<reqwest::Client> {
             header::USER_AGENT,
             USER_AGENT
                 .parse()
-                .map_err(|e| Error::context(e, "failed to parse user agent"))?,
+                .map_err(|e| Error::new_http_header_value(e, "failed to parse user agent"))?,
         );
 
         headers
@@ -34,7 +34,7 @@ pub async fn get_http_client() -> Result<reqwest::Client> {
         .danger_accept_invalid_certs(true)
         .danger_accept_invalid_hostnames(true)
         .build()
-        .map_err(|e| Error::context(e, "failed to build http client"))
+        .map_err(|e| Error::new_http_request(e, "failed to build http client"))
 }
 
 pub fn get_ext(filename: &str) -> String {

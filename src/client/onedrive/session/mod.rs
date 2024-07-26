@@ -77,15 +77,14 @@ impl OneDriveSession {
             )
             .send()
             .await
-            .map_err(|e| Error::context(e, "failed to send request for user profile"))?;
+            .map_err(|e| Error::new_http_request(e, "failed to send request for user profile"))?;
 
-        let content = response
-            .text()
-            .await
-            .map_err(|e| Error::context(e, "failed to get response text for user profile"))?;
+        let content = response.text().await.map_err(|e| {
+            Error::new_http_request(e, "failed to get response text for user profile")
+        })?;
 
         let user_profile = serde_json::from_str::<Value>(&content)
-            .map_err(|e| Error::context(e, "failed to deserialize user profile into Value"))?;
+            .map_err(|e| Error::new_serde(e, "failed to deserialize user profile into Value"))?;
 
         let username = user_profile
             .get("userPrincipalName")
@@ -100,7 +99,7 @@ impl OneDriveSession {
     async fn connect_db(path: &str) -> Result<DatabaseConnection> {
         let connection = sea_orm::Database::connect(format!("sqlite://{}?mode=rwc", path))
             .await
-            .map_err(|e| Error::context(e, "failed to connect to onedrive session"))?;
+            .map_err(|e| Error::new_database(e, "failed to connect to onedrive session"))?;
 
         Self::create_table_if_not_exists(&connection, session::Entity).await?;
         Self::create_table_if_not_exists(&connection, current_user::Entity).await?;
@@ -140,7 +139,10 @@ impl OneDriveSession {
                 .execute(backend.build(&table_create_statement))
                 .await
                 .map_err(|e| {
-                    Error::context(e, format!("failed to create table {}", entity.table_name()))
+                    Error::new_database(
+                        e,
+                        format!("failed to create table {}", entity.table_name()),
+                    )
                 })?;
         }
 
@@ -173,7 +175,7 @@ impl OneDriveSession {
             session::Entity::insert(insert_item)
                 .exec(&self.connection)
                 .await
-                .map_err(|e| Error::context(e, "failed to insert onedrive session"))?;
+                .map_err(|e| Error::new_database(e, "failed to insert onedrive session"))?;
         }
 
         Ok(())
@@ -204,7 +206,7 @@ impl OneDriveSession {
             .filter(session::Column::Username.eq(&self.username))
             .one(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to query onedrive session"))?
+            .map_err(|e| Error::new_database(e, "failed to query onedrive session"))?
             .is_some();
 
         Ok(exists)
@@ -228,7 +230,7 @@ impl OneDriveSession {
             .col_expr(session::Column::RootPath, Expr::value(&self.root_path))
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to update onedrive session"))?;
+            .map_err(|e| Error::new_database(e, "failed to update onedrive session"))?;
 
         Ok(())
     }
@@ -237,14 +239,14 @@ impl OneDriveSession {
         let current_user = current_user::Entity::find()
             .one(connection)
             .await
-            .map_err(|e| Error::context(e, "faield to query onedrive current user"))?
+            .map_err(|e| Error::new_database(e, "faield to query onedrive current user"))?
             .ok_or_else(|| Error::new("onedrive current user not found"))?;
 
         let session = current_user
             .find_related(session::Entity)
             .one(connection)
             .await
-            .map_err(|e| Error::context(e, "failed to query related onedrive session"))?
+            .map_err(|e| Error::new_database(e, "failed to query related onedrive session"))?
             .ok_or_else(|| Error::new("related onedrive session not found"))?;
 
         Ok(session)
@@ -254,14 +256,16 @@ impl OneDriveSession {
         let current_user_col = current_user::Entity::find()
             .one(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to query onedrive current user"))?;
+            .map_err(|e| Error::new_database(e, "failed to query onedrive current user"))?;
 
         if let Some(current_user_col) = current_user_col {
             if current_user_col.username != self.username {
                 current_user::Entity::delete_many()
                     .exec(&self.connection)
                     .await
-                    .map_err(|e| Error::context(e, "failed to delete onedrive current user"))?;
+                    .map_err(|e| {
+                        Error::new_database(e, "failed to delete onedrive current user")
+                    })?;
             } else {
                 return Ok(());
             }
@@ -275,7 +279,7 @@ impl OneDriveSession {
         current_user::Entity::insert(insert_item)
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to insert onedrive current user"))?;
+            .map_err(|e| Error::new_database(e, "failed to insert onedrive current user"))?;
 
         Ok(())
     }
@@ -285,7 +289,7 @@ impl OneDriveSession {
             .column(session::Column::Username)
             .all(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to query onedrive usernames"))?;
+            .map_err(|e| Error::new_database(e, "failed to query onedrive usernames"))?;
 
         let usernames = result
             .into_iter()
@@ -299,7 +303,7 @@ impl OneDriveSession {
         match current_user::Entity::find()
             .one(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to query onedrive current username"))?
+            .map_err(|e| Error::new_database(e, "failed to query onedrive current username"))?
         {
             Some(model) => Ok(Some(model.username)),
             None => Ok(None),
@@ -316,14 +320,14 @@ impl OneDriveSession {
             current_user::Entity::delete_many()
                 .exec(&self.connection)
                 .await
-                .map_err(|e| Error::context(e, "failed to delete onedrive current user"))?;
+                .map_err(|e| Error::new_database(e, "failed to delete onedrive current user"))?;
         }
 
         session::Entity::delete_many()
             .filter(session::Column::Username.eq(&username))
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to delete onedrive session"))?;
+            .map_err(|e| Error::new_database(e, "failed to delete onedrive session"))?;
 
         if username != self.username {
             return Ok(());
@@ -340,7 +344,7 @@ impl OneDriveSession {
 
                 self.overwrite(session).await?;
             }
-            Err(e) => return Err(Error::context(e, "failed to query onedrive session")),
+            Err(e) => return Err(Error::new_database(e, "failed to query onedrive session")),
         }
 
         Ok(())
@@ -355,7 +359,7 @@ impl OneDriveSession {
             .filter(session::Column::Username.eq(username))
             .one(&self.connection)
             .await
-            .map_err(|e| Error::context(e, "failed to query onedrive session"))?
+            .map_err(|e| Error::new_database(e, "failed to query onedrive session"))?
             .ok_or_else(|| Error::new("onedrive session not found"))?;
 
         self.overwrite(Self::from(session)).await?;

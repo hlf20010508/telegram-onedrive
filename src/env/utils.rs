@@ -19,7 +19,7 @@ where
     let mut args = Arguments::from_env();
     let value: T = args
         .value_from_str(arg_name)
-        .map_err(|e| Error::context(e, "failed to get arg"))?;
+        .map_err(|e| Error::new_arg(e, "failed to get arg"))?;
 
     Ok(value)
 }

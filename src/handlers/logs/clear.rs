@@ -15,7 +15,7 @@ use crate::error::{Error, Result};
 pub async fn clear_logs(message: Arc<Message>) -> Result<()> {
     fs::remove_file(LOG_PATH)
         .await
-        .map_err(|e| Error::context(e, "failed to remove log file"))?;
+        .map_err(|e| Error::new_sys_io(e, "failed to remove log file"))?;
 
     let response = "Logs cleared.";
     message

@@ -147,7 +147,7 @@ impl OneDriveClient {
             .login_with_code(&code, &ClientCredential::Secret(self.client_secret.clone()))
             .await
             .map_err(|e| {
-                Error::context(
+                Error::new_onedrive(
                     e,
                     "failed to get onedrive token response when login with code",
                 )
@@ -221,7 +221,7 @@ impl OneDriveClient {
             )
             .await
             .map_err(|e| {
-                Error::context(
+                Error::new_onedrive(
                     e,
                     "failed to get refresh token response when login with refresh token",
                 )

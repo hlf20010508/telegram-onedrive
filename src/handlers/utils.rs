@@ -87,9 +87,9 @@ pub async fn get_filename(url: &str, response: &Response) -> Result<String> {
     };
 
     let content_type = match response.headers().get(header::CONTENT_TYPE) {
-        Some(content_type) => content_type
-            .to_str()
-            .map_err(|e| Error::context(e, "header Content-Type has invisible ASCII chars"))?,
+        Some(content_type) => content_type.to_str().map_err(|e| {
+            Error::new_http_header_to_str(e, "header Content-Type has invisible ASCII chars")
+        })?,
         None => "application/octet-stream",
     };
 
@@ -142,7 +142,7 @@ pub async fn get_filename(url: &str, response: &Response) -> Result<String> {
 fn get_filename_from_cd(response: &Response) -> Result<Option<String>> {
     if let Some(cd) = response.headers().get(header::CONTENT_DISPOSITION) {
         let cd = cd.to_str().map_err(|e| {
-            Error::context(e, "header Content-Disposition has invisible ASCII chars")
+            Error::new_http_header_to_str(e, "header Content-Disposition has invisible ASCII chars")
         })?;
 
         let re = Regex::new(r"filename=(.+)").unwrap();
@@ -169,7 +169,7 @@ fn get_filename_from_cd(response: &Response) -> Result<Option<String>> {
 }
 
 fn get_filename_from_url(url: &str) -> Result<Option<String>> {
-    let parsed_url = Url::parse(url).map_err(|e| Error::context(e, "failed to parse url"))?;
+    let parsed_url = Url::parse(url).map_err(|e| Error::new_parse_url(e, "failed to parse url"))?;
     let captured_value_dict = parsed_url
         .query_pairs()
         .into_iter()
