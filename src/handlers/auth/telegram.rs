@@ -5,23 +5,18 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Message;
-use std::sync::Arc;
-
-use crate::error::{Error, Result};
+use crate::client::TelegramMessage;
+use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 
-pub async fn login_to_telegram(message: Arc<Message>, state: AppState) -> Result<()> {
+pub async fn login_to_telegram(message: TelegramMessage, state: AppState) -> Result<()> {
     let telegram_user = &state.telegram_user;
     let env = &state.env;
 
     telegram_user.login(message.clone(), env).await?;
 
     let response = "Login to Telegram successful!";
-    message
-        .respond(response)
-        .await
-        .map_err(|e| Error::respond_error(e, response))?;
+    message.respond(response).await.details(response)?;
 
     Ok(())
 }

@@ -7,20 +7,19 @@
 
 mod docs;
 
-use grammers_client::types::Message;
 use grammers_client::InputMessage;
-use std::sync::Arc;
 
-use crate::error::{Error, Result};
+use crate::client::TelegramMessage;
+use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 
 pub const PATTERN: &str = "/help";
 
-pub async fn handler(message: Arc<Message>, _state: AppState) -> Result<()> {
+pub async fn handler(message: TelegramMessage, _state: AppState) -> Result<()> {
     message
         .respond(InputMessage::html(docs::GREETING))
         .await
-        .map_err(|e| Error::new_telegram_invocation(e, "failed to respond help docs"))?;
+        .context("help docs")?;
 
     Ok(())
 }

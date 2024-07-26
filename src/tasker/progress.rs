@@ -14,8 +14,8 @@ use std::time::Duration;
 
 use super::session::{ChatHex, ChatTasks};
 use super::{tasks, TaskSession};
-use crate::client::ext::{chat_from_hex, TelegramExt};
-use crate::error::{Error, Result, ResultExt};
+use crate::client::ext::chat_from_hex;
+use crate::error::{Error, Result, ResultExt, ResultUnwrapExt};
 use crate::state::AppState;
 
 pub struct Progress {
@@ -116,10 +116,7 @@ impl Progress {
             if let Err(e) = result {
                 let chat = chat_from_hex(chat_bot_hex)?;
 
-                e.send_chat(&telegram_bot.client, chat)
-                    .await
-                    .unwrap_both()
-                    .trace();
+                e.send_chat(telegram_bot, chat).await.unwrap_both().trace();
             }
         }
 
@@ -137,10 +134,7 @@ impl Progress {
         for task in completed_tasks {
             let chat = chat_from_hex(chat_user_hex)?;
 
-            let message_user = telegram_user
-                .client
-                .get_message(chat, task.message_id)
-                .await?;
+            let message_user = telegram_user.get_message(chat, task.message_id).await?;
 
             let file_path_raw = Path::new(&task.root_path).join(task.filename);
             let file_path = file_path_raw.to_slash_lossy();
@@ -152,17 +146,13 @@ impl Progress {
                 task.total_length as f64 / 1024.0 / 1024.0
             );
             if let Err(e) = telegram_user
-                .client
                 .edit_message(chat, task.message_id, response.as_str())
                 .await
-                .map_err(|e| Error::respond_error(e, response))
+                .details(response)
             {
                 let chat = chat_from_hex(chat_user_hex)?;
 
-                e.send_chat(&telegram_bot.client, chat)
-                    .await
-                    .unwrap_both()
-                    .trace();
+                e.send_chat(telegram_bot, chat).await.unwrap_both().trace();
             }
 
             self.session.delete_task(task.id).await?;
@@ -183,24 +173,17 @@ impl Progress {
         for task in failed_tasks {
             let chat = chat_from_hex(chat_user_hex)?;
 
-            let message_user = telegram_user
-                .client
-                .get_message(chat, task.message_id)
-                .await?;
+            let message_user = telegram_user.get_message(chat, task.message_id).await?;
 
             let response = format!("{}\n\nFailed.", message_user.text());
             if let Err(e) = telegram_user
-                .client
                 .edit_message(chat, task.message_id, response.as_str())
                 .await
-                .map_err(|e| Error::respond_error(e, response))
+                .details(response)
             {
                 let chat = chat_from_hex(chat_bot_hex)?;
 
-                e.send_chat(&telegram_bot.client, chat)
-                    .await
-                    .unwrap_both()
-                    .trace();
+                e.send_chat(telegram_bot, chat).await.unwrap_both().trace();
             }
 
             self.session.delete_task(task.id).await?;
@@ -228,17 +211,10 @@ impl Progress {
 
                 if let Some(progress_message_id) = progress_message_id {
                     if let Err(e) = telegram_bot
-                        .client
                         .delete_messages(chat, &[progress_message_id.to_owned()])
                         .await
-                        .map_err(|e| {
-                            Error::new_telegram_invocation(e, "failed to delete progress message")
-                        })
                     {
-                        e.send_chat(&telegram_bot.client, chat)
-                            .await
-                            .unwrap_both()
-                            .trace();
+                        e.send_chat(telegram_bot, chat).await.unwrap_both().trace();
                     }
                 }
 
@@ -296,7 +272,6 @@ impl Progress {
                 let chat_user = chat_from_hex(chat_user_hex)?;
 
                 let latest_message = telegram_user
-                    .client
                     .iter_messages(chat_user)
                     .limit(1)
                     .next()
@@ -311,37 +286,31 @@ impl Progress {
                 if let Some(latest_message) = latest_message {
                     if latest_message.id() != progress_message_id.to_owned() {
                         telegram_bot
-                            .client
                             .delete_messages(chat, &[progress_message_id.to_owned()])
-                            .await
-                            .map_err(|e| {
-                                Error::new_telegram_invocation(
-                                    e,
-                                    "failed to delete progress message",
-                                )
-                            })?;
+                            .await?;
 
                         let message = telegram_bot
-                            .client
                             .send_message(chat, InputMessage::html(response.as_str()))
                             .await
-                            .map_err(|e| Error::respond_error(e, response))?;
+                            .details(response)?;
 
                         *progress_message_id = message.id();
                     } else {
                         if let Err(e) = telegram_bot
-                            .client
                             .edit_message(
                                 chat,
                                 progress_message_id.to_owned(),
                                 InputMessage::html(response.as_str()),
                             )
                             .await
+                            .details(response)
                         {
                             match e {
-                                grammers_client::client::bots::InvocationError::Rpc(e)
-                                    if e.code == 400 => {}
-                                _ => Err(Error::respond_error(e, response))?,
+                                Error::TelegramInvocationError {
+                                    raw: grammers_client::InvocationError::Rpc(e),
+                                    ..
+                                } if e.code == 400 => {}
+                                _ => Err(e)?,
                             }
                         }
                     }
@@ -349,10 +318,9 @@ impl Progress {
             }
             None => {
                 let message = telegram_bot
-                    .client
                     .send_message(chat, InputMessage::html(response.as_str()))
                     .await
-                    .map_err(|e| Error::respond_error(e, response))?;
+                    .details(response)?;
 
                 *progress_message_id = Some(message.id());
             }

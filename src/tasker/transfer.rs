@@ -13,8 +13,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::{tasks, Progress};
-use crate::client::ext::{chat_from_hex, TelegramExt};
-use crate::error::{Error, Result};
+use crate::client::ext::chat_from_hex;
+use crate::error::{Error, Result, ResultExt};
 use crate::state::AppState;
 use crate::utils::get_http_client;
 
@@ -133,13 +133,11 @@ pub async fn multi_parts_uploader_from_tg_file(
         None => message_id,
     };
 
-    let message = telegram_user.client.get_message(chat, *message_id).await?;
+    let message = telegram_user.get_message(chat, *message_id).await?;
     let media = message
         .media()
         .ok_or_else(|| Error::new("message does not contain any media"))?;
-    let mut download = telegram_user
-        .client
-        .iter_download(&Downloadable::Media(media));
+    let mut download = telegram_user.iter_download(&Downloadable::Media(media));
 
     let max_retries = 5;
 
@@ -172,10 +170,7 @@ pub async fn multi_parts_uploader_from_tg_file(
         .ok_or_else(|| Error::new("drive item name not found"))?;
 
     if message_id_forward.is_some() {
-        message
-            .delete()
-            .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to delete forwarded message"))?;
+        message.delete().await.context("forwarded message")?;
     }
 
     Ok(filename)

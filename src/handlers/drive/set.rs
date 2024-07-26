@@ -5,15 +5,12 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Message;
-use std::sync::Arc;
-
-use crate::client::OneDriveClient;
-use crate::error::{Error, Result};
+use crate::client::{OneDriveClient, TelegramMessage};
+use crate::error::{Error, Result, ResultExt};
 
 pub async fn set_drive(
     onedrive: &OneDriveClient,
-    message: Arc<Message>,
+    message: TelegramMessage,
     index: usize,
 ) -> Result<()> {
     let current_username = onedrive
@@ -34,16 +31,10 @@ pub async fn set_drive(
             "Changed account from\n{}\nto\n{}",
             current_username, selected_username
         );
-        message
-            .respond(response.as_str())
-            .await
-            .map_err(|e| Error::respond_error(e, response))?;
+        message.respond(response.as_str()).await.details(response)?;
     } else {
         let response = "Same account, nothing to change.";
-        message
-            .respond(response)
-            .await
-            .map_err(|e| Error::respond_error(e, response))?;
+        message.respond(response).await.details(response)?;
     }
 
     Ok(())

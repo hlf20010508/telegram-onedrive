@@ -5,14 +5,12 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Message;
-use std::sync::Arc;
-
-use crate::error::{Error, Result};
+use crate::client::TelegramMessage;
+use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 
 pub async fn authorize_onedrive(
-    message: Arc<Message>,
+    message: TelegramMessage,
     state: AppState,
     should_add: bool,
 ) -> Result<()> {
@@ -22,10 +20,7 @@ pub async fn authorize_onedrive(
     onedrive.login(message.clone(), env, should_add).await?;
 
     let response = "OneDrive authorization successful!";
-    message
-        .respond(response)
-        .await
-        .map_err(|e| Error::respond_error(e, response))?;
+    message.respond(response).await.details(response)?;
 
     Ok(())
 }

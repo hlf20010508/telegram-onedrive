@@ -11,9 +11,7 @@ mod logout;
 mod set;
 mod show;
 
-use grammers_client::types::Message;
 use grammers_client::InputMessage;
-use std::sync::Arc;
 
 use add::add_drive;
 use logout::{logout_current_drive, logout_drive};
@@ -21,13 +19,14 @@ use set::set_drive;
 use show::show_drive;
 
 use super::utils::cmd_parser;
-use crate::error::{Error, Result};
+use crate::client::TelegramMessage;
+use crate::error::{Error, Result, ResultExt};
 use crate::state::AppState;
 use crate::{check_in_group, check_od_login, check_senders};
 
 pub const PATTERN: &str = "/drive";
 
-pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
+pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);
     check_od_login!(message, state);
@@ -71,12 +70,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
                     docs::USAGE
                 )))
                 .await
-                .map_err(|e| {
-                    Error::new_telegram_invocation(
-                        e,
-                        "failed to respond sub command error for /drive",
-                    )
-                })?;
+                .context("sub command error for /drive")?;
         }
     } else {
         message
@@ -85,9 +79,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
                 docs::USAGE
             )))
             .await
-            .map_err(|e| {
-                Error::new_telegram_invocation(e, "failed to respond command error for /drive")
-            })?;
+            .context("command error for /drive")?;
     }
 
     Ok(())

@@ -9,23 +9,22 @@ mod clear;
 mod docs;
 mod send;
 
-use grammers_client::types::Message;
 use grammers_client::InputMessage;
-use std::sync::Arc;
 use tokio::fs;
 
 use clear::clear_logs;
 use send::send_log_file;
 
 use super::utils::cmd_parser;
+use crate::client::TelegramMessage;
 use crate::env::LOG_PATH;
-use crate::error::{Error, Result};
+use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 use crate::{check_in_group, check_senders, check_tg_login};
 
 pub const PATTERN: &str = "/logs";
 
-pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
+pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);
     check_tg_login!(message, state);
@@ -34,10 +33,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         let metadata = fs::metadata(LOG_PATH).await;
         if metadata.is_err() || (metadata.is_ok() && metadata.unwrap().len() == 0) {
             let response = "Logs not found.";
-            message
-                .respond(response)
-                .await
-                .map_err(|e| Error::respond_error(e, response))?;
+            message.respond(response).await.details(response)?;
 
             return Ok(());
         }
@@ -60,9 +56,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
                 docs::USAGE
             )))
             .await
-            .map_err(|e| {
-                Error::new_telegram_invocation(e, "failed to respond command error for logs")
-            })?;
+            .context("command error for logs")?;
     }
 
     Ok(())

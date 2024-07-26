@@ -5,18 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Message;
-use std::sync::Arc;
+use crate::client::TelegramMessage;
+use crate::error::{Result, ResultExt};
 
-use crate::error::{Error, Result};
-
-pub async fn is_root_path_valid(root_path: &str, message: Arc<Message>) -> Result<bool> {
+pub async fn is_root_path_valid(root_path: &str, message: TelegramMessage) -> Result<bool> {
     if !root_path.starts_with('/') {
         let response = "directory path should start with /";
-        message
-            .reply(response)
-            .await
-            .map_err(|e| Error::respond_error(e, response))?;
+        message.reply(response).await.details(response)?;
 
         Ok(false)
     } else {

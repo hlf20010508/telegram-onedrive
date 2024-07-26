@@ -5,10 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::{Media, Message};
+use grammers_client::types::Media;
 use std::sync::Arc;
 
 use super::{EventType, Events};
+use crate::client::TelegramMessage;
 use crate::error::Result;
 use crate::state::AppState;
 
@@ -22,7 +23,7 @@ impl Handler {
         Self { events, state }
     }
 
-    pub async fn handle_message(&self, message: Arc<Message>) -> Result<()> {
+    pub async fn handle_message(&self, message: TelegramMessage) -> Result<()> {
         match message.media() {
             Some(media) => match media {
                 Media::Photo(_) | Media::Document(_) | Media::Sticker(_) => {
@@ -46,7 +47,7 @@ impl Handler {
         Ok(())
     }
 
-    pub async fn handle_command(&self, message: Arc<Message>) -> Result<()> {
+    pub async fn handle_command(&self, message: TelegramMessage) -> Result<()> {
         let text = message.text();
 
         for event in self.get_event_names() {
@@ -59,15 +60,15 @@ impl Handler {
         Ok(())
     }
 
-    pub async fn handle_text(&self, message: Arc<Message>) -> Result<()> {
+    pub async fn handle_text(&self, message: TelegramMessage) -> Result<()> {
         self.trigger(EventType::Text, message).await
     }
 
-    pub async fn handle_media(&self, message: Arc<Message>) -> Result<()> {
+    pub async fn handle_media(&self, message: TelegramMessage) -> Result<()> {
         self.trigger(EventType::Media, message).await
     }
 
-    async fn trigger(&self, event_name: EventType, message: Arc<Message>) -> Result<()> {
+    async fn trigger(&self, event_name: EventType, message: TelegramMessage) -> Result<()> {
         if let Some(callback) = self.events.get(event_name.to_str()) {
             callback(message, self.state.clone()).await?;
         }

@@ -5,13 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Message;
 use reqwest::header;
-use std::sync::Arc;
 
 use super::utils::{cmd_parser, get_filename, TextExt};
-use crate::client::ext::TelegramExt;
-use crate::error::{Error, Result};
+use crate::client::TelegramMessage;
+use crate::error::{Error, Result, ResultExt};
 use crate::state::AppState;
 use crate::tasker::CmdType;
 use crate::utils::get_http_client;
@@ -19,7 +17,7 @@ use crate::{check_in_group, check_od_login, check_senders, check_tg_login};
 
 pub const PATTERN: &str = "/url";
 
-pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
+pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);
     check_tg_login!(message, state);
@@ -72,10 +70,8 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
             let chat_bot_hex = message.chat().pack().to_hex();
             let chat_user_hex = telegram_user
-                .client
                 .get_chat(message.clone())
                 .await?
-                .ok_or_else(|| Error::new("failed to get chat"))?
                 .pack()
                 .to_hex();
 

@@ -5,13 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Message;
-use std::sync::Arc;
+use crate::client::{OneDriveClient, TelegramMessage};
+use crate::error::{Error, Result, ResultExt};
 
-use crate::client::OneDriveClient;
-use crate::error::{Error, Result};
-
-pub async fn logout_current_drive(onedrive: &OneDriveClient, message: Arc<Message>) -> Result<()> {
+pub async fn logout_current_drive(
+    onedrive: &OneDriveClient,
+    message: TelegramMessage,
+) -> Result<()> {
     let current_username = onedrive
         .get_current_username()
         .await?
@@ -32,17 +32,14 @@ pub async fn logout_current_drive(onedrive: &OneDriveClient, message: Arc<Messag
         response
     };
 
-    message
-        .respond(response.as_str())
-        .await
-        .map_err(|e| Error::respond_error(e, response))?;
+    message.respond(response.as_str()).await.details(response)?;
 
     Ok(())
 }
 
 pub async fn logout_drive(
     onedrive: &OneDriveClient,
-    message: Arc<Message>,
+    message: TelegramMessage,
     index: usize,
 ) -> Result<()> {
     let usernames = onedrive.get_usernames().await?;
@@ -66,10 +63,7 @@ pub async fn logout_drive(
         response
     };
 
-    message
-        .respond(response.as_str())
-        .await
-        .map_err(|e| Error::respond_error(e, response))?;
+    message.respond(response.as_str()).await.details(response)?;
 
     Ok(())
 }

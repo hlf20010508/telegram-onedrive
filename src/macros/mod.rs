@@ -16,12 +16,7 @@ macro_rules! check_in_group {
                 $message
                     .respond(crate::macros::docs::CHECK_IN_GROUP_FAILED)
                     .await
-                    .map_err(|e| {
-                        crate::error::Error::respond_error(
-                            e,
-                            crate::macros::docs::CHECK_IN_GROUP_FAILED,
-                        )
-                    })?;
+                    .details(crate::macros::docs::CHECK_IN_GROUP_FAILED)?;
 
                 return Ok(());
             }
@@ -47,24 +42,11 @@ macro_rules! check_senders {
 #[macro_export]
 macro_rules! check_tg_login {
     ($message: ident, $state: ident) => {
-        let is_authorized = $state
-            .telegram_user
-            .client
-            .is_authorized()
-            .await
-            .map_err(|e| {
-                Error::new_telegram_invocation(
-                    e,
-                    "failed to check telegram user client authorization state",
-                )
-            })?;
+        let is_authorized = $state.telegram_user.is_authorized().await?;
 
         if !is_authorized {
             let response = "You haven't logged in to Telegram.";
-            $message
-                .respond(response)
-                .await
-                .map_err(|e| Error::respond_error(e, response))?;
+            $message.respond(response).await.details(response)?;
 
             let env = &$state.env;
             let _server_abort_handle = crate::auth_server::spawn(env).await?;
@@ -80,10 +62,7 @@ macro_rules! check_od_login {
 
         if !is_authorized {
             let response = "You haven't authorize OneDrive.";
-            $message
-                .respond(response)
-                .await
-                .map_err(|e| Error::respond_error(e, response))?;
+            $message.respond(response).await.details(response)?;
 
             let env = &$state.env;
             let _server_abort_handle = crate::auth_server::spawn(env).await?;

@@ -5,17 +5,14 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Message;
-use std::sync::Arc;
-
-use crate::client::ext::TelegramExt;
-use crate::error::{Error, Result};
+use crate::client::TelegramMessage;
+use crate::error::{Error, Result, ResultExt};
 use crate::state::AppState;
 use crate::{check_in_group, check_senders, check_tg_login};
 
 pub const PATTERN: &str = "/clear";
 
-pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
+pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);
     check_tg_login!(message, state);
@@ -25,14 +22,10 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
     task_session.clear().await?;
 
-    let chat = telegram_user
-        .client
-        .get_chat(message)
-        .await?
-        .ok_or_else(|| Error::new("failed to get user chat"))?;
+    let chat = telegram_user.get_chat(message).await?;
 
     loop {
-        let mut messages = telegram_user.client.iter_messages(&chat).limit(100);
+        let mut messages = telegram_user.iter_messages(&chat).limit(100);
 
         let mut message_ids = Vec::new();
 
@@ -52,11 +45,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
             break;
         }
 
-        telegram_user
-            .client
-            .delete_messages(&chat, &message_ids)
-            .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to delete messages"))?;
+        telegram_user.delete_messages(&chat, &message_ids).await?;
     }
 
     Ok(())

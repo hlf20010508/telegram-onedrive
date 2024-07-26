@@ -5,13 +5,10 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Message;
-use std::sync::Arc;
+use crate::client::{OneDriveClient, TelegramMessage};
+use crate::error::{Result, ResultExt};
 
-use crate::client::OneDriveClient;
-use crate::error::{Error, Result};
-
-pub async fn show_dir(onedrive: &OneDriveClient, message: Arc<Message>) -> Result<()> {
+pub async fn show_dir(onedrive: &OneDriveClient, message: TelegramMessage) -> Result<()> {
     let root_path = onedrive.get_root_path(false).await?;
     let is_temp = onedrive.does_temp_root_path_exist().await;
 
@@ -20,10 +17,7 @@ pub async fn show_dir(onedrive: &OneDriveClient, message: Arc<Message>) -> Resul
     } else {
         format!("Current directory is {}, and it's temporary.", root_path)
     };
-    message
-        .respond(response.as_str())
-        .await
-        .map_err(|e| Error::respond_error(e, response))?;
+    message.respond(response.as_str()).await.details(response)?;
 
     Ok(())
 }

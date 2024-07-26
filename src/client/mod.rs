@@ -7,10 +7,8 @@
 
 pub mod ext;
 mod onedrive;
-mod telegram_bot;
-mod telegram_user;
+mod telegram;
 mod utils;
 
 pub use onedrive::OneDriveClient;
-pub use telegram_bot::TelegramBotClient;
-pub use telegram_user::TelegramUserClient;
+pub use telegram::{TelegramClient, TelegramMessage};

@@ -7,20 +7,19 @@
 
 use grammers_client::types::media::Uploaded;
 use grammers_client::types::photo_sizes::{PhotoSize, VecExt};
-use grammers_client::types::{Downloadable, Media, Message};
-use grammers_client::{Client, InputMessage};
+use grammers_client::types::{Downloadable, Media};
+use grammers_client::InputMessage;
 use std::io::Cursor;
-use std::sync::Arc;
 
-use crate::client::ext::TelegramExt;
+use crate::client::{TelegramClient, TelegramMessage};
 use crate::env::BYPASS_PREFIX;
-use crate::error::{Error, Result};
+use crate::error::{Error, Result, ResultExt};
 use crate::handlers::utils::{get_tg_file_size, preprocess_tg_file_name};
 use crate::state::AppState;
 use crate::tasker::CmdType;
 use crate::{check_in_group, check_od_login, check_senders, check_tg_login};
 
-pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
+pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);
     check_tg_login!(message, state);
@@ -30,16 +29,9 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
     let onedrive = &state.onedrive;
     let task_session = state.task_session.clone();
 
-    let chat_user = telegram_user
-        .client
-        .get_chat(message.clone())
-        .await?
-        .ok_or_else(|| Error::new("failed to get user chat from message"))?;
+    let chat_user = telegram_user.get_chat(message.clone()).await?;
 
-    let message_user = telegram_user
-        .client
-        .get_message(&chat_user, message.id())
-        .await?;
+    let message_user = telegram_user.get_message(&chat_user, message.id()).await?;
 
     let media = message_user
         .media()
@@ -75,11 +67,9 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
     if let Some(_) = message_user.forward_header() {
         let uploaded = match media {
-            Media::Photo(file) => upload_thumb(&telegram_user.client, file.thumbs()).await?,
-            Media::Document(file) => upload_thumb(&telegram_user.client, file.thumbs()).await?,
-            Media::Sticker(file) => {
-                upload_thumb(&telegram_user.client, file.document.thumbs()).await?
-            }
+            Media::Photo(file) => upload_thumb(telegram_user, file.thumbs()).await?,
+            Media::Document(file) => upload_thumb(telegram_user, file.thumbs()).await?,
+            Media::Sticker(file) => upload_thumb(telegram_user, file.document.thumbs()).await?,
             _ => Err(Error::new(
                 "media type is not one of photo, document and sticker",
             ))?,
@@ -89,22 +79,21 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
         match uploaded {
             Some(uploaded) => {
                 message_id = telegram_user
-                    .client
-                    .send_message(chat_user, InputMessage::text(response).photo(uploaded))
+                    .send_message(
+                        chat_user,
+                        InputMessage::text(response.as_str()).photo(uploaded),
+                    )
                     .await
-                    .map_err(|e| {
-                        Error::new_telegram_invocation(e, "failed to send message for forwarded")
-                    })?
+                    .context("forwarded message with thumb")
+                    .details(response)?
                     .id();
             }
             None => {
                 message_id = telegram_user
-                    .client
-                    .send_message(chat_user, response)
+                    .send_message(chat_user, response.as_str())
                     .await
-                    .map_err(|e| {
-                        Error::new_telegram_invocation(e, "failed to send message for forwarded")
-                    })?
+                    .context("forwarded message without thumn")
+                    .details(response)?
                     .id()
             }
         }
@@ -129,7 +118,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
     Ok(())
 }
 
-async fn upload_thumb(client: &Client, thumbs: Vec<PhotoSize>) -> Result<Option<Uploaded>> {
+async fn upload_thumb(client: &TelegramClient, thumbs: Vec<PhotoSize>) -> Result<Option<Uploaded>> {
     let uploaded = match thumbs.largest() {
         Some(thumb) => {
             let downloadable = Downloadable::PhotoSize(thumb.clone());
@@ -146,8 +135,7 @@ async fn upload_thumb(client: &Client, thumbs: Vec<PhotoSize>) -> Result<Option<
             let mut stream = Cursor::new(buffer);
             let uploaded = client
                 .upload_stream(&mut stream, size, "thumb.jpg".to_string())
-                .await
-                .map_err(|e| Error::new_sys_io(e, "failed to upload thumb"))?;
+                .await?;
 
             Some(uploaded)
         }

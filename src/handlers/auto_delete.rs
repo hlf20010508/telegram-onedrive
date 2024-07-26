@@ -5,17 +5,16 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Message;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
 
-use crate::error::{Error, Result};
+use crate::client::TelegramMessage;
+use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 use crate::{check_in_group, check_senders};
 
 pub const PATTERN: &str = "/autoDelete";
 
-pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
+pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);
 
@@ -27,16 +26,10 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
 
     if !should_auto_delete {
         let response = "Bot will auto delete message.";
-        message
-            .respond(response)
-            .await
-            .map_err(|e| Error::respond_error(e, response))?;
+        message.respond(response).await.details(response)?;
     } else {
         let response = "Bot won't auto delete message.";
-        message
-            .respond(response)
-            .await
-            .map_err(|e| Error::respond_error(e, response))?;
+        message.respond(response).await.details(response)?;
     }
 
     Ok(())

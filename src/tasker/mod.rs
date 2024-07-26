@@ -11,7 +11,6 @@ mod session;
 mod tasks;
 mod transfer;
 
-use grammers_client::types::Message;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Semaphore;
@@ -21,9 +20,10 @@ use progress::Progress;
 pub use session::TaskSession;
 pub use tasks::CmdType;
 
-use crate::client::ext::{chat_from_hex, TelegramExt};
+use crate::client::ext::chat_from_hex;
+use crate::client::TelegramMessage;
 use crate::env::WORKER_NUM;
-use crate::error::{Result, ResultExt};
+use crate::error::{Result, ResultUnwrapExt};
 use crate::state::AppState;
 
 pub struct Tasker {
@@ -71,16 +71,11 @@ impl Tasker {
         if let Some(task) = task {
             let chat = chat_from_hex(&task.chat_bot_hex)?;
 
-            let message = {
-                let message = self
-                    .state
-                    .telegram_bot
-                    .client
-                    .get_message(chat, task.message_id)
-                    .await?;
-
-                Arc::new(message)
-            };
+            let message = self
+                .state
+                .telegram_bot
+                .get_message(chat, task.message_id)
+                .await?;
 
             let semaphore_clone = semaphore.clone();
             let state_clone = self.state.clone();
@@ -92,7 +87,7 @@ impl Tasker {
                     tokio::spawn(async move {
                         async fn handler(
                             task: tasks::Model,
-                            message: Arc<Message>,
+                            message: TelegramMessage,
                             session: Arc<TaskSession>,
                             progress: Arc<Progress>,
                             state: AppState,

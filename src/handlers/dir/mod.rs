@@ -11,22 +11,21 @@ mod set;
 mod show;
 mod utils;
 
-use grammers_client::types::Message;
 use grammers_client::InputMessage;
-use std::sync::Arc;
 
 use reset::{cancel_temp_dir, reset_dir};
 use set::{set_dir, set_temp_dir};
 use show::show_dir;
 
 use super::utils::cmd_parser;
-use crate::error::{Error, Result};
+use crate::client::TelegramMessage;
+use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 use crate::{check_in_group, check_od_login, check_senders};
 
 pub const PATTERN: &str = "/dir";
 
-pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
+pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);
     check_od_login!(message, state);
@@ -64,12 +63,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
                     docs::USAGE
                 )))
                 .await
-                .map_err(|e| {
-                    Error::new_telegram_invocation(
-                        e,
-                        "failed to respond sub command error for /dir",
-                    )
-                })?;
+                .context("sub command error for /dir")?;
         }
     } else {
         message
@@ -78,9 +72,7 @@ pub async fn handler(message: Arc<Message>, state: AppState) -> Result<()> {
                 docs::USAGE
             )))
             .await
-            .map_err(|e| {
-                Error::new_telegram_invocation(e, "failed to respond command error for /dir")
-            })?;
+            .context("command error for /dir")?;
     }
 
     Ok(())

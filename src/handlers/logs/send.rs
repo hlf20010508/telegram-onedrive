@@ -5,25 +5,19 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Message;
 use grammers_client::InputMessage;
-use std::sync::Arc;
 
-use crate::client::TelegramBotClient;
+use crate::client::{TelegramClient, TelegramMessage};
 use crate::env::LOG_PATH;
-use crate::error::{Error, Result};
+use crate::error::{Result, ResultExt};
 
-pub async fn send_log_file(telegram_bot: &TelegramBotClient, message: Arc<Message>) -> Result<()> {
-    let file = telegram_bot
-        .client
-        .upload_file(LOG_PATH)
-        .await
-        .map_err(|e| Error::new_sys_io(e, "failed to upload log file"))?;
+pub async fn send_log_file(telegram_bot: &TelegramClient, message: TelegramMessage) -> Result<()> {
+    let file = telegram_bot.upload_file(LOG_PATH).await?;
 
     message
         .respond(InputMessage::default().file(file))
         .await
-        .map_err(|e| Error::new_telegram_invocation(e, "failed to respond log file"))?;
+        .context("log file")?;
 
     Ok(())
 }

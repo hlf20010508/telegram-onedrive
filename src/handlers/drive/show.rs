@@ -5,13 +5,10 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Message;
-use std::sync::Arc;
+use crate::client::{OneDriveClient, TelegramMessage};
+use crate::error::{Result, ResultExt};
 
-use crate::client::OneDriveClient;
-use crate::error::{Error, Result};
-
-pub async fn show_drive(onedrive: &OneDriveClient, message: Arc<Message>) -> Result<()> {
+pub async fn show_drive(onedrive: &OneDriveClient, message: TelegramMessage) -> Result<()> {
     let usernames = onedrive.get_usernames().await?;
     if let Some(current_username) = onedrive.get_current_username().await? {
         if usernames.len() > 0 {
@@ -27,20 +24,14 @@ pub async fn show_drive(onedrive: &OneDriveClient, message: Arc<Message>) -> Res
 
                 response
             };
-            message
-                .respond(response.as_str())
-                .await
-                .map_err(|e| Error::respond_error(e, response))?;
+            message.respond(response.as_str()).await.details(response)?;
 
             return Ok(());
         }
     }
 
     let response = "No account found.";
-    message
-        .respond(response)
-        .await
-        .map_err(|e| Error::respond_error(e, response))?;
+    message.respond(response).await.details(response)?;
 
     Ok(())
 }

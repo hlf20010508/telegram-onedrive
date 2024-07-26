@@ -8,14 +8,14 @@
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-use crate::client::{OneDriveClient, TelegramBotClient, TelegramUserClient};
+use crate::client::{OneDriveClient, TelegramClient};
 use crate::env::Env;
 use crate::tasker::TaskSession;
 
 pub struct State {
     pub env: Env,
-    pub telegram_bot: TelegramBotClient,
-    pub telegram_user: TelegramUserClient,
+    pub telegram_bot: TelegramClient,
+    pub telegram_user: TelegramClient,
     pub onedrive: OneDriveClient,
     pub should_auto_delete: AtomicBool,
     pub task_session: Arc<TaskSession>,
@@ -24,8 +24,8 @@ pub struct State {
 impl State {
     pub async fn new() -> Self {
         let env = Env::new();
-        let telegram_bot = TelegramBotClient::new(&env).await.unwrap();
-        let telegram_user = TelegramUserClient::new(&env).await.unwrap();
+        let telegram_bot = TelegramClient::new_bot(&env).await.unwrap();
+        let telegram_user = TelegramClient::new_user(&env).await.unwrap();
         let onedrive = OneDriveClient::new(&env).await.unwrap();
         let should_auto_delete = AtomicBool::new(env.should_auto_delete);
         let task_session = Arc::new(TaskSession::new(&env.tasker_session_path).await.unwrap());

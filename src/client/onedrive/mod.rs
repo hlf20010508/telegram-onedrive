@@ -10,19 +10,18 @@ mod drive;
 mod session;
 mod upload;
 
-use grammers_client::types::Message;
 use onedrive_api::{
     Auth, ClientCredential, DriveLocation, OneDrive as Client, Permission, Tenant, TokenResponse,
 };
-use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use session::OneDriveSession;
 
 use super::utils::{socketio_client, socketio_disconnect};
+use super::TelegramMessage;
 use crate::auth_server::OD_CODE_EVENT;
 use crate::env::{Env, OneDriveEnv};
-use crate::error::{Error, Result};
+use crate::error::{Error, Result, ResultExt};
 
 pub struct OneDriveClient {
     client: RwLock<Client>,
@@ -82,7 +81,7 @@ impl OneDriveClient {
 
     pub async fn login(
         &self,
-        message: Arc<Message>,
+        message: TelegramMessage,
         Env {
             port,
             use_reverse_proxy,
@@ -93,19 +92,13 @@ impl OneDriveClient {
         if !should_add {
             if !self.is_authorized().await {
                 let response = "Auto logging in to OneDrive...";
-                message
-                    .respond(response)
-                    .await
-                    .map_err(|e| Error::respond_error(e, response))?;
+                message.respond(response).await.details(response)?;
 
                 if self.auto_login().await.is_ok() {
                     return Ok(());
                 } else {
                     let response = "Auto login to OneDrive failed, login manually.";
-                    message
-                        .respond(response)
-                        .await
-                        .map_err(|e| Error::respond_error(e, response))?;
+                    message.respond(response).await.details(response)?;
                 }
             } else {
                 return Ok(());
@@ -116,10 +109,7 @@ impl OneDriveClient {
             "Here are the authorization url of OneDrive:\n\n{}",
             self.get_auth_url()
         );
-        message
-            .respond(response.as_str())
-            .await
-            .map_err(|e| Error::respond_error(e, response))?;
+        message.respond(response.as_str()).await.details(response)?;
 
         let (socketio_client, mut rx) =
             socketio_client(OD_CODE_EVENT, port.to_owned(), use_reverse_proxy.to_owned()).await?;
@@ -132,10 +122,7 @@ impl OneDriveClient {
         socketio_disconnect(socketio_client).await?;
 
         let response = "Code received, authorizing...";
-        message
-            .respond(response)
-            .await
-            .map_err(|e| Error::respond_error(e, response))?;
+        message.respond(response).await.details(response)?;
 
         let TokenResponse {
             expires_in_secs,
