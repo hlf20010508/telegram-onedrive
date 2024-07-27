@@ -66,7 +66,11 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         ))?,
     };
 
+    let mut message_id_forward = None;
+
     if let Some(_) = message_user.forward_header() {
+        message_id_forward = Some(message_id);
+
         let uploaded = match media {
             Media::Photo(file) => upload_thumb(telegram_user, file.thumbs()).await?,
             Media::Document(file) => upload_thumb(telegram_user, file.thumbs()).await?,
@@ -112,7 +116,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             &chat_bot_hex,
             &chat_user_hex,
             message_id,
-            Some(message.id()),
+            message_id_forward,
         )
         .await?;
 
