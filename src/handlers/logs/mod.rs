@@ -16,7 +16,7 @@ use clear::clear_logs;
 use send::send_log_file;
 
 use super::utils::cmd_parser;
-use crate::client::TelegramMessage;
+use crate::message::TelegramMessage;
 use crate::env::LOG_PATH;
 use crate::error::{Result, ResultExt};
 use crate::state::AppState;

@@ -7,7 +7,7 @@
 
 use tokio::fs;
 
-use crate::client::TelegramMessage;
+use crate::message::TelegramMessage;
 use crate::env::LOG_PATH;
 use crate::error::{Error, Result, ResultExt};
 

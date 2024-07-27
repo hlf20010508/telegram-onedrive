@@ -5,8 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::client::{OneDriveClient, TelegramMessage};
+use crate::client::OneDriveClient;
 use crate::error::{Error, Result, ResultExt};
+use crate::message::TelegramMessage;
 
 pub async fn logout_current_drive(
     onedrive: &OneDriveClient,

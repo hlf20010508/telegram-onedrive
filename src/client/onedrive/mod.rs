@@ -18,10 +18,10 @@ use tokio::sync::RwLock;
 use session::OneDriveSession;
 
 use super::utils::{socketio_client, socketio_disconnect};
-use super::TelegramMessage;
 use crate::auth_server::OD_CODE_EVENT;
 use crate::env::{Env, OneDriveEnv};
 use crate::error::{Error, Result, ResultExt};
+use crate::message::TelegramMessage;
 
 pub struct OneDriveClient {
     client: RwLock<Client>,

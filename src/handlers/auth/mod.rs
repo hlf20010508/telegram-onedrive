@@ -11,8 +11,8 @@ mod telegram;
 pub use onedrive::authorize_onedrive;
 pub use telegram::login_to_telegram;
 
-use crate::client::TelegramMessage;
 use crate::error::{Result, ResultExt};
+use crate::message::TelegramMessage;
 use crate::state::AppState;
 use crate::{auth_server, check_in_group, check_senders};
 

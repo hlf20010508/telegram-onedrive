@@ -9,7 +9,7 @@ mod docs;
 
 use grammers_client::InputMessage;
 
-use crate::client::TelegramMessage;
+use crate::message::TelegramMessage;
 use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 

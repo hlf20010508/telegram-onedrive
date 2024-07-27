@@ -5,8 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::client::TelegramMessage;
 use crate::error::{Result, ResultExt};
+use crate::message::TelegramMessage;
 use crate::state::AppState;
 
 pub async fn authorize_onedrive(

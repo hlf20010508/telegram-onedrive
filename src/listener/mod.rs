@@ -16,9 +16,9 @@ pub use events::{EventType, HashMapExt};
 use events::Events;
 use handler::Handler;
 
-use crate::client::TelegramMessage;
 use crate::env::BYPASS_PREFIX;
 use crate::error::{Result, ResultUnwrapExt};
+use crate::message::TelegramMessage;
 use crate::state::{AppState, State};
 use crate::tasker::Tasker;
 
@@ -53,13 +53,11 @@ impl Listener {
     async fn handle_message(&self) -> Result<()> {
         let handler = Handler::new(self.events.clone(), self.state.clone());
 
-        let telegram_bot = &handler.state.telegram_bot;
-
-        let update = telegram_bot.next_update().await?;
+        let update = handler.state.telegram_bot.next_update().await?;
 
         if let Some(Update::NewMessage(message_raw)) = update {
             if !message_raw.outgoing() && !message_raw.text().starts_with(BYPASS_PREFIX) {
-                let message = TelegramMessage::new(telegram_bot.clone(), message_raw);
+                let message = TelegramMessage::new(message_raw);
 
                 if let Err(e) = handler.handle_message(message.clone()).await {
                     e.send(message).await.unwrap_both().trace()

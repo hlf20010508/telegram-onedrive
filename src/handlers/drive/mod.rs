@@ -19,7 +19,7 @@ use set::set_drive;
 use show::show_drive;
 
 use super::utils::cmd_parser;
-use crate::client::TelegramMessage;
+use crate::message::TelegramMessage;
 use crate::error::{Error, Result, ResultExt};
 use crate::state::AppState;
 use crate::{check_in_group, check_od_login, check_senders};

@@ -5,8 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::client::{OneDriveClient, TelegramMessage};
+use crate::client::OneDriveClient;
 use crate::error::{Result, ResultExt};
+use crate::message::TelegramMessage;
 
 pub async fn show_drive(onedrive: &OneDriveClient, message: TelegramMessage) -> Result<()> {
     let usernames = onedrive.get_usernames().await?;

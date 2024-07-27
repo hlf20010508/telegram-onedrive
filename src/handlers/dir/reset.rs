@@ -5,8 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::client::{OneDriveClient, TelegramMessage};
+use crate::client::OneDriveClient;
 use crate::error::{Result, ResultExt};
+use crate::message::TelegramMessage;
 
 pub async fn reset_dir(onedrive: &OneDriveClient, message: TelegramMessage) -> Result<()> {
     onedrive.reset_root_path().await?;

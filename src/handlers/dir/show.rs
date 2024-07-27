@@ -5,8 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::client::{OneDriveClient, TelegramMessage};
+use crate::client::OneDriveClient;
 use crate::error::{Result, ResultExt};
+use crate::message::TelegramMessage;
 
 pub async fn show_dir(onedrive: &OneDriveClient, message: TelegramMessage) -> Result<()> {
     let root_path = onedrive.get_root_path(false).await?;

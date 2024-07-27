@@ -8,8 +8,8 @@
 use reqwest::header;
 
 use super::utils::{cmd_parser, get_filename, TextExt};
-use crate::client::TelegramMessage;
 use crate::error::{Error, Result, ResultExt};
+use crate::message::TelegramMessage;
 use crate::state::AppState;
 use crate::tasker::CmdType;
 use crate::utils::get_http_client;

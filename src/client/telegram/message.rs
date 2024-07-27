@@ -6,79 +6,12 @@
 */
 
 use grammers_client::client::messages::MessageIter;
-use grammers_client::grammers_tl_types as tl;
-use grammers_client::types::{Chat, InputMessage, Media, Message, PackedChat};
+use grammers_client::types::{Chat, InputMessage, Message, PackedChat};
 use grammers_client::Update;
-use std::sync::Arc;
 
 use super::TelegramClient;
 use crate::error::{Error, Result};
-
-#[derive(Clone)]
-pub struct TelegramMessage {
-    raw: Arc<Message>,
-    client: TelegramClient,
-}
-
-impl TelegramMessage {
-    pub fn new(client: TelegramClient, message: Message) -> Self {
-        Self {
-            raw: Arc::new(message),
-            client,
-        }
-    }
-
-    pub fn chat(&self) -> Chat {
-        self.raw.chat()
-    }
-
-    pub fn text(&self) -> &str {
-        self.raw.text()
-    }
-
-    pub fn id(&self) -> i32 {
-        self.raw.id()
-    }
-
-    pub fn media(&self) -> Option<Media> {
-        self.raw.media()
-    }
-
-    pub fn sender(&self) -> Option<Chat> {
-        self.raw.sender()
-    }
-
-    pub async fn respond<M: Into<InputMessage>>(&self, message: M) -> Result<Self> {
-        let message_raw = self
-            .raw
-            .respond(message)
-            .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to respond message"))?;
-
-        Ok(Self::new(self.client.clone(), message_raw))
-    }
-
-    pub async fn reply<M: Into<InputMessage>>(&self, message: M) -> Result<Self> {
-        let message_raw = self
-            .raw
-            .reply(message)
-            .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to reply message"))?;
-
-        Ok(Self::new(self.client.clone(), message_raw))
-    }
-
-    pub fn forward_header(&self) -> Option<tl::enums::MessageFwdHeader> {
-        self.raw.forward_header()
-    }
-
-    pub async fn delete(&self) -> Result<()> {
-        self.raw
-            .delete()
-            .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to delete message"))
-    }
-}
+use crate::message::TelegramMessage;
 
 impl TelegramClient {
     pub async fn get_message<C>(&self, chat: C, message_id: i32) -> Result<TelegramMessage>
@@ -95,7 +28,7 @@ impl TelegramClient {
             .to_owned()
             .ok_or_else(|| Error::new("message not found"))?;
 
-        let message = TelegramMessage::new(self.clone(), message_raw);
+        let message = TelegramMessage::new(message_raw);
 
         Ok(message)
     }

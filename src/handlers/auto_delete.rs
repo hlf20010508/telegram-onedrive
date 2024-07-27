@@ -7,7 +7,7 @@
 
 use std::sync::atomic::Ordering;
 
-use crate::client::TelegramMessage;
+use crate::message::TelegramMessage;
 use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 use crate::{check_in_group, check_senders};

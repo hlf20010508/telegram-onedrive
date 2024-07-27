@@ -11,12 +11,11 @@ mod message;
 use grammers_client::session::Session;
 use grammers_client::{Client, Config, SignInError};
 
-pub use message::TelegramMessage;
-
 use super::utils::{socketio_client, socketio_disconnect};
 use crate::auth_server::TG_CODE_EVENT;
 use crate::env::{Env, TelegramBotEnv, TelegramUserEnv};
 use crate::error::{Error, Result, ResultExt};
+use crate::message::TelegramMessage;
 
 #[derive(Clone)]
 pub enum TelegramClient {

@@ -6,7 +6,7 @@
 */
 
 use crate::auth_server;
-use crate::client::TelegramMessage;
+use crate::message::TelegramMessage;
 use crate::error::Result;
 use crate::handlers::auth::authorize_onedrive;
 use crate::state::AppState;

@@ -11,4 +11,4 @@ mod telegram;
 mod utils;
 
 pub use onedrive::OneDriveClient;
-pub use telegram::{TelegramClient, TelegramMessage};
+pub use telegram::TelegramClient;

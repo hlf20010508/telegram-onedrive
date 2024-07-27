@@ -5,8 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::client::TelegramMessage;
 use crate::error::{Error, Result, ResultExt};
+use crate::message::TelegramMessage;
 use crate::state::AppState;
 use crate::{check_in_group, check_senders, check_tg_login};
 

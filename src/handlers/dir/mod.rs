@@ -18,7 +18,7 @@ use set::{set_dir, set_temp_dir};
 use show::show_dir;
 
 use super::utils::cmd_parser;
-use crate::client::TelegramMessage;
+use crate::message::TelegramMessage;
 use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 use crate::{check_in_group, check_od_login, check_senders};

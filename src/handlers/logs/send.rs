@@ -7,9 +7,10 @@
 
 use grammers_client::InputMessage;
 
-use crate::client::{TelegramClient, TelegramMessage};
+use crate::client::TelegramClient;
 use crate::env::LOG_PATH;
 use crate::error::{Result, ResultExt};
+use crate::message::TelegramMessage;
 
 pub async fn send_log_file(telegram_bot: &TelegramClient, message: TelegramMessage) -> Result<()> {
     let file = telegram_bot.upload_file(LOG_PATH).await?;

@@ -10,8 +10,8 @@ use futures::{Future, FutureExt};
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use crate::client::TelegramMessage;
 use crate::error::Result;
+use crate::message::TelegramMessage;
 use crate::state::AppState;
 
 type EventFn = dyn Fn(TelegramMessage, AppState) -> BoxFuture<'static, Result<()>>;

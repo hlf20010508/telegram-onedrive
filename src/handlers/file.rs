@@ -11,10 +11,11 @@ use grammers_client::types::{Downloadable, Media};
 use grammers_client::InputMessage;
 use std::io::Cursor;
 
-use crate::client::{TelegramClient, TelegramMessage};
+use crate::client::TelegramClient;
 use crate::env::BYPASS_PREFIX;
 use crate::error::{Error, Result, ResultExt};
 use crate::handlers::utils::{get_tg_file_size, preprocess_tg_file_name};
+use crate::message::TelegramMessage;
 use crate::state::AppState;
 use crate::tasker::CmdType;
 use crate::{check_in_group, check_od_login, check_senders, check_tg_login};

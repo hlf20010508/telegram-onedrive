@@ -5,7 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::client::TelegramMessage;
+use crate::message::TelegramMessage;
 use crate::error::{Result, ResultExt};
 
 pub async fn is_root_path_valid(root_path: &str, message: TelegramMessage) -> Result<bool> {

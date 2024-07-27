@@ -9,8 +9,8 @@ use grammers_client::types::Media;
 use std::sync::Arc;
 
 use super::{EventType, Events};
-use crate::client::TelegramMessage;
 use crate::error::Result;
+use crate::message::TelegramMessage;
 use crate::state::AppState;
 
 pub struct Handler {

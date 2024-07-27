@@ -10,7 +10,8 @@ use axum::response::{IntoResponse, Response};
 use grammers_client::types::PackedChat;
 use std::fmt::Display;
 
-use crate::client::{TelegramClient, TelegramMessage};
+use crate::client::TelegramClient;
+use crate::message::TelegramMessage;
 
 #[derive(Debug)]
 pub enum Error {

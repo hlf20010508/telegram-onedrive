@@ -21,9 +21,9 @@ pub use session::TaskSession;
 pub use tasks::CmdType;
 
 use crate::client::ext::chat_from_hex;
-use crate::client::TelegramMessage;
 use crate::env::WORKER_NUM;
 use crate::error::{Result, ResultUnwrapExt};
+use crate::message::TelegramMessage;
 use crate::state::AppState;
 
 pub struct Tasker {

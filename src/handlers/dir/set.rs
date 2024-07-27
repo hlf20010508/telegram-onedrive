@@ -6,8 +6,9 @@
 */
 
 use super::utils::is_root_path_valid;
-use crate::client::{OneDriveClient, TelegramMessage};
+use crate::client::OneDriveClient;
 use crate::error::{Result, ResultExt};
+use crate::message::TelegramMessage;
 
 pub async fn set_dir(
     onedrive: &OneDriveClient,
