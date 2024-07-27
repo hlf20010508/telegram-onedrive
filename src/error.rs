@@ -362,6 +362,7 @@ impl Error {
         }
     }
 
+    // TODO: push new details to the back
     pub fn details<T>(mut self, message_details: T) -> Self
     where
         T: Display,
@@ -391,6 +392,7 @@ impl Error {
         self
     }
 
+    // TODO: push new context to the front
     pub fn context<T>(mut self, message_context: T) -> Self
     where
         T: Display,

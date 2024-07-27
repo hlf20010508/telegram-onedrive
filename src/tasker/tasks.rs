@@ -109,6 +109,7 @@ impl Display for CmdType {
 #[derive(Debug, Clone, PartialEq)]
 pub enum TaskStatus {
     Waiting,
+    Fetched,
     Started,
     Completed,
     Failed,
@@ -119,6 +120,7 @@ impl ValueType for TaskStatus {
         match v {
             Value::String(Some(value)) => match value.as_str() {
                 "waiting" => Ok(Self::Waiting),
+                "fetched" => Ok(Self::Fetched),
                 "started" => Ok(Self::Started),
                 "completed" => Ok(Self::Completed),
                 "failed" => Ok(Self::Failed),
@@ -145,6 +147,7 @@ impl Into<Value> for TaskStatus {
     fn into(self) -> Value {
         match self {
             Self::Waiting => Value::String(Some(Box::new(self.to_string()))),
+            Self::Fetched => Value::String(Some(Box::new(self.to_string()))),
             Self::Started => Value::String(Some(Box::new(self.to_string()))),
             Self::Completed => Value::String(Some(Box::new(self.to_string()))),
             Self::Failed => Value::String(Some(Box::new(self.to_string()))),
@@ -158,6 +161,7 @@ impl TryGetable for TaskStatus {
 
         match value.as_str() {
             "waiting" => Ok(Self::Waiting),
+            "fetched" => Ok(Self::Fetched),
             "started" => Ok(Self::Started),
             "completed" => Ok(Self::Completed),
             "failed" => Ok(Self::Failed),
@@ -173,6 +177,7 @@ impl Display for TaskStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Waiting => write!(f, "waiting"),
+            Self::Fetched => write!(f, "fetched"),
             Self::Started => write!(f, "started"),
             Self::Completed => write!(f, "completed"),
             Self::Failed => write!(f, "failed"),

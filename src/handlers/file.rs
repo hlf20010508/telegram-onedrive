@@ -32,7 +32,10 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     let chat_user = telegram_user.get_chat(message.clone()).await?;
 
-    let message_user = telegram_user.get_message(&chat_user, message.id()).await?;
+    let message_user = telegram_user
+        .get_message(&chat_user, message.id())
+        .await
+        .context("message_user in file handler")?;
 
     let media = message_user
         .media()

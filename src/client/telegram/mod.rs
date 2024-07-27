@@ -10,18 +10,19 @@ mod message;
 
 use grammers_client::session::Session;
 use grammers_client::{Client, Config, SignInError};
-use std::collections::VecDeque;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+
+use message::MessageVecDeque;
 
 use super::utils::{socketio_client, socketio_disconnect};
 use crate::auth_server::TG_CODE_EVENT;
 use crate::env::{Env, TelegramBotEnv, TelegramUserEnv};
 use crate::error::{Error, Result, ResultExt};
-use crate::message::{QueuedMessage, TelegramMessage};
+use crate::message::TelegramMessage;
 
 // messages to be sent or edited
-type MessageQueue = Arc<Mutex<VecDeque<QueuedMessage>>>;
+type MessageQueue = Arc<Mutex<MessageVecDeque>>;
 
 #[derive(Clone)]
 pub enum TelegramClient {
@@ -86,7 +87,7 @@ impl TelegramClient {
 
         let telegram_client = Self::Bot {
             client,
-            message_queue: Arc::new(Mutex::new(VecDeque::new())),
+            message_queue: Arc::new(Mutex::new(MessageVecDeque::new())),
         };
 
         telegram_client.run_message_loop().await;
@@ -127,7 +128,7 @@ impl TelegramClient {
 
         let telegram_client = Self::User {
             client,
-            message_queue: Arc::new(Mutex::new(VecDeque::new())),
+            message_queue: Arc::new(Mutex::new(MessageVecDeque::new())),
         };
 
         telegram_client.run_message_loop().await;

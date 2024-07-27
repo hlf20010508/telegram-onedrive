@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 
 use super::session::{ChatHex, ChatTasks};
 use super::{tasks, TaskSession};
@@ -21,13 +22,19 @@ use crate::state::AppState;
 pub struct Progress {
     session: Arc<TaskSession>,
     state: AppState,
+    last_progress_response: Arc<Mutex<String>>,
 }
 
 impl Progress {
     pub fn new(state: AppState) -> Self {
         let session = state.task_session.clone();
+        let last_progress_response = Arc::new(Mutex::new("".to_string()));
 
-        Self { session, state }
+        Self {
+            session,
+            state,
+            last_progress_response,
+        }
     }
 
     pub async fn set_current_length(&self, id: i64, current_length: u64) -> Result<()> {
@@ -81,6 +88,7 @@ impl Progress {
             )
             .await?;
 
+            // TODO: check if the media is in an album, if yes, update status to the caption of the album
             self.handle_chat_completed_tasks(completed_tasks, &chat_user_hex)
                 .await?;
 
@@ -134,7 +142,10 @@ impl Progress {
         for task in completed_tasks {
             let chat = chat_from_hex(chat_user_hex)?;
 
-            let message_user = telegram_user.get_message(chat, task.message_id).await?;
+            let message_user = telegram_user
+                .get_message(chat, task.message_id)
+                .await
+                .context("message_user in handle_chat_completed_tasks")?;
 
             let file_path_raw = Path::new(&task.root_path).join(task.filename);
             let file_path = file_path_raw.to_slash_lossy();
@@ -173,7 +184,10 @@ impl Progress {
         for task in failed_tasks {
             let chat = chat_from_hex(chat_user_hex)?;
 
-            let message_user = telegram_user.get_message(chat, task.message_id).await?;
+            let message_user = telegram_user
+                .get_message(chat, task.message_id)
+                .await
+                .context("message_user in handle_chat_failed_tasks")?;
 
             let response = format!("{}\n\nFailed.", message_user.text());
             if let Err(e) = telegram_user
@@ -296,22 +310,19 @@ impl Progress {
 
                         *progress_message_id = message.id();
                     } else {
-                        if let Err(e) = telegram_bot
-                            .edit_message(
-                                chat,
-                                progress_message_id.to_owned(),
-                                InputMessage::html(response.as_str()),
-                            )
-                            .await
-                            .details(response)
-                        {
-                            match e {
-                                Error::TelegramInvocationError {
-                                    raw: grammers_client::InvocationError::Rpc(e),
-                                    ..
-                                } if e.code == 400 => {}
-                                _ => Err(e)?,
-                            }
+                        let mut last_progress_response = self.last_progress_response.lock().await;
+
+                        if *last_progress_response != response {
+                            telegram_bot
+                                .edit_message(
+                                    chat,
+                                    progress_message_id.to_owned(),
+                                    InputMessage::html(response.as_str()),
+                                )
+                                .await
+                                .details(&response)?;
+
+                            *last_progress_response = response;
                         }
                     }
                 }

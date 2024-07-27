@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use std::collections::{HashMap, VecDeque};
 use std::time::Duration;
 
 use grammers_client::client::messages::MessageIter;
@@ -190,5 +191,46 @@ impl TelegramClient {
                 tokio::time::sleep(Duration::from_secs(2)).await;
             }
         });
+    }
+}
+
+pub struct MessageVecDeque {
+    deque: VecDeque<QueuedMessage>,
+    key_map: HashMap<i32, usize>,
+}
+
+impl MessageVecDeque {
+    pub fn new() -> Self {
+        Self {
+            deque: VecDeque::new(),
+            key_map: HashMap::new(),
+        }
+    }
+
+    pub fn push_back(&mut self, queued_message: QueuedMessage) {
+        match queued_message.message_type {
+            QueuedMessageType::Respond | QueuedMessageType::Reply(_) => {
+                self.deque.push_back(queued_message);
+            }
+            QueuedMessageType::Edit(message_id) => match self.key_map.get(&message_id) {
+                Some(index) => {
+                    self.deque[*index] = queued_message;
+                }
+                None => {
+                    self.key_map.insert(message_id, self.deque.len());
+                    self.deque.push_back(queued_message);
+                }
+            },
+        }
+    }
+
+    pub fn pop_front(&mut self) -> Option<QueuedMessage> {
+        self.deque.pop_front().map(|queued_message| {
+            if let QueuedMessageType::Edit(message_id) = queued_message.message_type {
+                self.key_map.remove(&message_id);
+            }
+
+            queued_message
+        })
     }
 }

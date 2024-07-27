@@ -68,11 +68,18 @@ impl TaskSession {
     }
 
     pub async fn fetch_task(&self) -> Result<Option<tasks::Model>> {
-        tasks::Entity::find()
+        let task = tasks::Entity::find()
             .filter(tasks::Column::Status.eq(TaskStatus::Waiting))
             .one(&self.connection)
             .await
-            .map_err(|e| Error::new_database(e, "failed to get a task"))
+            .map_err(|e| Error::new_database(e, "failed to get a task"))?;
+
+        if let Some(task) = &task {
+            self.set_task_status(task.id, tasks::TaskStatus::Fetched)
+                .await?;
+        }
+
+        Ok(task)
     }
 
     pub async fn insert_task(
@@ -178,7 +185,11 @@ impl TaskSession {
             .filter(
                 Condition::all()
                     .add(tasks::Column::ChatBotHex.eq(chat_bot_hex))
-                    .add(tasks::Column::Status.eq(TaskStatus::Waiting)),
+                    .add(
+                        Condition::any()
+                            .add(tasks::Column::Status.eq(TaskStatus::Waiting))
+                            .add(tasks::Column::Status.eq(TaskStatus::Fetched)),
+                    ),
             )
             .count(&self.connection)
             .await
