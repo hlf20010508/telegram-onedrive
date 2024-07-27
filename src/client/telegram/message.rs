@@ -5,13 +5,16 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use std::time::Duration;
+
 use grammers_client::client::messages::MessageIter;
-use grammers_client::types::{Chat, InputMessage, Message, PackedChat};
+use grammers_client::types::{Chat, InputMessage, PackedChat};
 use grammers_client::Update;
+use tokio::sync::mpsc;
 
 use super::TelegramClient;
-use crate::error::{Error, Result};
-use crate::message::TelegramMessage;
+use crate::error::{Error, Result, ResultExt};
+use crate::message::{QueuedMessage, QueuedMessageType, TelegramMessage};
 
 impl TelegramClient {
     pub async fn get_message<C>(&self, chat: C, message_id: i32) -> Result<TelegramMessage>
@@ -28,7 +31,7 @@ impl TelegramClient {
             .to_owned()
             .ok_or_else(|| Error::new("message not found"))?;
 
-        let message = TelegramMessage::new(message_raw);
+        let message = TelegramMessage::new(self.clone(), message_raw);
 
         Ok(message)
     }
@@ -71,11 +74,18 @@ impl TelegramClient {
         &self,
         chat: C,
         message: M,
-    ) -> Result<Message> {
-        self.client()
-            .send_message(chat, message)
+    ) -> Result<TelegramMessage> {
+        let (tx, mut rx) = mpsc::channel(1);
+
+        let queued_message = QueuedMessage::new(QueuedMessageType::Respond, message, chat, tx);
+
+        self.push_queued_message(queued_message).await;
+
+        rx.recv()
             .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to respond message"))
+            .ok_or_else(|| Error::new("failed to receive message result"))
+            .context("respond")??
+            .ok_or_else(|| Error::new("received message is None").context("respond"))
     }
 
     pub async fn edit_message<C: Into<PackedChat>, M: Into<InputMessage>>(
@@ -84,10 +94,19 @@ impl TelegramClient {
         message_id: i32,
         new_message: M,
     ) -> Result<()> {
-        self.client()
-            .edit_message(chat, message_id, new_message)
+        let (tx, mut rx) = mpsc::channel(1);
+
+        let queued_message =
+            QueuedMessage::new(QueuedMessageType::Edit(message_id), new_message, chat, tx);
+
+        self.push_queued_message(queued_message).await;
+
+        rx.recv()
             .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to edit message"))
+            .ok_or_else(|| Error::new("failed to receive message result"))
+            .context("edit")??;
+
+        Ok(())
     }
 
     pub async fn next_update(&self) -> Result<Option<Update>> {
@@ -95,5 +114,81 @@ impl TelegramClient {
             .next_update()
             .await
             .map_err(|e| Error::new_telegram_invocation(e, "Failed to get next update"))
+    }
+
+    pub async fn push_queued_message(&self, queued_message: QueuedMessage) {
+        self.message_queue().lock().await.push_back(queued_message);
+    }
+
+    pub async fn run_message_loop(&self) {
+        let message_queue = self.message_queue();
+        let telegram_client = self.clone();
+
+        tokio::spawn(async move {
+            loop {
+                if let Some(QueuedMessage {
+                    message_type,
+                    input_message,
+                    chat,
+                    tx,
+                }) = message_queue.lock().await.pop_front()
+                {
+                    let message_result = match message_type {
+                        QueuedMessageType::Respond => {
+                            let result = telegram_client
+                                .client()
+                                .send_message(chat, input_message)
+                                .await
+                                .map_err(|e| {
+                                    Error::new_telegram_invocation(e, "failed to respond message")
+                                });
+
+                            match result {
+                                Ok(message_raw) => Ok(Some(TelegramMessage::new(
+                                    telegram_client.clone(),
+                                    message_raw,
+                                ))),
+                                Err(e) => Err(e),
+                            }
+                        }
+                        QueuedMessageType::Reply(message_id) => {
+                            let result = telegram_client
+                                .client()
+                                .send_message(chat, input_message.reply_to(Some(message_id)))
+                                .await
+                                .map_err(|e| {
+                                    Error::new_telegram_invocation(e, "failed to respond message")
+                                });
+
+                            match result {
+                                Ok(message_raw) => Ok(Some(TelegramMessage::new(
+                                    telegram_client.clone(),
+                                    message_raw,
+                                ))),
+                                Err(e) => Err(e),
+                            }
+                        }
+                        QueuedMessageType::Edit(message_id) => {
+                            let result = telegram_client
+                                .client()
+                                .edit_message(chat, message_id, input_message)
+                                .await
+                                .map_err(|e| {
+                                    Error::new_telegram_invocation(e, "failed to respond message")
+                                });
+
+                            match result {
+                                Ok(_) => Ok(None),
+                                Err(e) => Err(e),
+                            }
+                        }
+                    };
+
+                    tx.send(message_result).await.unwrap();
+                }
+
+                tokio::time::sleep(Duration::from_secs(2)).await;
+            }
+        });
     }
 }

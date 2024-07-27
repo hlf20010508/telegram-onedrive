@@ -10,17 +10,29 @@ mod message;
 
 use grammers_client::session::Session;
 use grammers_client::{Client, Config, SignInError};
+use std::collections::VecDeque;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use super::utils::{socketio_client, socketio_disconnect};
 use crate::auth_server::TG_CODE_EVENT;
 use crate::env::{Env, TelegramBotEnv, TelegramUserEnv};
 use crate::error::{Error, Result, ResultExt};
-use crate::message::TelegramMessage;
+use crate::message::{QueuedMessage, TelegramMessage};
+
+// messages to be sent or edited
+type MessageQueue = Arc<Mutex<VecDeque<QueuedMessage>>>;
 
 #[derive(Clone)]
 pub enum TelegramClient {
-    Bot { client: Client },
-    User { client: Client },
+    Bot {
+        client: Client,
+        message_queue: MessageQueue,
+    },
+    User {
+        client: Client,
+        message_queue: MessageQueue,
+    },
 }
 
 impl TelegramClient {
@@ -72,7 +84,14 @@ impl TelegramClient {
             })?;
         }
 
-        Ok(Self::Bot { client })
+        let telegram_client = Self::Bot {
+            client,
+            message_queue: Arc::new(Mutex::new(VecDeque::new())),
+        };
+
+        telegram_client.run_message_loop().await;
+
+        Ok(telegram_client)
     }
 
     pub async fn new_user(
@@ -106,12 +125,27 @@ impl TelegramClient {
             Error::new_telegram_authorization(e, "failed to create telegram user client")
         })?;
 
-        Ok(Self::User { client })
+        let telegram_client = Self::User {
+            client,
+            message_queue: Arc::new(Mutex::new(VecDeque::new())),
+        };
+
+        telegram_client.run_message_loop().await;
+
+        Ok(telegram_client)
     }
 
     fn client(&self) -> &Client {
         match self {
-            Self::Bot { client } | Self::User { client } => client,
+            Self::Bot { client, .. } | Self::User { client, .. } => client,
+        }
+    }
+
+    fn message_queue(&self) -> MessageQueue {
+        match self {
+            Self::Bot { message_queue, .. } | Self::User { message_queue, .. } => {
+                message_queue.clone()
+            }
         }
     }
 
