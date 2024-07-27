@@ -17,116 +17,116 @@ use crate::message::TelegramMessage;
 pub enum Error {
     DefaultError {
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     HttpHeaderValueError {
         raw: reqwest::header::InvalidHeaderValue,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     HttpHeaderToStrError {
         raw: reqwest::header::ToStrError,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     HttpRequestError {
         raw: reqwest::Error,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     SysIOError {
         raw: std::io::Error,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     CertGenError {
         raw: rcgen::Error,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     TlsError {
         raw: native_tls::Error,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     SocketIOServerBroadcastError {
         raw: socketioxide::BroadcastError,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     SocketIOClientError {
         raw: rust_socketio::Error,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     TelegramInvocationError {
         raw: grammers_client::InvocationError,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     TelegramPackedChatError {
         raw: String,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     TelegramAuthorizationError {
         raw: grammers_client::client::bots::AuthorizationError,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     TelegramSignInError {
         raw: grammers_client::SignInError,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     OneDriveError {
         raw: onedrive_api::Error,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     SerdeError {
         raw: serde_json::Error,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     DatabaseError {
         raw: sea_orm::DbErr,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     ArgError {
         raw: pico_args::Error,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     ParseIntError {
         raw: std::num::ParseIntError,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
     ParseUrlError {
         raw: url::ParseError,
         message: String,
-        context: Option<String>,
-        details: Option<String>,
+        contexts: Vec<String>,
+        details: Vec<String>,
     },
 }
 
@@ -137,8 +137,8 @@ impl Error {
     {
         Self::DefaultError {
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -149,8 +149,8 @@ impl Error {
         Self::HttpHeaderValueError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -161,8 +161,8 @@ impl Error {
         Self::HttpHeaderToStrError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -173,8 +173,8 @@ impl Error {
         Self::HttpRequestError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -185,8 +185,8 @@ impl Error {
         Self::SysIOError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -197,8 +197,8 @@ impl Error {
         Self::CertGenError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -209,8 +209,8 @@ impl Error {
         Self::TlsError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -221,8 +221,8 @@ impl Error {
         Self::SocketIOServerBroadcastError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -233,8 +233,8 @@ impl Error {
         Self::SocketIOClientError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -245,8 +245,8 @@ impl Error {
         Self::TelegramInvocationError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -258,8 +258,8 @@ impl Error {
         Self::TelegramPackedChatError {
             raw: e.to_string(),
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -273,8 +273,8 @@ impl Error {
         Self::TelegramAuthorizationError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -285,8 +285,8 @@ impl Error {
         Self::TelegramSignInError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -297,8 +297,8 @@ impl Error {
         Self::OneDriveError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -309,8 +309,8 @@ impl Error {
         Self::SerdeError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -321,8 +321,8 @@ impl Error {
         Self::DatabaseError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -333,8 +333,8 @@ impl Error {
         Self::ArgError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -345,8 +345,8 @@ impl Error {
         Self::ParseIntError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
@@ -357,13 +357,12 @@ impl Error {
         Self::ParseUrlError {
             raw: e,
             message: message.to_string(),
-            context: None,
-            details: None,
+            contexts: Vec::new(),
+            details: Vec::new(),
         }
     }
 
-    // TODO: push new details to the back
-    pub fn details<T>(mut self, message_details: T) -> Self
+    pub fn details<T>(mut self, detail: T) -> Self
     where
         T: Display,
     {
@@ -386,37 +385,36 @@ impl Error {
             | Self::DatabaseError { details, .. }
             | Self::ArgError { details, .. }
             | Self::ParseIntError { details, .. }
-            | Self::ParseUrlError { details, .. } => *details = Some(message_details.to_string()),
+            | Self::ParseUrlError { details, .. } => details.push(detail.to_string()),
         }
 
         self
     }
 
-    // TODO: push new context to the front
-    pub fn context<T>(mut self, message_context: T) -> Self
+    pub fn context<T>(mut self, context: T) -> Self
     where
         T: Display,
     {
         match &mut self {
-            Self::DefaultError { context, .. }
-            | Self::HttpHeaderValueError { context, .. }
-            | Self::HttpHeaderToStrError { context, .. }
-            | Self::HttpRequestError { context, .. }
-            | Self::SysIOError { context, .. }
-            | Self::CertGenError { context, .. }
-            | Self::TlsError { context, .. }
-            | Self::SocketIOServerBroadcastError { context, .. }
-            | Self::SocketIOClientError { context, .. }
-            | Self::TelegramInvocationError { context, .. }
-            | Self::TelegramPackedChatError { context, .. }
-            | Self::TelegramAuthorizationError { context, .. }
-            | Self::TelegramSignInError { context, .. }
-            | Self::OneDriveError { context, .. }
-            | Self::SerdeError { context, .. }
-            | Self::DatabaseError { context, .. }
-            | Self::ArgError { context, .. }
-            | Self::ParseIntError { context, .. }
-            | Self::ParseUrlError { context, .. } => *context = Some(message_context.to_string()),
+            Self::DefaultError { contexts, .. }
+            | Self::HttpHeaderValueError { contexts, .. }
+            | Self::HttpHeaderToStrError { contexts, .. }
+            | Self::HttpRequestError { contexts, .. }
+            | Self::SysIOError { contexts, .. }
+            | Self::CertGenError { contexts, .. }
+            | Self::TlsError { contexts, .. }
+            | Self::SocketIOServerBroadcastError { contexts, .. }
+            | Self::SocketIOClientError { contexts, .. }
+            | Self::TelegramInvocationError { contexts, .. }
+            | Self::TelegramPackedChatError { contexts, .. }
+            | Self::TelegramAuthorizationError { contexts, .. }
+            | Self::TelegramSignInError { contexts, .. }
+            | Self::OneDriveError { contexts, .. }
+            | Self::SerdeError { contexts, .. }
+            | Self::DatabaseError { contexts, .. }
+            | Self::ArgError { contexts, .. }
+            | Self::ParseIntError { contexts, .. }
+            | Self::ParseUrlError { contexts, .. } => contexts.insert(0, context.to_string()),
         }
 
         self
@@ -451,155 +449,196 @@ impl Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        fn write_fmt<T>(
+        fn write_fmt(
             f: &mut std::fmt::Formatter<'_>,
-            raw: T,
-            message: &String,
-            context: &Option<String>,
-            details: &Option<String>,
-        ) -> std::fmt::Result
-        where
-            T: Display,
-        {
-            let mut output = format!("{}: {}", message, raw);
-
-            if let Some(context) = context {
-                output.push_str(&format!("\ncontext: {}", context));
+            mut base: String,
+            contexts: &Vec<String>,
+            details: &Vec<String>,
+        ) -> std::fmt::Result {
+            if !contexts.is_empty() {
+                let contexts = contexts.join("\n-");
+                base.push_str(&format!("\ncontexts:\n-{}", contexts));
             }
 
-            if let Some(details) = details {
-                output.push_str(&format!("\ndetails: {}", details));
+            if !details.is_empty() {
+                let details = details.join("\n--------\n");
+                base.push_str(&format!("\ndetails:\n{}", details));
             }
 
-            write!(f, "{}", output)
+            write!(f, "{}", base)
         }
 
         match self {
             Self::DefaultError {
                 message,
-                context,
+                contexts,
                 details,
             } => {
-                let mut output = message.clone();
-
-                if let Some(context) = context {
-                    output.push_str(&format!("\ncontext: {}", context));
-                }
-
-                if let Some(details) = details {
-                    output.push_str(&format!("\ndetails: {}", details));
-                }
-
-                write!(f, "{}", output)
+                let base = message.clone();
+                write_fmt(f, base, contexts, details)
             }
             Self::HttpHeaderValueError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::HttpHeaderToStrError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::HttpRequestError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::SysIOError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::CertGenError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::TlsError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::SocketIOServerBroadcastError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::SocketIOClientError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::TelegramInvocationError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::TelegramPackedChatError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::TelegramAuthorizationError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::TelegramSignInError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::OneDriveError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::SerdeError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::DatabaseError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::ArgError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::ParseIntError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
             Self::ParseUrlError {
                 raw,
                 message,
-                context,
+                contexts,
                 details,
-            } => write_fmt(f, raw, message, context, details),
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
         }
     }
 }
