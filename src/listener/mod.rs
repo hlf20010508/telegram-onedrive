@@ -9,6 +9,7 @@ mod events;
 mod handler;
 
 use grammers_client::Update;
+use proc_macros::add_trace;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -29,6 +30,7 @@ pub struct Listener {
 }
 
 impl Listener {
+    #[add_trace]
     pub async fn new(events: Events) -> Self {
         let events = Rc::new(events);
         let state = Arc::new(State::new().await);
@@ -36,6 +38,7 @@ impl Listener {
         Self { events, state }
     }
 
+    #[add_trace]
     pub async fn run(self) {
         tracing::debug!("listener started");
 
@@ -51,6 +54,7 @@ impl Listener {
         }
     }
 
+    #[add_trace(context)]
     async fn handle_message(&self) -> Result<()> {
         let handler = Handler::new(self.events.clone(), self.state.clone());
 

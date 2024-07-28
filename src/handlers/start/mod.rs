@@ -7,12 +7,15 @@
 
 mod docs;
 
+use proc_macros::add_trace;
+
 use crate::error::Result;
 use crate::message::TelegramMessage;
 use crate::state::AppState;
 
 pub const PATTERN: &str = "/start";
 
+#[add_trace(context)]
 pub async fn handler(message: TelegramMessage, _state: AppState) -> Result<()> {
     message.respond(docs::GREETING).await?;
 

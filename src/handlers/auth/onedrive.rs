@@ -5,10 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::error::{Result, ResultExt};
+use proc_macros::add_trace;
+
+use crate::error::Result;
 use crate::message::TelegramMessage;
 use crate::state::AppState;
 
+#[add_trace(context)]
 pub async fn authorize_onedrive(
     message: TelegramMessage,
     state: AppState,

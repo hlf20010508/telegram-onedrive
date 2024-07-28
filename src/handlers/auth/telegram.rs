@@ -5,10 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use proc_macros::add_trace;
+
+use crate::error::Result;
 use crate::message::TelegramMessage;
-use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 
+#[add_trace(context)]
 pub async fn login_to_telegram(message: TelegramMessage, state: AppState) -> Result<()> {
     let telegram_user = &state.telegram_user;
     let env = &state.env;

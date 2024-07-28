@@ -10,6 +10,7 @@ mod message;
 
 use grammers_client::session::Session;
 use grammers_client::{Client, Config, SignInError};
+use proc_macros::add_trace;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -18,7 +19,7 @@ use message::MessageVecDeque;
 use super::utils::{socketio_client, socketio_disconnect};
 use crate::auth_server::TG_CODE_EVENT;
 use crate::env::{Env, TelegramBotEnv, TelegramUserEnv};
-use crate::error::{Error, Result, ResultExt};
+use crate::error::{Error, Result};
 use crate::message::TelegramMessage;
 
 // messages to be sent or edited
@@ -37,6 +38,7 @@ pub enum TelegramClient {
 }
 
 impl TelegramClient {
+    #[add_trace(context)]
     pub async fn new_bot(
         Env {
             telegram_bot:
@@ -95,6 +97,7 @@ impl TelegramClient {
         Ok(telegram_client)
     }
 
+    #[add_trace(context)]
     pub async fn new_user(
         Env {
             telegram_user:
@@ -136,12 +139,14 @@ impl TelegramClient {
         Ok(telegram_client)
     }
 
+    #[add_trace]
     fn client(&self) -> &Client {
         match self {
             Self::Bot { client, .. } | Self::User { client, .. } => client,
         }
     }
 
+    #[add_trace]
     fn message_queue(&self) -> MessageQueue {
         match self {
             Self::Bot { message_queue, .. } | Self::User { message_queue, .. } => {
@@ -150,6 +155,7 @@ impl TelegramClient {
         }
     }
 
+    #[add_trace(context)]
     pub async fn login(
         &self,
         message: TelegramMessage,
@@ -234,6 +240,7 @@ impl TelegramClient {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn is_authorized(&self) -> Result<bool> {
         self.client().is_authorized().await.map_err(|e| {
             Error::new_telegram_invocation(

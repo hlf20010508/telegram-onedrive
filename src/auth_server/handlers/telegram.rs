@@ -8,6 +8,7 @@
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response};
 use axum::{debug_handler, Extension, Json};
+use proc_macros::add_trace;
 use socketioxide::SocketIo;
 use std::sync::Arc;
 use tokio::fs;
@@ -19,6 +20,7 @@ use crate::error::{Error, Result};
 pub const INDEX_PATH: &str = "/";
 
 #[debug_handler]
+#[add_trace(context)]
 pub async fn index_handler() -> Result<Html<String>> {
     let html = fs::read_to_string("./index.html")
         .await
@@ -30,6 +32,7 @@ pub async fn index_handler() -> Result<Html<String>> {
 pub const CODE_PATH: &str = "/tg";
 
 #[debug_handler]
+#[add_trace(context)]
 pub async fn code_handler(
     Extension(socketio): Extension<Arc<SocketIo>>,
     Json(CodeParams { code }): Json<CodeParams>,

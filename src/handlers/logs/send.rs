@@ -6,12 +6,14 @@
 */
 
 use grammers_client::InputMessage;
+use proc_macros::add_trace;
 
 use crate::client::TelegramClient;
 use crate::env::LOG_PATH;
 use crate::error::Result;
 use crate::message::TelegramMessage;
 
+#[add_trace(context)]
 pub async fn send_log_file(telegram_bot: &TelegramClient, message: TelegramMessage) -> Result<()> {
     let file = telegram_bot.upload_file(LOG_PATH).await?;
 

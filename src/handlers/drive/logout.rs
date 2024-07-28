@@ -5,10 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use proc_macros::add_trace;
+
 use crate::client::OneDriveClient;
-use crate::error::{Error, Result, ResultExt};
+use crate::error::{Error, Result};
 use crate::message::TelegramMessage;
 
+#[add_trace(context)]
 pub async fn logout_current_drive(
     onedrive: &OneDriveClient,
     message: TelegramMessage,
@@ -38,6 +41,7 @@ pub async fn logout_current_drive(
     Ok(())
 }
 
+#[add_trace(context)]
 pub async fn logout_drive(
     onedrive: &OneDriveClient,
     message: TelegramMessage,

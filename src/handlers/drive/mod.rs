@@ -15,17 +15,19 @@ use grammers_client::InputMessage;
 
 use add::add_drive;
 use logout::{logout_current_drive, logout_drive};
+use proc_macros::add_trace;
 use set::set_drive;
 use show::show_drive;
 
 use super::utils::cmd_parser;
-use crate::error::{Error, Result, ResultExt};
+use crate::error::{Error, Result};
 use crate::message::TelegramMessage;
 use crate::state::AppState;
 use crate::{check_in_group, check_od_login, check_senders};
 
 pub const PATTERN: &str = "/drive";
 
+#[add_trace(context)]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);

@@ -5,15 +5,17 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use proc_macros::add_trace;
 use std::sync::atomic::Ordering;
 
+use crate::error::Result;
 use crate::message::TelegramMessage;
-use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 use crate::{check_in_group, check_senders};
 
 pub const PATTERN: &str = "/autoDelete";
 
+#[add_trace(context)]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);

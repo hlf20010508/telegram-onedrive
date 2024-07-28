@@ -7,6 +7,7 @@
 
 use grammers_client::InputMessage;
 use path_slash::PathBufExt;
+use proc_macros::add_trace;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -16,7 +17,7 @@ use tokio::sync::Mutex;
 use super::session::{ChatHex, ChatTasks};
 use super::{tasks, TaskSession};
 use crate::client::ext::chat_from_hex;
-use crate::error::{Error, Result, ResultExt, ResultUnwrapExt};
+use crate::error::{Error, Result, ResultUnwrapExt};
 use crate::state::AppState;
 
 pub struct Progress {
@@ -26,6 +27,7 @@ pub struct Progress {
 }
 
 impl Progress {
+    #[add_trace]
     pub fn new(state: AppState) -> Self {
         let session = state.task_session.clone();
         let last_progress_response = Arc::new(Mutex::new("".to_string()));
@@ -37,10 +39,12 @@ impl Progress {
         }
     }
 
+    #[add_trace(context)]
     pub async fn set_current_length(&self, id: i64, current_length: u64) -> Result<()> {
         self.session.set_current_length(id, current_length).await
     }
 
+    #[add_trace]
     pub async fn run(&self) {
         tracing::debug!("progress started");
 
@@ -58,6 +62,7 @@ impl Progress {
         }
     }
 
+    #[add_trace(context)]
     async fn handle_chat_tasks_progress(
         &self,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
@@ -102,6 +107,7 @@ impl Progress {
         Ok(())
     }
 
+    #[add_trace(context)]
     async fn handle_chat_current_tasks(
         &self,
         current_tasks: Vec<tasks::Model>,
@@ -131,6 +137,7 @@ impl Progress {
         Ok(())
     }
 
+    #[add_trace(context)]
     async fn handle_chat_completed_tasks(
         &self,
         completed_tasks: Vec<tasks::Model>,
@@ -169,6 +176,7 @@ impl Progress {
         Ok(())
     }
 
+    #[add_trace(context)]
     async fn handle_chat_failed_tasks(
         &self,
         failed_tasks: Vec<tasks::Model>,
@@ -200,6 +208,7 @@ impl Progress {
         Ok(())
     }
 
+    #[add_trace(context)]
     async fn remove_chats_without_tasks(
         &self,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
@@ -237,6 +246,7 @@ impl Progress {
         Ok(())
     }
 
+    #[add_trace(context)]
     async fn sync_chat_progress(
         &self,
         chat_bot_hex: &str,
@@ -334,6 +344,7 @@ impl Progress {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn update_filename(&self, id: i64, filename: &str) -> Result<()> {
         self.session.update_filename(id, filename).await
     }

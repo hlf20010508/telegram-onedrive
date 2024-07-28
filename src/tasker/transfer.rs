@@ -8,6 +8,7 @@
 use grammers_client::types::Downloadable;
 use onedrive_api::resource::DriveItem;
 use onedrive_api::UploadSession;
+use proc_macros::add_trace;
 use std::ops::Range;
 use std::sync::Arc;
 use std::time::Duration;
@@ -18,6 +19,7 @@ use crate::error::{Error, Result};
 use crate::state::AppState;
 use crate::utils::get_http_client;
 
+#[add_trace(context)]
 pub async fn multi_parts_uploader_from_url(
     tasks::Model {
         id,
@@ -97,6 +99,7 @@ pub async fn multi_parts_uploader_from_url(
     Ok(filename)
 }
 
+#[add_trace(context)]
 pub async fn multi_parts_uploader_from_tg_file(
     tasks::Model {
         id,
@@ -176,6 +179,7 @@ pub async fn multi_parts_uploader_from_tg_file(
     Ok(filename)
 }
 
+#[add_trace(context)]
 async fn upload_file(
     upload_session: &UploadSession,
     buffer: &[u8],

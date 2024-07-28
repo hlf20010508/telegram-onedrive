@@ -13,6 +13,7 @@ mod upload;
 use onedrive_api::{
     Auth, ClientCredential, DriveLocation, OneDrive as Client, Permission, Tenant, TokenResponse,
 };
+use proc_macros::add_trace;
 use tokio::sync::RwLock;
 
 use session::OneDriveSession;
@@ -20,7 +21,7 @@ use session::OneDriveSession;
 use super::utils::{socketio_client, socketio_disconnect};
 use crate::auth_server::OD_CODE_EVENT;
 use crate::env::{Env, OneDriveEnv};
-use crate::error::{Error, Result, ResultExt};
+use crate::error::{Error, Result};
 use crate::message::TelegramMessage;
 
 pub struct OneDriveClient {
@@ -34,6 +35,7 @@ pub struct OneDriveClient {
 }
 
 impl OneDriveClient {
+    #[add_trace(context)]
     pub async fn new(
         Env {
             onedrive:
@@ -79,6 +81,7 @@ impl OneDriveClient {
         Ok(onedrive_client)
     }
 
+    #[add_trace(context)]
     pub async fn login(
         &self,
         message: TelegramMessage,
@@ -175,6 +178,7 @@ impl OneDriveClient {
         Ok(())
     }
 
+    #[add_trace(context)]
     async fn auto_login(&self) -> Result<()> {
         let mut session = OneDriveSession::load(&self.session_path).await?;
 
@@ -197,6 +201,7 @@ impl OneDriveClient {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn get_token_using_refresh_token(
         &self,
         refresh_token: &str,
@@ -215,10 +220,12 @@ impl OneDriveClient {
             })
     }
 
+    #[add_trace]
     pub fn get_auth_url(&self) -> String {
         self.auth_provider.code_auth_url().to_string()
     }
 
+    #[add_trace]
     pub async fn is_authorized(&self) -> bool {
         let is_expired = { self.session.read().await.is_expired() };
 
@@ -229,10 +236,12 @@ impl OneDriveClient {
         self.client.read().await.get_drive().await.is_ok()
     }
 
+    #[add_trace(context)]
     pub async fn set_current_user(&self) -> Result<()> {
         self.session.write().await.set_current_user().await
     }
 
+    #[add_trace(context)]
     pub async fn logout(&self, username: Option<String>) -> Result<()> {
         let mut session = self.session.write().await;
         session.remove_user(username).await?;
@@ -242,6 +251,7 @@ impl OneDriveClient {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn refresh_access_token(&self) -> Result<()> {
         let is_expired = { self.session.read().await.is_expired() };
 

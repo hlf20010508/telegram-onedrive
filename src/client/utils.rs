@@ -7,6 +7,7 @@
 
 use futures::FutureExt;
 use native_tls::TlsConnector;
+use proc_macros::add_trace;
 use rust_socketio::asynchronous::{
     Client as SocketIoClient, ClientBuilder as SocketIoClientBuilder,
 };
@@ -15,6 +16,7 @@ use tokio::sync::mpsc;
 
 use crate::error::{Error, Result};
 
+#[add_trace(context)]
 pub async fn socketio_client(
     event: &str,
     port: u16,
@@ -52,6 +54,7 @@ pub async fn socketio_client(
     Ok((socketio_client, rx))
 }
 
+#[add_trace(context)]
 pub async fn socketio_disconnect(socketio_client: SocketIoClient) -> Result<()> {
     socketio_client
         .disconnect()

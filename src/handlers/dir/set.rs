@@ -5,11 +5,14 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use proc_macros::add_trace;
+
 use super::utils::is_root_path_valid;
 use crate::client::OneDriveClient;
-use crate::error::{Result, ResultExt};
+use crate::error::Result;
 use crate::message::TelegramMessage;
 
+#[add_trace(context)]
 pub async fn set_dir(
     onedrive: &OneDriveClient,
     message: TelegramMessage,
@@ -25,6 +28,7 @@ pub async fn set_dir(
     Ok(())
 }
 
+#[add_trace(context)]
 pub async fn set_temp_dir(
     onedrive: &OneDriveClient,
     message: TelegramMessage,

@@ -5,10 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use proc_macros::add_trace;
+
 use crate::client::OneDriveClient;
-use crate::error::{Result, ResultExt};
+use crate::error::Result;
 use crate::message::TelegramMessage;
 
+#[add_trace(context)]
 pub async fn show_dir(onedrive: &OneDriveClient, message: TelegramMessage) -> Result<()> {
     let root_path = onedrive.get_root_path(false).await?;
     let is_temp = onedrive.does_temp_root_path_exist().await;

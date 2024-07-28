@@ -8,12 +8,14 @@
 use onedrive_api::option::DriveItemPutOption;
 use onedrive_api::{ConflictBehavior, ItemLocation, UploadSession, UploadSessionMeta};
 use path_slash::PathBufExt;
+use proc_macros::add_trace;
 use std::path::Path;
 
 use super::OneDriveClient;
 use crate::error::{Error, Result};
 
 impl OneDriveClient {
+    #[add_trace(context)]
     pub async fn multipart_upload_session_builder(
         &self,
         root_path: &str,

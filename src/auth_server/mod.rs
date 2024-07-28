@@ -13,6 +13,7 @@ mod var;
 use axum::routing::{get, post};
 use axum::{Extension, Router};
 use axum_server::Handle;
+use proc_macros::add_trace;
 use socketioxide::extract::SocketRef;
 use socketioxide::SocketIo;
 use std::net::TcpListener;
@@ -27,6 +28,7 @@ use handlers::{onedrive, telegram};
 use crate::env::Env;
 use crate::error::{Error, Result};
 
+#[add_trace(context)]
 pub async fn spawn(
     Env {
         port,

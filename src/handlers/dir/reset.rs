@@ -5,10 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use proc_macros::add_trace;
+
 use crate::client::OneDriveClient;
-use crate::error::{Result, ResultExt};
+use crate::error::Result;
 use crate::message::TelegramMessage;
 
+#[add_trace(context)]
 pub async fn reset_dir(onedrive: &OneDriveClient, message: TelegramMessage) -> Result<()> {
     onedrive.reset_root_path().await?;
 
@@ -18,6 +21,7 @@ pub async fn reset_dir(onedrive: &OneDriveClient, message: TelegramMessage) -> R
     Ok(())
 }
 
+#[add_trace(context)]
 pub async fn cancel_temp_dir(onedrive: &OneDriveClient, message: TelegramMessage) -> Result<()> {
     onedrive.clear_temp_root_path().await?;
 

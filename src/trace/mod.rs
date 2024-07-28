@@ -34,7 +34,7 @@ pub fn trace_registor() -> WorkerGuard {
         .with(file_layer)
         .with(
             EnvFilter::from_default_env()
-                .add_directive(format!("telegram_onedrive={}", "debug").parse().unwrap()),
+                .add_directive(format!("telegram_onedrive={}", "trace").parse().unwrap()),
         )
         .init();
 

@@ -7,6 +7,7 @@
 
 use std::collections::HashMap;
 
+use proc_macros::add_trace;
 use sea_orm::{
     sea_query::Expr, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection, EntityName,
     EntityTrait, PaginatorTrait, QueryFilter, Schema, Set,
@@ -20,12 +21,14 @@ pub struct TaskSession {
 }
 
 impl TaskSession {
+    #[add_trace(context)]
     pub async fn new(session_path: &str) -> Result<Self> {
         let connection = Self::connect_db(session_path).await?;
 
         Ok(Self { connection })
     }
 
+    #[add_trace(context)]
     async fn connect_db(path: &str) -> Result<DatabaseConnection> {
         let connection = sea_orm::Database::connect(format!("sqlite://{}?mode=rwc", path))
             .await
@@ -36,6 +39,7 @@ impl TaskSession {
         Ok(connection)
     }
 
+    #[add_trace(context)]
     async fn create_table_if_not_exists(connection: &DatabaseConnection) -> Result<()> {
         if !Self::is_table_exists(connection).await {
             let backend = connection.get_database_backend();
@@ -57,12 +61,14 @@ impl TaskSession {
         Ok(())
     }
 
+    #[add_trace]
     async fn is_table_exists(connection: &DatabaseConnection) -> bool {
         let result = tasks::Entity::find().all(connection).await;
 
         result.is_ok()
     }
 
+    #[add_trace(context)]
     pub async fn fetch_task(&self) -> Result<Option<tasks::Model>> {
         let task = tasks::Entity::find()
             .filter(tasks::Column::Status.eq(TaskStatus::Waiting))
@@ -78,6 +84,7 @@ impl TaskSession {
         Ok(task)
     }
 
+    #[add_trace(context)]
     pub async fn insert_task(
         &self,
         cmd_type: CmdType,
@@ -116,6 +123,7 @@ impl TaskSession {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn set_task_status(&self, id: i64, status: TaskStatus) -> Result<()> {
         tasks::Entity::update_many()
             .filter(tasks::Column::Id.eq(id))
@@ -127,6 +135,7 @@ impl TaskSession {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn set_current_length(&self, id: i64, current_length: u64) -> Result<()> {
         tasks::Entity::update_many()
             .filter(tasks::Column::Id.eq(id))
@@ -141,6 +150,7 @@ impl TaskSession {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn get_chats_tasks(&self) -> Result<HashMap<ChatHex, ChatTasks>> {
         let mut chats = HashMap::new();
 
@@ -176,6 +186,7 @@ impl TaskSession {
         Ok(chats)
     }
 
+    #[add_trace(context)]
     pub async fn get_chat_pending_tasks_number(&self, chat_bot_hex: &str) -> Result<u64> {
         tasks::Entity::find()
             .filter(
@@ -192,6 +203,7 @@ impl TaskSession {
             .map_err(|e| Error::new_database(e, "failed to get pending tasks number"))
     }
 
+    #[add_trace(context)]
     pub async fn does_chat_has_started_tasks(&self, chat_bot_hex: &str) -> Result<bool> {
         let has_started_tasks = tasks::Entity::find()
             .filter(
@@ -207,6 +219,7 @@ impl TaskSession {
         Ok(has_started_tasks)
     }
 
+    #[add_trace(context)]
     pub async fn update_filename(&self, id: i64, filename: &str) -> Result<()> {
         tasks::Entity::update_many()
             .filter(tasks::Column::Id.eq(id))
@@ -218,6 +231,7 @@ impl TaskSession {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn delete_task(&self, id: i64) -> Result<()> {
         tasks::Entity::delete_by_id(id)
             .exec(&self.connection)
@@ -227,6 +241,7 @@ impl TaskSession {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn clear(&self) -> Result<()> {
         tasks::Entity::delete_many()
             .exec(&self.connection)

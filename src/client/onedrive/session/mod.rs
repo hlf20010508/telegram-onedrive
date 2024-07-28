@@ -9,6 +9,7 @@ mod models;
 
 use axum::http::header;
 use onedrive_api::OneDrive;
+use proc_macros::add_trace;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
     ColumnTrait, ConnectionTrait, DatabaseConnection, EntityName, EntityTrait, ModelTrait,
@@ -34,6 +35,7 @@ pub struct OneDriveSession {
 }
 
 impl OneDriveSession {
+    #[add_trace(context)]
     pub async fn new(
         client: &OneDrive,
         expires_in_secs: u64,
@@ -56,14 +58,17 @@ impl OneDriveSession {
         })
     }
 
+    #[add_trace]
     fn get_expiration_timestamp(expires_in_secs: u64) -> i64 {
         get_current_timestamp() + expires_in_secs as i64
     }
 
+    #[add_trace]
     pub fn set_expiration_timestamp(&mut self, expires_in_secs: u64) {
         self.expiration_timestamp = Self::get_expiration_timestamp(expires_in_secs);
     }
 
+    #[add_trace(context)]
     async fn get_username(client: &OneDrive) -> Result<String> {
         let http_client = client.client();
 
@@ -96,6 +101,7 @@ impl OneDriveSession {
         Ok(username)
     }
 
+    #[add_trace(context)]
     async fn connect_db(path: &str) -> Result<DatabaseConnection> {
         let connection = sea_orm::Database::connect(format!("sqlite://{}?mode=rwc", path))
             .await
@@ -107,12 +113,14 @@ impl OneDriveSession {
         Ok(connection)
     }
 
+    #[add_trace(context)]
     pub async fn set_connection(mut self, session_path: &str) -> Result<Self> {
         self.connection = Self::connect_db(session_path).await?;
 
         Ok(self)
     }
 
+    #[add_trace]
     async fn is_table_exists<E>(connection: &DatabaseConnection) -> bool
     where
         E: EntityTrait,
@@ -122,6 +130,7 @@ impl OneDriveSession {
         result.is_ok()
     }
 
+    #[add_trace(context)]
     async fn create_table_if_not_exists<E>(connection: &DatabaseConnection, entity: E) -> Result<()>
     where
         E: EntityTrait + EntityName,
@@ -145,6 +154,7 @@ impl OneDriveSession {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn load(path: &str) -> Result<Self> {
         let connection = Self::connect_db(path).await?;
 
@@ -155,6 +165,7 @@ impl OneDriveSession {
         Ok(session)
     }
 
+    #[add_trace(context)]
     pub async fn save(&self) -> Result<()> {
         if self.user_exists().await? {
             self.update().await?;
@@ -176,6 +187,7 @@ impl OneDriveSession {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn overwrite(
         &mut self,
         Self {
@@ -196,6 +208,7 @@ impl OneDriveSession {
         Ok(())
     }
 
+    #[add_trace(context)]
     async fn user_exists(&self) -> Result<bool> {
         let exists = session::Entity::find()
             .filter(session::Column::Username.eq(&self.username))
@@ -207,6 +220,7 @@ impl OneDriveSession {
         Ok(exists)
     }
 
+    #[add_trace(context)]
     async fn update(&self) -> Result<()> {
         session::Entity::update_many()
             .filter(session::Column::Username.eq(&self.username))
@@ -230,6 +244,7 @@ impl OneDriveSession {
         Ok(())
     }
 
+    #[add_trace(context)]
     async fn get_current_session(connection: &DatabaseConnection) -> Result<session::Model> {
         let current_user = current_user::Entity::find()
             .one(connection)
@@ -247,6 +262,7 @@ impl OneDriveSession {
         Ok(session)
     }
 
+    #[add_trace(context)]
     pub async fn set_current_user(&self) -> Result<()> {
         let current_user_col = current_user::Entity::find()
             .one(&self.connection)
@@ -278,6 +294,7 @@ impl OneDriveSession {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn get_usernames(&self) -> Result<Vec<String>> {
         let result = session::Entity::find()
             .column(session::Column::Username)
@@ -293,6 +310,7 @@ impl OneDriveSession {
         Ok(usernames)
     }
 
+    #[add_trace(context)]
     pub async fn get_current_username(&self) -> Result<Option<String>> {
         match current_user::Entity::find()
             .one(&self.connection)
@@ -304,6 +322,7 @@ impl OneDriveSession {
         }
     }
 
+    #[add_trace(context)]
     pub async fn remove_user(&mut self, username: Option<String>) -> Result<()> {
         let username = match username {
             Some(username) => username,
@@ -344,6 +363,7 @@ impl OneDriveSession {
         Ok(())
     }
 
+    #[add_trace(context)]
     pub async fn change_session(&mut self, username: &str) -> Result<()> {
         if username == self.username {
             return Ok(());
@@ -363,6 +383,7 @@ impl OneDriveSession {
         Ok(())
     }
 
+    #[add_trace]
     pub fn is_expired(&self) -> bool {
         self.expiration_timestamp < get_current_timestamp() + 60
     }

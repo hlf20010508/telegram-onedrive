@@ -5,10 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use proc_macros::add_trace;
 use reqwest::header;
 
 use super::utils::{cmd_parser, get_filename, TextExt};
-use crate::error::{Error, Result, ResultExt};
+use crate::error::{Error, Result};
 use crate::message::TelegramMessage;
 use crate::state::AppState;
 use crate::tasker::CmdType;
@@ -17,6 +18,7 @@ use crate::{check_in_group, check_od_login, check_senders, check_tg_login};
 
 pub const PATTERN: &str = "/url";
 
+#[add_trace(context)]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);

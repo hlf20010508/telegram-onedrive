@@ -7,6 +7,7 @@
 
 use grammers_client::grammers_tl_types as tl;
 use grammers_client::types::{Chat, InputMessage, Media, Message, PackedChat};
+use proc_macros::add_trace;
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Sender};
 
@@ -20,6 +21,7 @@ pub struct TelegramMessage {
 }
 
 impl TelegramMessage {
+    #[add_trace]
     pub fn new(client: TelegramClient, message: Message) -> Self {
         Self {
             raw: Arc::new(message),
@@ -47,6 +49,7 @@ impl TelegramMessage {
         self.raw.sender()
     }
 
+    #[add_trace(context)]
     pub async fn respond<M: Into<InputMessage>>(&self, message: M) -> Result<Self> {
         let (tx, mut rx) = mpsc::channel(1);
 
@@ -61,6 +64,7 @@ impl TelegramMessage {
             .ok_or_else(|| Error::new("received message is None"))
     }
 
+    #[add_trace(context)]
     pub async fn reply<M: Into<InputMessage>>(&self, message: M) -> Result<Self> {
         let (tx, mut rx) = mpsc::channel(1);
 
@@ -79,6 +83,7 @@ impl TelegramMessage {
             .ok_or_else(|| Error::new("received message is None"))
     }
 
+    #[add_trace(context)]
     pub async fn delete(&self) -> Result<()> {
         self.raw
             .delete()
@@ -99,6 +104,7 @@ pub struct QueuedMessage {
 }
 
 impl QueuedMessage {
+    #[add_trace]
     pub fn new<M: Into<InputMessage>, C: Into<PackedChat>>(
         message_type: QueuedMessageType,
         input_message: M,

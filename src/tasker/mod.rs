@@ -11,6 +11,7 @@ mod session;
 mod tasks;
 mod transfer;
 
+use proc_macros::add_trace;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Semaphore;
@@ -33,6 +34,7 @@ pub struct Tasker {
 }
 
 impl Tasker {
+    #[add_trace(context)]
     pub async fn new(state: AppState) -> Result<Self> {
         let session = state.task_session.clone();
         let progress = Arc::new(Progress::new(state.clone()));
@@ -44,6 +46,7 @@ impl Tasker {
         })
     }
 
+    #[add_trace]
     pub async fn run(&self) {
         tracing::debug!("tasker started");
 
@@ -65,6 +68,7 @@ impl Tasker {
         }
     }
 
+    #[add_trace(context)]
     async fn handle_tasks(&self, semaphore: Arc<Semaphore>) -> Result<()> {
         let task = self.session.fetch_task().await?;
 
