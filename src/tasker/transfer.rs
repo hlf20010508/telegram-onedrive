@@ -14,7 +14,7 @@ use std::time::Duration;
 
 use super::{tasks, Progress};
 use crate::client::ext::chat_from_hex;
-use crate::error::{Error, Result, ResultExt};
+use crate::error::{Error, Result};
 use crate::state::AppState;
 use crate::utils::get_http_client;
 
@@ -133,10 +133,7 @@ pub async fn multi_parts_uploader_from_tg_file(
         None => message_id,
     };
 
-    let message = telegram_user
-        .get_message(chat, *message_id)
-        .await
-        .context("multi_parts_uploader_from_tg_file")?;
+    let message = telegram_user.get_message(chat, *message_id).await?;
     let media = message
         .media()
         .ok_or_else(|| Error::new("message does not contain any media"))?;
@@ -173,7 +170,7 @@ pub async fn multi_parts_uploader_from_tg_file(
         .ok_or_else(|| Error::new("drive item name not found"))?;
 
     if message_id_forward.is_some() {
-        message.delete().await.context("forwarded message")?;
+        message.delete().await?;
     }
 
     Ok(filename)

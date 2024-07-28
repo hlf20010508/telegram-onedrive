@@ -19,8 +19,8 @@ use set::set_drive;
 use show::show_drive;
 
 use super::utils::cmd_parser;
-use crate::message::TelegramMessage;
 use crate::error::{Error, Result, ResultExt};
+use crate::message::TelegramMessage;
 use crate::state::AppState;
 use crate::{check_in_group, check_od_login, check_senders};
 
@@ -70,7 +70,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                     docs::USAGE
                 )))
                 .await
-                .context("sub command error for /drive")?;
+                .context("sub command error")?;
         }
     } else {
         message
@@ -79,7 +79,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 docs::USAGE
             )))
             .await
-            .context("command error for /drive")?;
+            .context("command error")?;
     }
 
     Ok(())

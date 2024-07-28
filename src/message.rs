@@ -11,7 +11,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc::{self, Sender};
 
 use crate::client::TelegramClient;
-use crate::error::{Error, Result, ResultExt};
+use crate::error::{Error, Result};
 
 #[derive(Clone)]
 pub struct TelegramMessage {
@@ -57,9 +57,8 @@ impl TelegramMessage {
 
         rx.recv()
             .await
-            .ok_or_else(|| Error::new("failed to receive message result"))
-            .context("respond")??
-            .ok_or_else(|| Error::new("received message is None").context("respond"))
+            .ok_or_else(|| Error::new("failed to receive message result"))??
+            .ok_or_else(|| Error::new("received message is None"))
     }
 
     pub async fn reply<M: Into<InputMessage>>(&self, message: M) -> Result<Self> {
@@ -76,9 +75,8 @@ impl TelegramMessage {
 
         rx.recv()
             .await
-            .ok_or_else(|| Error::new("failed to receive message result"))
-            .context("reply")??
-            .ok_or_else(|| Error::new("received message is None").context("reply"))
+            .ok_or_else(|| Error::new("failed to receive message result"))??
+            .ok_or_else(|| Error::new("received message is None"))
     }
 
     pub async fn delete(&self) -> Result<()> {

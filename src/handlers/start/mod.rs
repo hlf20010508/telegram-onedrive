@@ -7,17 +7,14 @@
 
 mod docs;
 
+use crate::error::Result;
 use crate::message::TelegramMessage;
-use crate::error::{Result, ResultExt};
 use crate::state::AppState;
 
 pub const PATTERN: &str = "/start";
 
 pub async fn handler(message: TelegramMessage, _state: AppState) -> Result<()> {
-    message
-        .respond(docs::GREETING)
-        .await
-        .context("greating message")?;
+    message.respond(docs::GREETING).await?;
 
     Ok(())
 }

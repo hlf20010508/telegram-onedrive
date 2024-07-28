@@ -142,10 +142,7 @@ impl Progress {
         for task in completed_tasks {
             let chat = chat_from_hex(chat_user_hex)?;
 
-            let message_user = telegram_user
-                .get_message(chat, task.message_id)
-                .await
-                .context("message_user in handle_chat_completed_tasks")?;
+            let message_user = telegram_user.get_message(chat, task.message_id).await?;
 
             let file_path_raw = Path::new(&task.root_path).join(task.filename);
             let file_path = file_path_raw.to_slash_lossy();
@@ -184,10 +181,7 @@ impl Progress {
         for task in failed_tasks {
             let chat = chat_from_hex(chat_user_hex)?;
 
-            let message_user = telegram_user
-                .get_message(chat, task.message_id)
-                .await
-                .context("message_user in handle_chat_failed_tasks")?;
+            let message_user = telegram_user.get_message(chat, task.message_id).await?;
 
             let response = format!("{}\n\nFailed.", message_user.text());
             if let Err(e) = telegram_user

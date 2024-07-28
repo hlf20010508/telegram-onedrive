@@ -215,10 +215,7 @@ impl TelegramClient {
                         None => Err(Error::new("password for telegram user 2FA required"))?,
                     },
                     Err(SignInError::InvalidCode) => {
-                        message
-                            .respond("Code invalid, please input again.")
-                            .await
-                            .context("telegram sign in code invalid")?;
+                        message.respond("Code invalid, please input again.").await?;
                     }
                     Err(e) => Err(Error::new_telegram_sign_in(
                         e,

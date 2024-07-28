@@ -14,7 +14,7 @@ use grammers_client::Update;
 use tokio::sync::mpsc;
 
 use super::TelegramClient;
-use crate::error::{Error, Result, ResultExt};
+use crate::error::{Error, Result};
 use crate::message::{QueuedMessage, QueuedMessageType, TelegramMessage};
 
 impl TelegramClient {
@@ -84,9 +84,8 @@ impl TelegramClient {
 
         rx.recv()
             .await
-            .ok_or_else(|| Error::new("failed to receive message result"))
-            .context("respond")??
-            .ok_or_else(|| Error::new("received message is None").context("respond"))
+            .ok_or_else(|| Error::new("failed to receive message result"))??
+            .ok_or_else(|| Error::new("received message is None"))
     }
 
     pub async fn edit_message<C: Into<PackedChat>, M: Into<InputMessage>>(
@@ -104,8 +103,7 @@ impl TelegramClient {
 
         rx.recv()
             .await
-            .ok_or_else(|| Error::new("failed to receive message result"))
-            .context("edit")??;
+            .ok_or_else(|| Error::new("failed to receive message result"))??;
 
         Ok(())
     }

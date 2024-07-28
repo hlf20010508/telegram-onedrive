@@ -425,11 +425,7 @@ impl Error {
     }
 
     pub async fn send(self, message: TelegramMessage) -> Result<Self> {
-        message
-            .reply(self.to_string())
-            .await
-            .context("error message")
-            .details(&self)?;
+        message.reply(self.to_string()).await.details(&self)?;
 
         Ok(self)
     }

@@ -22,7 +22,7 @@ pub use tasks::CmdType;
 
 use crate::client::ext::chat_from_hex;
 use crate::env::WORKER_NUM;
-use crate::error::{Result, ResultExt, ResultUnwrapExt};
+use crate::error::{Result, ResultUnwrapExt};
 use crate::message::TelegramMessage;
 use crate::state::AppState;
 
@@ -75,8 +75,7 @@ impl Tasker {
                 .state
                 .telegram_bot
                 .get_message(chat, task.message_id)
-                .await
-                .context("handle_tasks")?;
+                .await?;
 
             let semaphore_clone = semaphore.clone();
             let state_clone = self.state.clone();

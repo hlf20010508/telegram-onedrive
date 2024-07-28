@@ -18,8 +18,8 @@ use set::{set_dir, set_temp_dir};
 use show::show_dir;
 
 use super::utils::cmd_parser;
-use crate::message::TelegramMessage;
 use crate::error::{Result, ResultExt};
+use crate::message::TelegramMessage;
 use crate::state::AppState;
 use crate::{check_in_group, check_od_login, check_senders};
 
@@ -63,7 +63,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                     docs::USAGE
                 )))
                 .await
-                .context("sub command error for /dir")?;
+                .context("sub command error")?;
         }
     } else {
         message
@@ -72,7 +72,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 docs::USAGE
             )))
             .await
-            .context("command error for /dir")?;
+            .context("command error")?;
     }
 
     Ok(())

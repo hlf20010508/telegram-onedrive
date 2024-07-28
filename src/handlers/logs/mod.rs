@@ -16,9 +16,9 @@ use clear::clear_logs;
 use send::send_log_file;
 
 use super::utils::cmd_parser;
-use crate::message::TelegramMessage;
 use crate::env::LOG_PATH;
 use crate::error::{Result, ResultExt};
+use crate::message::TelegramMessage;
 use crate::state::AppState;
 use crate::{check_in_group, check_senders, check_tg_login};
 
@@ -55,8 +55,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 "Unknown command for /logs\n{}",
                 docs::USAGE
             )))
-            .await
-            .context("command error for logs")?;
+            .await?;
     }
 
     Ok(())
