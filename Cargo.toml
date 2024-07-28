@@ -5,6 +5,9 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[workspace]
+members = ["lib/proc_macros"]
+
 [profile.dev]
 incremental = true
 
@@ -16,6 +19,7 @@ codegen-units = 1
 opt-level = 'z'
 
 [dependencies]
+proc_macros = { path = "./lib/proc_macros" }
 axum = { version = "0.7.5", default-features = false, features = [
     "tokio",
     "http1",
