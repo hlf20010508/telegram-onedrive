@@ -214,22 +214,20 @@ async fn upload_file(
             }
             Err(e) => {
                 if let Some(status_code) = e.status_code() {
-                    match status_code.as_u16() {
-                        // 408: Request Timeout
-                        // 500: Internal Server Error
-                        // 502: Bad Gateway
-                        // 503: Service Unavailable
-                        // 504: Gateway Timeout
-                        408 | 500 | 502 | 503 | 504 if tries < max_retries => {}
-                        // 409: Conflict, probably caused by rename, too many files with the same name uploaded at once
-                        // 404: Not Found, probably because the item has already been uploaded
-                        // 416: Requested Range Not Satisfiable, probably because the fragment has already been received
-                        409 | 404 | 416 => {
-                            if upload_response.is_some() {
-                                break;
-                            }
-                        }
-                        _ => {}
+                    // normal
+                    // 408: Request Timeout
+                    // 500: Internal Server Error
+                    // 502: Bad Gateway
+                    // 503: Service Unavailable
+                    // 504: Gateway Timeout
+                    // 416: Requested Range Not Satisfiable, probably because the fragment has already been received
+                    //
+                    // probably has some problem
+                    // 409: Conflict, probably caused by rename, too many files with the same name uploaded at once
+                    // 404: Not Found, probably because the item has already been uploaded
+
+                    if status_code.as_u16() == 416 {
+                        break;
                     }
                 }
 
