@@ -33,6 +33,8 @@ pub fn add_trace(args: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = if fn_is_async {
         quote! {
             #fn_visibility async fn #fn_name #fn_generics(#fn_inputs) #fn_output #fn_where_clause {
+                use crate::error::ResultExt;
+
                 let func_path = module_path!().to_string() + "::" + #fn_name_str;
 
                 tracing::trace!("{}", func_path);
@@ -45,6 +47,8 @@ pub fn add_trace(args: TokenStream, item: TokenStream) -> TokenStream {
     } else {
         quote! {
             #fn_visibility fn #fn_name #fn_generics(#fn_inputs) #fn_output #fn_where_clause {
+                use crate::error::ResultExt;
+
                 let func_path = module_path!().to_string() + "::" + #fn_name_str;
 
                 tracing::trace!("{}", func_path);
