@@ -42,9 +42,7 @@ where
         let text = self
             .to_string()
             .trim()
-            .replace("*", "")
-            .replace("`", "")
-            .replace("~", "")
+            .replace(['*', '`', '~'], "")
             .replace("<b>", "")
             .replace("</b>", "")
             .replace("<strong>", "")
@@ -99,7 +97,7 @@ pub async fn get_filename(url: &str, response: &Response) -> Result<String> {
         Some(filename) => {
             let mut filename = filename;
 
-            if exts.len() > 0 && content_type != "application/octet-stream" {
+            if !exts.is_empty() && content_type != "application/octet-stream" {
                 let origin_ext = get_ext(&filename);
 
                 if filename.len() < 100 {
@@ -115,10 +113,8 @@ pub async fn get_filename(url: &str, response: &Response) -> Result<String> {
                         filename = filename + "." + &exts[0];
                     }
                 }
-            } else {
-                if filename.len() > 100 {
-                    filename = get_current_timestamp().to_string()
-                }
+            } else if filename.len() > 100 {
+                filename = get_current_timestamp().to_string()
             }
 
             filename
@@ -126,7 +122,7 @@ pub async fn get_filename(url: &str, response: &Response) -> Result<String> {
         None => {
             let mut filename = get_current_timestamp().to_string();
 
-            if let Some(ext) = exts.get(0) {
+            if let Some(ext) = exts.first() {
                 if content_type != "application/octet-stream" {
                     filename = filename + "." + ext
                 }
@@ -149,11 +145,10 @@ fn get_filename_from_cd(response: &Response) -> Result<Option<String>> {
 
         let filename = re
             .captures(cd)
-            .map(|cap| cap.get(1).map(|m| m.as_str().to_string()))
-            .flatten();
+            .and_then(|cap| cap.get(1).map(|m| m.as_str().to_string()));
 
         if let Some(filename) = filename {
-            if filename.len() > 0 {
+            if !filename.is_empty() {
                 let filename = filename
                     .trim()
                     .trim_matches('\'')
@@ -176,7 +171,7 @@ fn get_filename_from_url(url: &str) -> Result<Option<String>> {
         .map(|q| (q.0.to_string(), q.1.to_string().to_lowercase()))
         .collect::<HashMap<String, String>>();
 
-    let file_param_name_list = vec!["name", "filename", "file_name", "title", "file"];
+    let file_param_name_list = ["name", "filename", "file_name", "title", "file"];
 
     let filename = {
         let mut filename = None;
@@ -205,7 +200,7 @@ fn get_filename_from_url(url: &str) -> Result<Option<String>> {
         }
     };
 
-    if filename.len() > 0 {
+    if !filename.is_empty() {
         Ok(Some(filename))
     } else {
         Ok(None)
@@ -230,16 +225,13 @@ fn guess_exts(content_type: &str) -> Vec<String> {
     };
 
     match get_mime_extensions_str(&content_type) {
-        Some(exts) => exts
-            .into_iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<String>>(),
+        Some(exts) => exts.iter().map(|s| s.to_string()).collect::<Vec<String>>(),
         None => Vec::new(),
     }
 }
 
 fn validate_filename(filename: &str) -> bool {
-    if filename.len() == 0 || INVALID_NAME.contains(&filename) {
+    if filename.is_empty() || INVALID_NAME.contains(&filename) {
         return false;
     }
 
@@ -249,7 +241,7 @@ fn validate_filename(filename: &str) -> bool {
         }
     }
 
-    return true;
+    true
 }
 
 fn preprocess_url_file_name(filename: &str) -> String {
@@ -274,7 +266,7 @@ fn preprocess_url_file_name(filename: &str) -> String {
 pub fn preprocess_tg_file_name(media: &Media) -> String {
     let (filename, id) = match media {
         Media::Photo(file) => return file.id().to_string() + ".jpg",
-        Media::Document(file) => get_tg_document_name_and_id(&file),
+        Media::Document(file) => get_tg_document_name_and_id(file),
         Media::Sticker(file) => get_tg_document_name_and_id(&file.document),
         _ => Default::default(),
     };

@@ -15,114 +15,114 @@ use crate::message::TelegramMessage;
 
 #[derive(Debug)]
 pub enum Error {
-    DefaultError {
+    Default {
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    HttpHeaderValueError {
+    HttpHeaderValue {
         raw: reqwest::header::InvalidHeaderValue,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    HttpHeaderToStrError {
+    HttpHeaderToStr {
         raw: reqwest::header::ToStrError,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    HttpRequestError {
+    HttpRequest {
         raw: reqwest::Error,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    SysIOError {
+    SysIO {
         raw: std::io::Error,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    CertGenError {
+    CertGen {
         raw: rcgen::Error,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    TlsError {
+    Tls {
         raw: native_tls::Error,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    SocketIOServerBroadcastError {
+    SocketIOServerBroadcast {
         raw: socketioxide::BroadcastError,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    SocketIOClientError {
+    SocketIOClient {
         raw: rust_socketio::Error,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    TelegramInvocationError {
+    TelegramInvocation {
         raw: grammers_client::InvocationError,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    TelegramPackedChatError {
+    TelegramPackedChat {
         raw: String,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    TelegramAuthorizationError {
+    TelegramAuthorization {
         raw: grammers_client::client::bots::AuthorizationError,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    TelegramSignInError {
+    TelegramSignIn {
         raw: grammers_client::SignInError,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    OneDriveError {
+    OneDrive {
         raw: onedrive_api::Error,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    SerdeError {
+    Serde {
         raw: serde_json::Error,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    DatabaseError {
+    Database {
         raw: sea_orm::DbErr,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    ArgError {
+    Arg {
         raw: pico_args::Error,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    ParseIntError {
+    ParseInt {
         raw: std::num::ParseIntError,
         message: String,
         contexts: Vec<String>,
         details: Vec<String>,
     },
-    ParseUrlError {
+    ParseUrl {
         raw: url::ParseError,
         message: String,
         contexts: Vec<String>,
@@ -135,7 +135,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::DefaultError {
+        Self::Default {
             message: message.to_string(),
             contexts: Vec::new(),
             details: Vec::new(),
@@ -146,7 +146,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::HttpHeaderValueError {
+        Self::HttpHeaderValue {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -158,7 +158,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::HttpHeaderToStrError {
+        Self::HttpHeaderToStr {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -170,7 +170,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::HttpRequestError {
+        Self::HttpRequest {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -182,7 +182,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::SysIOError {
+        Self::SysIO {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -194,7 +194,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::CertGenError {
+        Self::CertGen {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -206,7 +206,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::TlsError {
+        Self::Tls {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -218,7 +218,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::SocketIOServerBroadcastError {
+        Self::SocketIOServerBroadcast {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -230,7 +230,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::SocketIOClientError {
+        Self::SocketIOClient {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -242,7 +242,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::TelegramInvocationError {
+        Self::TelegramInvocation {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -255,7 +255,7 @@ impl Error {
         T: Display,
         U: Display,
     {
-        Self::TelegramPackedChatError {
+        Self::TelegramPackedChat {
             raw: e.to_string(),
             message: message.to_string(),
             contexts: Vec::new(),
@@ -270,7 +270,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::TelegramAuthorizationError {
+        Self::TelegramAuthorization {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -282,7 +282,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::TelegramSignInError {
+        Self::TelegramSignIn {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -294,7 +294,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::OneDriveError {
+        Self::OneDrive {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -306,7 +306,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::SerdeError {
+        Self::Serde {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -318,7 +318,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::DatabaseError {
+        Self::Database {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -330,7 +330,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::ArgError {
+        Self::Arg {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -342,7 +342,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::ParseIntError {
+        Self::ParseInt {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -354,7 +354,7 @@ impl Error {
     where
         T: Display,
     {
-        Self::ParseUrlError {
+        Self::ParseUrl {
             raw: e,
             message: message.to_string(),
             contexts: Vec::new(),
@@ -367,25 +367,25 @@ impl Error {
         T: Display,
     {
         match &mut self {
-            Self::DefaultError { details, .. }
-            | Self::HttpHeaderValueError { details, .. }
-            | Self::HttpHeaderToStrError { details, .. }
-            | Self::HttpRequestError { details, .. }
-            | Self::SysIOError { details, .. }
-            | Self::CertGenError { details, .. }
-            | Self::TlsError { details, .. }
-            | Self::SocketIOServerBroadcastError { details, .. }
-            | Self::SocketIOClientError { details, .. }
-            | Self::TelegramInvocationError { details, .. }
-            | Self::TelegramPackedChatError { details, .. }
-            | Self::TelegramAuthorizationError { details, .. }
-            | Self::TelegramSignInError { details, .. }
-            | Self::OneDriveError { details, .. }
-            | Self::SerdeError { details, .. }
-            | Self::DatabaseError { details, .. }
-            | Self::ArgError { details, .. }
-            | Self::ParseIntError { details, .. }
-            | Self::ParseUrlError { details, .. } => details.push(detail.to_string()),
+            Self::Default { details, .. }
+            | Self::HttpHeaderValue { details, .. }
+            | Self::HttpHeaderToStr { details, .. }
+            | Self::HttpRequest { details, .. }
+            | Self::SysIO { details, .. }
+            | Self::CertGen { details, .. }
+            | Self::Tls { details, .. }
+            | Self::SocketIOServerBroadcast { details, .. }
+            | Self::SocketIOClient { details, .. }
+            | Self::TelegramInvocation { details, .. }
+            | Self::TelegramPackedChat { details, .. }
+            | Self::TelegramAuthorization { details, .. }
+            | Self::TelegramSignIn { details, .. }
+            | Self::OneDrive { details, .. }
+            | Self::Serde { details, .. }
+            | Self::Database { details, .. }
+            | Self::Arg { details, .. }
+            | Self::ParseInt { details, .. }
+            | Self::ParseUrl { details, .. } => details.push(detail.to_string()),
         }
 
         self
@@ -396,25 +396,25 @@ impl Error {
         T: Display,
     {
         match &mut self {
-            Self::DefaultError { contexts, .. }
-            | Self::HttpHeaderValueError { contexts, .. }
-            | Self::HttpHeaderToStrError { contexts, .. }
-            | Self::HttpRequestError { contexts, .. }
-            | Self::SysIOError { contexts, .. }
-            | Self::CertGenError { contexts, .. }
-            | Self::TlsError { contexts, .. }
-            | Self::SocketIOServerBroadcastError { contexts, .. }
-            | Self::SocketIOClientError { contexts, .. }
-            | Self::TelegramInvocationError { contexts, .. }
-            | Self::TelegramPackedChatError { contexts, .. }
-            | Self::TelegramAuthorizationError { contexts, .. }
-            | Self::TelegramSignInError { contexts, .. }
-            | Self::OneDriveError { contexts, .. }
-            | Self::SerdeError { contexts, .. }
-            | Self::DatabaseError { contexts, .. }
-            | Self::ArgError { contexts, .. }
-            | Self::ParseIntError { contexts, .. }
-            | Self::ParseUrlError { contexts, .. } => contexts.insert(0, context.to_string()),
+            Self::Default { contexts, .. }
+            | Self::HttpHeaderValue { contexts, .. }
+            | Self::HttpHeaderToStr { contexts, .. }
+            | Self::HttpRequest { contexts, .. }
+            | Self::SysIO { contexts, .. }
+            | Self::CertGen { contexts, .. }
+            | Self::Tls { contexts, .. }
+            | Self::SocketIOServerBroadcast { contexts, .. }
+            | Self::SocketIOClient { contexts, .. }
+            | Self::TelegramInvocation { contexts, .. }
+            | Self::TelegramPackedChat { contexts, .. }
+            | Self::TelegramAuthorization { contexts, .. }
+            | Self::TelegramSignIn { contexts, .. }
+            | Self::OneDrive { contexts, .. }
+            | Self::Serde { contexts, .. }
+            | Self::Database { contexts, .. }
+            | Self::Arg { contexts, .. }
+            | Self::ParseInt { contexts, .. }
+            | Self::ParseUrl { contexts, .. } => contexts.insert(0, context.to_string()),
         }
 
         self
@@ -452,8 +452,8 @@ impl Display for Error {
         fn write_fmt(
             f: &mut std::fmt::Formatter<'_>,
             mut base: String,
-            contexts: &Vec<String>,
-            details: &Vec<String>,
+            contexts: &[String],
+            details: &[String],
         ) -> std::fmt::Result {
             if !contexts.is_empty() {
                 let contexts = contexts.join("\n-");
@@ -469,7 +469,7 @@ impl Display for Error {
         }
 
         match self {
-            Self::DefaultError {
+            Self::Default {
                 message,
                 contexts,
                 details,
@@ -477,7 +477,7 @@ impl Display for Error {
                 let base = message.clone();
                 write_fmt(f, base, contexts, details)
             }
-            Self::HttpHeaderValueError {
+            Self::HttpHeaderValue {
                 raw,
                 message,
                 contexts,
@@ -486,7 +486,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::HttpHeaderToStrError {
+            Self::HttpHeaderToStr {
                 raw,
                 message,
                 contexts,
@@ -495,7 +495,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::HttpRequestError {
+            Self::HttpRequest {
                 raw,
                 message,
                 contexts,
@@ -504,7 +504,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::SysIOError {
+            Self::SysIO {
                 raw,
                 message,
                 contexts,
@@ -513,7 +513,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::CertGenError {
+            Self::CertGen {
                 raw,
                 message,
                 contexts,
@@ -522,7 +522,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::TlsError {
+            Self::Tls {
                 raw,
                 message,
                 contexts,
@@ -531,7 +531,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::SocketIOServerBroadcastError {
+            Self::SocketIOServerBroadcast {
                 raw,
                 message,
                 contexts,
@@ -540,7 +540,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::SocketIOClientError {
+            Self::SocketIOClient {
                 raw,
                 message,
                 contexts,
@@ -549,7 +549,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::TelegramInvocationError {
+            Self::TelegramInvocation {
                 raw,
                 message,
                 contexts,
@@ -558,7 +558,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::TelegramPackedChatError {
+            Self::TelegramPackedChat {
                 raw,
                 message,
                 contexts,
@@ -567,7 +567,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::TelegramAuthorizationError {
+            Self::TelegramAuthorization {
                 raw,
                 message,
                 contexts,
@@ -576,7 +576,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::TelegramSignInError {
+            Self::TelegramSignIn {
                 raw,
                 message,
                 contexts,
@@ -585,7 +585,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::OneDriveError {
+            Self::OneDrive {
                 raw,
                 message,
                 contexts,
@@ -594,7 +594,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::SerdeError {
+            Self::Serde {
                 raw,
                 message,
                 contexts,
@@ -603,7 +603,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::DatabaseError {
+            Self::Database {
                 raw,
                 message,
                 contexts,
@@ -612,7 +612,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::ArgError {
+            Self::Arg {
                 raw,
                 message,
                 contexts,
@@ -621,7 +621,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::ParseIntError {
+            Self::ParseInt {
                 raw,
                 message,
                 contexts,
@@ -630,7 +630,7 @@ impl Display for Error {
                 let base = format!("{}: {}", message, raw);
                 write_fmt(f, base, contexts, details)
             }
-            Self::ParseUrlError {
+            Self::ParseUrl {
                 raw,
                 message,
                 contexts,

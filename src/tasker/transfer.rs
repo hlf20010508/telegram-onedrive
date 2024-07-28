@@ -181,7 +181,7 @@ pub async fn multi_parts_uploader_from_tg_file(
 
 async fn upload_file(
     upload_session: &UploadSession,
-    buffer: &Vec<u8>,
+    buffer: &[u8],
     current_length: u64,
     total_length: u64,
     http_client: &reqwest::Client,
@@ -196,13 +196,13 @@ async fn upload_file(
 
         let result = upload_session
             .upload_part(
-                buffer.clone(),
+                buffer.to_owned(),
                 Range {
                     start: current_length,
                     end: current_length + buffer.len() as u64,
                 },
                 total_length,
-                &http_client,
+                http_client,
             )
             .await;
 
@@ -225,7 +225,7 @@ async fn upload_file(
                         // 404: Not Found, probably because the item has already been uploaded
                         // 416: Requested Range Not Satisfiable, probably because the fragment has already been received
                         409 | 404 | 416 => {
-                            if !upload_response.is_none() {
+                            if upload_response.is_some() {
                                 break;
                             }
                         }

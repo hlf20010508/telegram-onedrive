@@ -60,11 +60,7 @@ impl TaskSession {
     async fn is_table_exists(connection: &DatabaseConnection) -> bool {
         let result = tasks::Entity::find().all(connection).await;
 
-        if result.is_ok() {
-            true
-        } else {
-            false
-        }
+        result.is_ok()
     }
 
     pub async fn fetch_task(&self) -> Result<Option<tasks::Model>> {

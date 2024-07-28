@@ -6,7 +6,7 @@
 */
 
 use grammers_client::types::Media;
-use std::sync::Arc;
+use std::rc::Rc;
 
 use super::{EventType, Events};
 use crate::error::Result;
@@ -14,12 +14,12 @@ use crate::message::TelegramMessage;
 use crate::state::AppState;
 
 pub struct Handler {
-    pub events: Arc<Events>,
+    pub events: Rc<Events>,
     pub state: AppState,
 }
 
 impl Handler {
-    pub fn new(events: Arc<Events>, state: AppState) -> Self {
+    pub fn new(events: Rc<Events>, state: AppState) -> Self {
         Self { events, state }
     }
 
@@ -77,9 +77,6 @@ impl Handler {
     }
 
     pub fn get_event_names(&self) -> Vec<EventType> {
-        self.events
-            .keys()
-            .map(|name| EventType::from(name))
-            .collect()
+        self.events.keys().map(EventType::from).collect()
     }
 }

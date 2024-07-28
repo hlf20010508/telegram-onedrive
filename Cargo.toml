@@ -8,6 +8,10 @@ edition = "2021"
 [workspace]
 members = ["lib/proc_macros"]
 
+[lints.clippy]
+result_large_err = "allow"
+too_many_arguments = "allow"
+
 [profile.dev]
 incremental = true
 

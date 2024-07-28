@@ -70,12 +70,12 @@ impl ValueType for CmdType {
     }
 }
 
-impl Into<Value> for CmdType {
-    fn into(self) -> Value {
-        match self {
-            Self::File => Value::String(Some(Box::new(self.to_string()))),
-            Self::Link => Value::String(Some(Box::new(self.to_string()))),
-            Self::Url => Value::String(Some(Box::new(self.to_string()))),
+impl From<CmdType> for Value {
+    fn from(value: CmdType) -> Self {
+        match value {
+            CmdType::File => Self::String(Some(Box::new(value.to_string()))),
+            CmdType::Link => Self::String(Some(Box::new(value.to_string()))),
+            CmdType::Url => Self::String(Some(Box::new(value.to_string()))),
         }
     }
 }
@@ -143,14 +143,14 @@ impl ValueType for TaskStatus {
     }
 }
 
-impl Into<Value> for TaskStatus {
-    fn into(self) -> Value {
-        match self {
-            Self::Waiting => Value::String(Some(Box::new(self.to_string()))),
-            Self::Fetched => Value::String(Some(Box::new(self.to_string()))),
-            Self::Started => Value::String(Some(Box::new(self.to_string()))),
-            Self::Completed => Value::String(Some(Box::new(self.to_string()))),
-            Self::Failed => Value::String(Some(Box::new(self.to_string()))),
+impl From<TaskStatus> for Value {
+    fn from(value: TaskStatus) -> Self {
+        match value {
+            TaskStatus::Waiting => Self::String(Some(Box::new(value.to_string()))),
+            TaskStatus::Fetched => Self::String(Some(Box::new(value.to_string()))),
+            TaskStatus::Started => Self::String(Some(Box::new(value.to_string()))),
+            TaskStatus::Completed => Self::String(Some(Box::new(value.to_string()))),
+            TaskStatus::Failed => Self::String(Some(Box::new(value.to_string()))),
         }
     }
 }

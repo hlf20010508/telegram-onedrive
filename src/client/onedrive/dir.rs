@@ -45,7 +45,7 @@ impl OneDriveClient {
         self.clear_temp_root_path().await?;
 
         let mut session = self.session.write().await;
-        session.root_path = self.default_root_path.clone();
+        session.root_path.clone_from(&self.default_root_path);
         session.save().await?;
 
         Ok(())

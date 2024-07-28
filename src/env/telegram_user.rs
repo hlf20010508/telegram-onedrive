@@ -43,7 +43,7 @@ impl TelegramUserEnv {
         let arg: Option<String> = get_arg_value("--tg-user-name").ok();
 
         let users = if let Some(user_names) = arg {
-            let users = user_names.split(",").map(|s| s.to_string()).collect();
+            let users = user_names.split(',').map(|s| s.to_string()).collect();
 
             users
         } else {

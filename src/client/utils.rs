@@ -36,7 +36,7 @@ pub async fn socketio_client(
             let tx: mpsc::Sender<String> = tx.clone();
             async move {
                 if let Payload::Text(values) = payload {
-                    if let Some(value) = values.get(0) {
+                    if let Some(value) = values.first() {
                         let code = serde_json::from_value::<String>(value.to_owned()).unwrap();
 
                         tx.send(code).await.unwrap();

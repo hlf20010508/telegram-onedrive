@@ -22,7 +22,7 @@ use models::{current_user, session};
 use crate::error::{Error, Result};
 use crate::utils::get_current_timestamp;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OneDriveSession {
     pub username: String,
     pub expiration_timestamp: i64,
@@ -119,11 +119,7 @@ impl OneDriveSession {
     {
         let result = E::find().all(connection).await;
 
-        if result.is_ok() {
-            true
-        } else {
-            false
-        }
+        result.is_ok()
     }
 
     async fn create_table_if_not_exists<E>(connection: &DatabaseConnection, entity: E) -> Result<()>
@@ -169,7 +165,6 @@ impl OneDriveSession {
                 access_token: Set(self.access_token.to_string()),
                 refresh_token: Set(self.refresh_token.to_string()),
                 root_path: Set(self.root_path.to_string()),
-                ..Default::default()
             };
 
             session::Entity::insert(insert_item)
@@ -273,7 +268,6 @@ impl OneDriveSession {
 
         let insert_item = current_user::ActiveModel {
             username: Set(self.username.clone()),
-            ..Default::default()
         };
 
         current_user::Entity::insert(insert_item)
@@ -371,19 +365,6 @@ impl OneDriveSession {
 
     pub fn is_expired(&self) -> bool {
         self.expiration_timestamp < get_current_timestamp() + 60
-    }
-}
-
-impl Default for OneDriveSession {
-    fn default() -> Self {
-        Self {
-            username: Default::default(),
-            expiration_timestamp: Default::default(),
-            access_token: Default::default(),
-            refresh_token: Default::default(),
-            root_path: Default::default(),
-            connection: Default::default(),
-        }
     }
 }
 

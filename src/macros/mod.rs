@@ -14,9 +14,9 @@ macro_rules! check_in_group {
             grammers_client::types::Chat::Group(_) => {}
             _ => {
                 $message
-                    .respond(crate::macros::docs::CHECK_IN_GROUP_FAILED)
+                    .respond($crate::macros::docs::CHECK_IN_GROUP_FAILED)
                     .await
-                    .details(crate::macros::docs::CHECK_IN_GROUP_FAILED)?;
+                    .details($crate::macros::docs::CHECK_IN_GROUP_FAILED)?;
 
                 return Ok(());
             }
@@ -49,8 +49,8 @@ macro_rules! check_tg_login {
             $message.respond(response).await.details(response)?;
 
             let env = &$state.env;
-            let _server_abort_handle = crate::auth_server::spawn(env).await?;
-            crate::handlers::auth::login_to_telegram($message.clone(), $state.clone()).await?;
+            let _server_abort_handle = $crate::auth_server::spawn(env).await?;
+            $crate::handlers::auth::login_to_telegram($message.clone(), $state.clone()).await?;
         }
     };
 }
@@ -65,8 +65,8 @@ macro_rules! check_od_login {
             $message.respond(response).await.details(response)?;
 
             let env = &$state.env;
-            let _server_abort_handle = crate::auth_server::spawn(env).await?;
-            crate::handlers::auth::authorize_onedrive($message.clone(), $state.clone(), false)
+            let _server_abort_handle = $crate::auth_server::spawn(env).await?;
+            $crate::handlers::auth::authorize_onedrive($message.clone(), $state.clone(), false)
                 .await?;
         }
     };

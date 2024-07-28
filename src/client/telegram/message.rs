@@ -27,7 +27,7 @@ impl TelegramClient {
             .get_messages_by_id(chat, &[message_id])
             .await
             .map_err(|e| Error::new_telegram_invocation(e, "failed to get message by id"))?
-            .get(0)
+            .first()
             .ok_or_else(|| Error::new("message vec is empty"))?
             .to_owned()
             .ok_or_else(|| Error::new("message not found"))?;

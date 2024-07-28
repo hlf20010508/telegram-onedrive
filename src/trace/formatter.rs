@@ -24,7 +24,10 @@ where
         mut writer: format::Writer<'_>,
         event: &tracing::Event<'_>,
     ) -> std::fmt::Result {
-        if let Err(_) = ChronoLocal::new("%Y-%m-%d %H:%M:%S".to_string()).format_time(&mut writer) {
+        if ChronoLocal::new("%Y-%m-%d %H:%M:%S".to_string())
+            .format_time(&mut writer)
+            .is_err()
+        {
             write!(writer, "Time error")?;
             writeln!(writer)?;
         }

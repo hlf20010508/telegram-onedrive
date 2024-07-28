@@ -298,7 +298,7 @@ impl Progress {
                     })?;
 
                 if let Some(latest_message) = latest_message {
-                    if latest_message.id() != progress_message_id.to_owned() {
+                    if latest_message.id() != *progress_message_id {
                         telegram_bot
                             .delete_messages(chat, &[progress_message_id.to_owned()])
                             .await?;

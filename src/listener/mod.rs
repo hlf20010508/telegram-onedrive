@@ -9,6 +9,7 @@ mod events;
 mod handler;
 
 use grammers_client::Update;
+use std::rc::Rc;
 use std::sync::Arc;
 
 pub use events::{EventType, HashMapExt};
@@ -23,13 +24,13 @@ use crate::state::{AppState, State};
 use crate::tasker::Tasker;
 
 pub struct Listener {
-    pub events: Arc<Events>,
+    pub events: Rc<Events>,
     pub state: AppState,
 }
 
 impl Listener {
     pub async fn new(events: Events) -> Self {
-        let events = Arc::new(events);
+        let events = Rc::new(events);
         let state = Arc::new(State::new().await);
 
         Self { events, state }

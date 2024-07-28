@@ -62,7 +62,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 .await?;
 
             let current_length = {
-                match upload_session_meta.next_expected_ranges.get(0) {
+                match upload_session_meta.next_expected_ranges.first() {
                     Some(range) => range.start,
                     None => 0,
                 }
