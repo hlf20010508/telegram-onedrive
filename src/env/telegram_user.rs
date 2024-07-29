@@ -28,7 +28,7 @@ impl TelegramUserEnv {
         let session_path = TG_USER_SESSION_PATH.to_string();
         let params = grammers_client::InitParams::default();
 
-        TelegramUserEnv {
+        Self {
             api_id,
             api_hash,
             users,

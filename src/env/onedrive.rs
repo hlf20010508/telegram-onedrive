@@ -22,7 +22,7 @@ impl OneDriveEnv {
         let root_path = get_arg_value_option("--od-root-path", "/".to_string());
         let session_path = OD_SESSION_PATH.to_string();
 
-        OneDriveEnv {
+        Self {
             client_id,
             client_secret,
             root_path,

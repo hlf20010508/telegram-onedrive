@@ -28,7 +28,7 @@ pub enum Relation {
     CurrentUser,
 }
 
-impl Related<super::session::Entity> for Entity {
+impl Related<Self> for Entity {
     fn to() -> RelationDef {
         Relation::CurrentUser.def()
     }

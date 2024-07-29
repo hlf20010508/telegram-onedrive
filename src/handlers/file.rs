@@ -51,12 +51,10 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         .multipart_upload_session_builder(&root_path, &filename)
         .await?;
 
-    let current_length = {
-        match upload_session_meta.next_expected_ranges.first() {
-            Some(range) => range.start,
-            None => 0,
-        }
-    };
+    let current_length = upload_session_meta
+        .next_expected_ranges
+        .first()
+        .map_or(0, |range| range.start);
 
     let mut message_id = message.id();
     let chat_bot_hex = message.chat().pack().to_hex();

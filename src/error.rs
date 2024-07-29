@@ -663,7 +663,7 @@ pub trait ResultExt<T> {
 }
 
 impl<T> ResultExt<T> for Result<T> {
-    fn details<U>(self, message_details: U) -> Result<T>
+    fn details<U>(self, message_details: U) -> Self
     where
         U: Display,
     {
@@ -673,7 +673,7 @@ impl<T> ResultExt<T> for Result<T> {
         }
     }
 
-    fn context<U>(self, message_context: U) -> Result<T>
+    fn context<U>(self, message_context: U) -> Self
     where
         U: Display,
     {

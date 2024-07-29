@@ -131,10 +131,9 @@ pub async fn multi_parts_uploader_from_tg_file(
 
     let chat = chat_from_hex(chat_user_hex)?;
 
-    let message_id = match message_id_forward {
-        Some(message_id) => message_id,
-        None => message_id,
-    };
+    let message_id = message_id_forward
+        .as_ref()
+        .map_or(message_id, |message_id| message_id);
 
     let message = telegram_user.get_message(chat, *message_id).await?;
     let media = message

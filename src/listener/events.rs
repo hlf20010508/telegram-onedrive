@@ -46,22 +46,22 @@ pub enum EventType {
 
 impl EventType {
     pub fn command(pattern: &str) -> Self {
-        EventType::Command(pattern.to_string())
+        Self::Command(pattern.to_string())
     }
 
     pub fn text() -> Self {
-        EventType::Text
+        Self::Text
     }
 
     pub fn media() -> Self {
-        EventType::Media
+        Self::Media
     }
 
     pub fn to_str(&self) -> &str {
         match self {
-            EventType::Command(command) => command.as_str(),
-            EventType::Text => "__TEXT__",
-            EventType::Media => "__MEDIA__",
+            Self::Command(command) => command.as_str(),
+            Self::Text => "__TEXT__",
+            Self::Media => "__MEDIA__",
         }
     }
 }
@@ -69,7 +69,7 @@ impl EventType {
 impl Display for EventType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            EventType::Command(command) => write!(f, "{}", command),
+            Self::Command(command) => write!(f, "{}", command),
             _ => write!(f, "{}", self.to_str()),
         }
     }
@@ -77,12 +77,12 @@ impl Display for EventType {
 
 impl From<&String> for EventType {
     fn from(value: &String) -> Self {
-        if value == EventType::Text.to_str() {
-            EventType::Text
-        } else if value == EventType::Media.to_str() {
-            EventType::Media
+        if value == Self::Text.to_str() {
+            Self::Text
+        } else if value == Self::Media.to_str() {
+            Self::Media
         } else {
-            EventType::Command(value.to_string())
+            Self::Command(value.to_string())
         }
     }
 }

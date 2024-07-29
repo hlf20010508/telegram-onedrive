@@ -45,7 +45,7 @@ impl Env {
         let should_auto_delete = args_contains("--auto-delete");
         let tasker_session_path = var::TASKER_SESSION_PATH.to_string();
 
-        Env {
+        Self {
             telegram_bot,
             telegram_user,
             onedrive,

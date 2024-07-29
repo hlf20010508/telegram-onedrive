@@ -24,7 +24,7 @@ impl TelegramBotEnv {
         let session_path = TG_BOT_SESSION_PATH.to_string();
         let params = grammers_client::InitParams::default();
 
-        TelegramBotEnv {
+        Self {
             api_id,
             api_hash,
             token,
