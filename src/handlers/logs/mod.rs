@@ -10,7 +10,7 @@ mod docs;
 mod send;
 
 use grammers_client::InputMessage;
-use proc_macros::{add_context, add_trace};
+use proc_macros::{add_context, add_trace, check_in_group, check_senders, check_tg_login};
 use tokio::fs;
 
 use clear::clear_logs;
@@ -21,17 +21,15 @@ use crate::env::LOG_PATH;
 use crate::error::Result;
 use crate::message::TelegramMessage;
 use crate::state::AppState;
-use crate::{check_in_group, check_senders, check_tg_login};
 
 pub const PATTERN: &str = "/logs";
 
+#[check_tg_login]
+#[check_senders]
+#[check_in_group]
 #[add_context]
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
-    check_in_group!(message);
-    check_senders!(message, state);
-    check_tg_login!(message, state);
-
     {
         let metadata = fs::metadata(LOG_PATH).await;
         if metadata.is_err() || (metadata.is_ok() && metadata.unwrap().len() == 0) {

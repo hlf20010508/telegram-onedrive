@@ -11,7 +11,6 @@ mod env;
 mod error;
 mod handlers;
 mod listener;
-mod macros;
 mod message;
 mod state;
 mod tasker;

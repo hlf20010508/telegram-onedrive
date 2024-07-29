@@ -5,7 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use proc_macros::{add_context, add_trace};
+use proc_macros::{
+    add_context, add_trace, check_in_group, check_od_login, check_senders, check_tg_login,
+};
 use reqwest::header;
 
 use super::utils::{cmd_parser, get_filename, TextExt};
@@ -14,18 +16,16 @@ use crate::message::TelegramMessage;
 use crate::state::AppState;
 use crate::tasker::CmdType;
 use crate::utils::get_http_client;
-use crate::{check_in_group, check_od_login, check_senders, check_tg_login};
 
 pub const PATTERN: &str = "/url";
 
+#[check_od_login]
+#[check_tg_login]
+#[check_senders]
+#[check_in_group]
 #[add_context]
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
-    check_in_group!(message);
-    check_senders!(message, state);
-    check_tg_login!(message, state);
-    check_od_login!(message, state);
-
     let cmd = cmd_parser(message.text());
 
     if cmd.len() == 2 {
