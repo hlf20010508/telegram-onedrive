@@ -31,15 +31,15 @@ pub async fn set_drive(
 
     onedrive.change_account(selected_username).await?;
 
-    if current_username != *selected_username {
+    if current_username == *selected_username {
+        let response = "Same account, nothing to change.";
+        message.respond(response).await.details(response)?;
+    } else {
         let response = format!(
             "Changed account from\n{}\nto\n{}",
             current_username, selected_username
         );
         message.respond(response.as_str()).await.details(response)?;
-    } else {
-        let response = "Same account, nothing to change.";
-        message.respond(response).await.details(response)?;
     }
 
     Ok(())

@@ -31,7 +31,7 @@ impl Handler {
         match message.media() {
             Some(media) => match media {
                 Media::Photo(_) | Media::Document(_) | Media::Sticker(_) => {
-                    self.handle_media(message).await?
+                    self.handle_media(message).await?;
                 }
                 _ => {}
             },

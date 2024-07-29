@@ -74,7 +74,7 @@ impl OneDriveClient {
             client_secret: client_secret.clone(),
             session_path: session_path.clone(),
             default_root_path: root_path.to_string(),
-            temp_root_path: RwLock::new("".to_string()),
+            temp_root_path: RwLock::new(String::new()),
         };
 
         let _ = onedrive_client.auto_login().await;
@@ -95,19 +95,19 @@ impl OneDriveClient {
         should_add: bool,
     ) -> Result<()> {
         if !should_add {
-            if !self.is_authorized().await {
-                let response = "Auto logging in to OneDrive...";
-                message.respond(response).await.details(response)?;
-
-                if self.auto_login().await.is_ok() {
-                    return Ok(());
-                } else {
-                    let response = "Auto login to OneDrive failed, login manually.";
-                    message.respond(response).await.details(response)?;
-                }
-            } else {
+            if self.is_authorized().await {
                 return Ok(());
             }
+
+            let response = "Auto logging in to OneDrive...";
+            message.respond(response).await.details(response)?;
+
+            if self.auto_login().await.is_ok() {
+                return Ok(());
+            }
+
+            let response = "Auto login to OneDrive failed, login manually.";
+            message.respond(response).await.details(response)?;
         }
 
         let response = format!(

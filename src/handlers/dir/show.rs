@@ -17,10 +17,10 @@ pub async fn show_dir(onedrive: &OneDriveClient, message: TelegramMessage) -> Re
     let root_path = onedrive.get_root_path(false).await?;
     let is_temp = onedrive.does_temp_root_path_exist().await;
 
-    let response = if !is_temp {
-        format!("Current directory is {}", root_path)
-    } else {
+    let response = if is_temp {
         format!("Current directory is {}, and it's temporary.", root_path)
+    } else {
+        format!("Current directory is {}", root_path)
     };
     message.respond(response.as_str()).await.details(response)?;
 

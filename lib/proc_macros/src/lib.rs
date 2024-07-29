@@ -153,11 +153,11 @@ gen_checker!(check_in_group, {
     match message.chat() {
         grammers_client::types::Chat::Group(_) => {}
         _ => {
-            const CHECK_IN_GROUP_FAILED: &str = r#"
+            const CHECK_IN_GROUP_FAILED: &str = r"
 This bot must be used in a Group!
 
 Add this bot to a Group as Admin, and give it ability to Delete Messages.
-"#;
+";
 
             message
                 .respond(CHECK_IN_GROUP_FAILED)

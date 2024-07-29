@@ -5,8 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
-pub const USAGE: &str = r#"
+pub const USAGE: &str = r"
 Usage:
 <pre>/logs</pre>
 <pre>/logs clear</pre>
-"#;
+";

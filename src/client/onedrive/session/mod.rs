@@ -282,16 +282,14 @@ impl OneDriveSession {
             .map_err(|e| Error::new_database(e, "failed to query onedrive current user"))?;
 
         if let Some(current_user_col) = current_user_col {
-            if current_user_col.username != self.username {
-                current_user::Entity::delete_many()
-                    .exec(&self.connection)
-                    .await
-                    .map_err(|e| {
-                        Error::new_database(e, "failed to delete onedrive current user")
-                    })?;
-            } else {
+            if current_user_col.username == self.username {
                 return Ok(());
             }
+
+            current_user::Entity::delete_many()
+                .exec(&self.connection)
+                .await
+                .map_err(|e| Error::new_database(e, "failed to delete onedrive current user"))?;
         }
 
         let insert_item = current_user::ActiveModel {
@@ -413,7 +411,7 @@ impl From<session::Model> for OneDriveSession {
             access_token: model.access_token,
             refresh_token: model.refresh_token,
             root_path: model.root_path,
-            connection: Default::default(),
+            connection: DatabaseConnection::default(),
         }
     }
 }

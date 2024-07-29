@@ -68,7 +68,7 @@ impl Listener {
                 let message = TelegramMessage::new(client.clone(), message_raw);
 
                 if let Err(e) = handler.handle_message(message.clone()).await {
-                    e.send(message).await.unwrap_both().trace()
+                    e.send(message).await.unwrap_both().trace();
                 }
             }
         }

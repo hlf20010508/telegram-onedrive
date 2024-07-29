@@ -5,11 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
-pub const USAGE: &str = r#"
+pub const USAGE: &str = r"
 Usage:
 <pre>/drive</pre>
 <pre>/drive add</pre>
 <pre>/drive $index</pre>
 <pre>/drive logout</pre>
 <pre>/drive logout $index</pre>
-"#;
+";

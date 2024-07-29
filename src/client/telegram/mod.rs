@@ -93,7 +93,7 @@ impl TelegramClient {
             message_queue: Arc::new(Mutex::new(MessageVecDeque::new())),
         };
 
-        telegram_client.run_message_loop().await;
+        telegram_client.run_message_loop();
 
         Ok(telegram_client)
     }
@@ -136,7 +136,7 @@ impl TelegramClient {
             message_queue: Arc::new(Mutex::new(MessageVecDeque::new())),
         };
 
-        telegram_client.run_message_loop().await;
+        telegram_client.run_message_loop();
 
         Ok(telegram_client)
     }

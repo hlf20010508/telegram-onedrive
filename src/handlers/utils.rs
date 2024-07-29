@@ -66,7 +66,7 @@ where
             .replace("</u>", "")
             .replace("</pre>", "");
 
-        let re = Regex::new(r#"<pre[^>]*>"#).unwrap();
+        let re = Regex::new("<pre[^>]*>").unwrap();
         re.replace_all(&text, "").to_string()
     }
 
@@ -120,7 +120,7 @@ pub async fn get_filename(url: &str, response: &Response) -> Result<String> {
                     }
                 }
             } else if filename.len() > 100 {
-                filename = get_current_timestamp().to_string()
+                filename = get_current_timestamp().to_string();
             }
 
             filename
@@ -130,7 +130,7 @@ pub async fn get_filename(url: &str, response: &Response) -> Result<String> {
 
             if let Some(ext) = exts.first() {
                 if content_type != "application/octet-stream" {
-                    filename = filename + "." + ext
+                    filename = filename + "." + ext;
                 }
             }
 
@@ -210,10 +210,10 @@ fn get_filename_from_url(url: &str) -> Result<Option<String>> {
         }
     };
 
-    if !filename.is_empty() {
-        Ok(Some(filename))
-    } else {
+    if filename.is_empty() {
         Ok(None)
+    } else {
+        Ok(Some(filename))
     }
 }
 
@@ -236,7 +236,10 @@ fn guess_exts(content_type: &str) -> Vec<String> {
     };
 
     match get_mime_extensions_str(&content_type) {
-        Some(exts) => exts.iter().map(|s| s.to_string()).collect::<Vec<String>>(),
+        Some(exts) => exts
+            .iter()
+            .map(|s| (*s).to_string())
+            .collect::<Vec<String>>(),
         None => Vec::new(),
     }
 }
@@ -302,10 +305,10 @@ fn get_tg_document_name_and_id(document: &Document) -> (String, i64) {
         if let Some(mime) = document.mime_type() {
             let exts = guess_exts(mime);
 
-            if !exts.is_empty() {
-                filename = file_id.to_string() + "." + &exts[0];
-            } else {
+            if exts.is_empty() {
                 filename = file_id.to_string();
+            } else {
+                filename = file_id.to_string() + "." + &exts[0];
             }
         }
     }

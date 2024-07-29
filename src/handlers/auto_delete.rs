@@ -25,11 +25,11 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         .should_auto_delete
         .store(!should_auto_delete, Ordering::Release);
 
-    if !should_auto_delete {
-        let response = "Bot will auto delete message.";
+    if should_auto_delete {
+        let response = "Bot won't auto delete message.";
         message.respond(response).await.details(response)?;
     } else {
-        let response = "Bot won't auto delete message.";
+        let response = "Bot will auto delete message.";
         message.respond(response).await.details(response)?;
     }
 

@@ -73,9 +73,9 @@ impl ValueType for CmdType {
 impl From<CmdType> for Value {
     fn from(value: CmdType) -> Self {
         match value {
-            CmdType::File => Self::String(Some(Box::new(value.to_string()))),
-            CmdType::Link => Self::String(Some(Box::new(value.to_string()))),
-            CmdType::Url => Self::String(Some(Box::new(value.to_string()))),
+            CmdType::File | CmdType::Link | CmdType::Url => {
+                Self::String(Some(Box::new(value.to_string())))
+            }
         }
     }
 }
@@ -146,11 +146,11 @@ impl ValueType for TaskStatus {
 impl From<TaskStatus> for Value {
     fn from(value: TaskStatus) -> Self {
         match value {
-            TaskStatus::Waiting => Self::String(Some(Box::new(value.to_string()))),
-            TaskStatus::Fetched => Self::String(Some(Box::new(value.to_string()))),
-            TaskStatus::Started => Self::String(Some(Box::new(value.to_string()))),
-            TaskStatus::Completed => Self::String(Some(Box::new(value.to_string()))),
-            TaskStatus::Failed => Self::String(Some(Box::new(value.to_string()))),
+            TaskStatus::Waiting
+            | TaskStatus::Fetched
+            | TaskStatus::Started
+            | TaskStatus::Completed
+            | TaskStatus::Failed => Self::String(Some(Box::new(value.to_string()))),
         }
     }
 }

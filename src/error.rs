@@ -691,8 +691,7 @@ pub trait ResultUnwrapExt {
 impl ResultUnwrapExt for Result<Error> {
     fn unwrap_both(self) -> Error {
         match self {
-            Ok(e) => e,
-            Err(e) => e,
+            Ok(e) | Err(e) => e,
         }
     }
 }

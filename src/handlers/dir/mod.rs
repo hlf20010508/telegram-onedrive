@@ -48,13 +48,13 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         }
     } else if cmd.len() == 3 {
         if cmd[1] == "temp" {
-            if cmd[2] != "cancel" {
+            if cmd[2] == "cancel" {
+                // /dir temp cancel
+                cancel_temp_dir(onedrive, message).await?;
+            } else {
                 // /dir temp $temp_root_path
                 let temp_root_path = &cmd[2];
                 set_temp_dir(onedrive, message, temp_root_path).await?;
-            } else {
-                // /dir temp cancel
-                cancel_temp_dir(onedrive, message).await?;
             }
         } else {
             message

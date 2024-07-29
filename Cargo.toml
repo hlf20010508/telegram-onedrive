@@ -11,6 +11,17 @@ members = ["lib/proc_macros"]
 [lints.clippy]
 result_large_err = "allow"
 too_many_arguments = "allow"
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+uninlined_format_args = "allow"
+cast_possible_wrap = "allow"
+single_match_else = "allow"
+redundant_closure_for_method_calls = "allow"
+cast_sign_loss = "allow"
+cast_precision_loss = "allow"
+struct_field_names = "allow"
+unreadable_literal = "allow"
+too_many_lines = "allow"
 
 [profile.dev]
 incremental = true

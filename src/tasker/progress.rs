@@ -30,7 +30,7 @@ impl Progress {
     #[add_trace]
     pub fn new(state: AppState) -> Self {
         let session = state.task_session.clone();
-        let last_progress_response = Arc::new(Mutex::new("".to_string()));
+        let last_progress_response = Arc::new(Mutex::new(String::new()));
 
         Self {
             session,
@@ -309,18 +309,7 @@ impl Progress {
                     })?;
 
                 if let Some(latest_message) = latest_message {
-                    if latest_message.id() != *progress_message_id {
-                        telegram_bot
-                            .delete_messages(chat, &[progress_message_id.to_owned()])
-                            .await?;
-
-                        let message = telegram_bot
-                            .send_message(chat, InputMessage::html(response.as_str()))
-                            .await
-                            .details(response)?;
-
-                        *progress_message_id = message.id();
-                    } else {
+                    if latest_message.id() == *progress_message_id {
                         let mut last_progress_response = self.last_progress_response.lock().await;
 
                         if *last_progress_response != response {
@@ -335,6 +324,17 @@ impl Progress {
 
                             *last_progress_response = response;
                         }
+                    } else {
+                        telegram_bot
+                            .delete_messages(chat, &[progress_message_id.to_owned()])
+                            .await?;
+
+                        let message = telegram_bot
+                            .send_message(chat, InputMessage::html(response.as_str()))
+                            .await
+                            .details(response)?;
+
+                        *progress_message_id = message.id();
                     }
                 }
             }

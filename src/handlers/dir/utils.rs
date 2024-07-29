@@ -13,12 +13,12 @@ use crate::message::TelegramMessage;
 #[add_context]
 #[add_trace]
 pub async fn is_root_path_valid(root_path: &str, message: TelegramMessage) -> Result<bool> {
-    if !root_path.starts_with('/') {
+    if root_path.starts_with('/') {
+        Ok(true)
+    } else {
         let response = "directory path should start with /";
         message.reply(response).await.details(response)?;
 
         Ok(false)
-    } else {
-        Ok(true)
     }
 }

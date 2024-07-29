@@ -102,7 +102,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                     .await
                     .context("forwarded message without thumn")
                     .details(response)?
-                    .id()
+                    .id();
             }
         }
     }

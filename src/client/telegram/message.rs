@@ -135,7 +135,7 @@ impl TelegramClient {
     }
 
     #[add_trace]
-    pub async fn run_message_loop(&self) {
+    pub fn run_message_loop(&self) {
         let message_queue = self.message_queue();
         let telegram_client = self.clone();
 
@@ -193,7 +193,7 @@ impl TelegramClient {
                                 });
 
                             match result {
-                                Ok(_) => Ok(None),
+                                Ok(()) => Ok(None),
                                 Err(e) => Err(e),
                             }
                         }

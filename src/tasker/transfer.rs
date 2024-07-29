@@ -32,6 +32,8 @@ pub async fn multi_parts_uploader_from_url(
     }: &tasks::Model,
     progress: Arc<Progress>,
 ) -> Result<String> {
+    const PART_SIZE: usize = 3276800;
+
     let http_client = get_http_client().await?;
 
     let url = url.clone().ok_or_else(|| Error::new("url is none"))?;
@@ -45,8 +47,6 @@ pub async fn multi_parts_uploader_from_url(
         .set_current_length(id.to_owned(), current_length)
         .await?;
 
-    let mut _upload_response = None;
-
     let mut response = http_client
         .get(url)
         .send()
@@ -55,9 +55,7 @@ pub async fn multi_parts_uploader_from_url(
 
     let max_retries = 5;
 
-    const PART_SIZE: usize = 3276800;
-
-    loop {
+    let upload_response = loop {
         let mut buffer = Vec::with_capacity(PART_SIZE);
 
         while let Some(chunk) = response
@@ -72,7 +70,7 @@ pub async fn multi_parts_uploader_from_url(
             }
         }
 
-        _upload_response = upload_file(
+        let upload_response = upload_file(
             &upload_session,
             &buffer,
             current_length,
@@ -88,11 +86,11 @@ pub async fn multi_parts_uploader_from_url(
             .await?;
 
         if current_length >= total_length {
-            break;
+            break upload_response;
         }
-    }
+    };
 
-    let filename = _upload_response
+    let filename = upload_response
         .ok_or_else(|| Error::new("failed to get drive item after upload"))?
         .name
         .ok_or_else(|| Error::new("drive item name not found"))?;
@@ -239,9 +237,9 @@ async fn upload_file(
                     tokio::time::sleep(Duration::from_secs(2)).await;
 
                     continue;
-                } else {
-                    return Err(Error::new_onedrive(e, "failed to upload part"));
                 }
+
+                return Err(Error::new_onedrive(e, "failed to upload part"));
             }
         }
     }
