@@ -422,7 +422,7 @@ impl Error {
     }
 
     pub fn trace(self) {
-        tracing::debug!("{}", self.to_string());
+        tracing::error!("{}", self.to_string());
     }
 
     #[add_context]

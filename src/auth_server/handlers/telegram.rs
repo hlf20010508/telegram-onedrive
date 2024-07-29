@@ -43,7 +43,7 @@ pub async fn code_handler(
         .emit(TG_CODE_EVENT, code)
         .map_err(|e| Error::new_socket_io_server_broadcast(e, "failed to emit tg_code"))?;
 
-    tracing::debug!("tg code emitted");
+    tracing::info!("tg code emitted");
 
     Ok(StatusCode::OK.into_response())
 }

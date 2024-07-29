@@ -49,7 +49,7 @@ impl Tasker {
 
     #[add_trace]
     pub async fn run(&self) {
-        tracing::debug!("tasker started");
+        tracing::info!("tasker started");
 
         self.session.clear().await.unwrap();
 

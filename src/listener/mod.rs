@@ -40,7 +40,7 @@ impl Listener {
 
     #[add_trace]
     pub async fn run(self) {
-        tracing::debug!("listener started");
+        tracing::info!("listener started");
 
         let tasker = Tasker::new(self.state.clone()).await.unwrap();
         tokio::spawn(async move {

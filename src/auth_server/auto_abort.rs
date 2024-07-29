@@ -30,6 +30,6 @@ impl Drop for AutoAbortHandle {
         self.shutdown_handle.shutdown();
         self.abort_handle.abort();
 
-        tracing::debug!("auth server auto aborted");
+        tracing::info!("auth server auto aborted");
     }
 }

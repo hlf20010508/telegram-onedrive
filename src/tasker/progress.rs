@@ -47,7 +47,7 @@ impl Progress {
 
     #[add_trace]
     pub async fn run(&self) {
-        tracing::debug!("progress started");
+        tracing::info!("progress started");
 
         let mut chat_progress_message_id = HashMap::new();
 

@@ -28,7 +28,7 @@ pub async fn code_handler(
         .emit(OD_CODE_EVENT, code)
         .map_err(|e| Error::new_socket_io_server_broadcast(e, "failed to emit od_code"))?;
 
-    tracing::debug!("od code emitted");
+    tracing::info!("od code emitted");
 
     Ok("Authorization successful!".to_string())
 }

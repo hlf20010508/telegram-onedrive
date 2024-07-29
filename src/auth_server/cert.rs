@@ -19,13 +19,13 @@ pub async fn get_rustls_config() -> Result<RustlsConfig> {
     let key_path = Path::new("ssl/server.key");
 
     let config = if cert_path.exists() && key_path.exists() {
-        tracing::debug!("auth server uses cert from file");
+        tracing::info!("auth server uses cert from file");
 
         RustlsConfig::from_pem_file(cert_path, key_path)
             .await
             .map_err(|e| Error::new_sys_io(e, "failed to create rustls config from pem file"))?
     } else {
-        tracing::debug!("auth server uses self signed cert");
+        tracing::info!("auth server uses self signed cert");
 
         let (cert, key) = gen_self_signed_cert()?;
 
