@@ -15,7 +15,7 @@ use grammers_client::InputMessage;
 
 use add::add_drive;
 use logout::{logout_current_drive, logout_drive};
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 use set::set_drive;
 use show::show_drive;
 
@@ -27,7 +27,8 @@ use crate::{check_in_group, check_od_login, check_senders};
 
 pub const PATTERN: &str = "/drive";
 
-#[add_trace(context)]
+#[add_context]
+#[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);

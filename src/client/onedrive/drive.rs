@@ -6,23 +6,26 @@
 */
 
 use onedrive_api::{DriveLocation, OneDrive};
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 
 use super::OneDriveClient;
 use crate::error::Result;
 
 impl OneDriveClient {
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn get_usernames(&self) -> Result<Vec<String>> {
         self.session.read().await.get_usernames().await
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn get_current_username(&self) -> Result<Option<String>> {
         self.session.read().await.get_current_username().await
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn change_account(&self, username: &str) -> Result<()> {
         let mut session = self.session.write().await;
 

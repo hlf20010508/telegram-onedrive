@@ -7,7 +7,7 @@
 
 use grammers_client::grammers_tl_types as tl;
 use grammers_client::types::{Chat, InputMessage, Media, Message, PackedChat};
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Sender};
 
@@ -49,7 +49,8 @@ impl TelegramMessage {
         self.raw.sender()
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn respond<M: Into<InputMessage>>(&self, message: M) -> Result<Self> {
         let (tx, mut rx) = mpsc::channel(1);
 
@@ -64,7 +65,8 @@ impl TelegramMessage {
             .ok_or_else(|| Error::new("received message is None"))
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn reply<M: Into<InputMessage>>(&self, message: M) -> Result<Self> {
         let (tx, mut rx) = mpsc::channel(1);
 
@@ -83,7 +85,8 @@ impl TelegramMessage {
             .ok_or_else(|| Error::new("received message is None"))
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn delete(&self) -> Result<()> {
         self.raw
             .delete()

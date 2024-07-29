@@ -12,7 +12,7 @@ mod show;
 mod utils;
 
 use grammers_client::InputMessage;
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 use reset::{cancel_temp_dir, reset_dir};
 use set::{set_dir, set_temp_dir};
 use show::show_dir;
@@ -25,7 +25,8 @@ use crate::{check_in_group, check_od_login, check_senders};
 
 pub const PATTERN: &str = "/dir";
 
-#[add_trace(context)]
+#[add_context]
+#[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);

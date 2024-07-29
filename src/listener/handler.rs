@@ -6,7 +6,7 @@
 */
 
 use grammers_client::types::Media;
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 use std::rc::Rc;
 
 use super::{EventType, Events};
@@ -25,7 +25,8 @@ impl Handler {
         Self { events, state }
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn handle_message(&self, message: TelegramMessage) -> Result<()> {
         match message.media() {
             Some(media) => match media {
@@ -50,7 +51,8 @@ impl Handler {
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn handle_command(&self, message: TelegramMessage) -> Result<()> {
         let text = message.text();
 
@@ -64,17 +66,20 @@ impl Handler {
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn handle_text(&self, message: TelegramMessage) -> Result<()> {
         self.trigger(EventType::Text, message).await
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn handle_media(&self, message: TelegramMessage) -> Result<()> {
         self.trigger(EventType::Media, message).await
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     async fn trigger(&self, event_name: EventType, message: TelegramMessage) -> Result<()> {
         if let Some(callback) = self.events.get(event_name.to_str()) {
             callback(message, self.state.clone()).await?;

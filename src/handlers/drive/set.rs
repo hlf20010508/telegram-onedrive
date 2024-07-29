@@ -5,13 +5,14 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 
 use crate::client::OneDriveClient;
 use crate::error::{Error, Result};
 use crate::message::TelegramMessage;
 
-#[add_trace(context)]
+#[add_context]
+#[add_trace]
 pub async fn set_drive(
     onedrive: &OneDriveClient,
     message: TelegramMessage,

@@ -5,13 +5,14 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 
 use super::OneDriveClient;
 use crate::error::Result;
 
 impl OneDriveClient {
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn get_root_path(&self, should_consume_temp: bool) -> Result<String> {
         let temp_root_path_read = self.temp_root_path.read().await;
         let temp_root_path_exists = self.does_temp_root_path_exist().await;
@@ -35,7 +36,8 @@ impl OneDriveClient {
         !self.temp_root_path.read().await.is_empty()
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn set_root_path(&self, path: &str) -> Result<()> {
         self.clear_temp_root_path().await?;
 
@@ -46,7 +48,8 @@ impl OneDriveClient {
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn reset_root_path(&self) -> Result<()> {
         self.clear_temp_root_path().await?;
 
@@ -57,14 +60,16 @@ impl OneDriveClient {
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn set_temp_root_path(&self, path: &str) -> Result<()> {
         *self.temp_root_path.write().await = path.to_string();
 
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn clear_temp_root_path(&self) -> Result<()> {
         self.set_temp_root_path("").await
     }

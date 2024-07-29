@@ -8,7 +8,7 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use grammers_client::types::PackedChat;
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 use std::fmt::Display;
 
 use crate::client::TelegramClient;
@@ -425,14 +425,16 @@ impl Error {
         tracing::debug!("{}", self.to_string());
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn send(self, message: TelegramMessage) -> Result<Self> {
         message.reply(self.to_string()).await.details(&self)?;
 
         Ok(self)
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn send_chat<C>(self, telegram_client: &TelegramClient, chat: C) -> Result<Self>
     where
         C: Into<PackedChat>,

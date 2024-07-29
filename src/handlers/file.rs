@@ -9,7 +9,7 @@ use grammers_client::types::media::Uploaded;
 use grammers_client::types::photo_sizes::{PhotoSize, VecExt};
 use grammers_client::types::{Downloadable, Media};
 use grammers_client::InputMessage;
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 use std::io::Cursor;
 
 use crate::client::TelegramClient;
@@ -21,7 +21,8 @@ use crate::state::AppState;
 use crate::tasker::CmdType;
 use crate::{check_in_group, check_od_login, check_senders, check_tg_login};
 
-#[add_trace(context)]
+#[add_context]
+#[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);

@@ -9,7 +9,7 @@ mod events;
 mod handler;
 
 use grammers_client::Update;
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -54,7 +54,8 @@ impl Listener {
         }
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     async fn handle_message(&self) -> Result<()> {
         let handler = Handler::new(self.events.clone(), self.state.clone());
 

@@ -10,7 +10,7 @@ mod message;
 
 use grammers_client::session::Session;
 use grammers_client::{Client, Config, SignInError};
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -38,7 +38,8 @@ pub enum TelegramClient {
 }
 
 impl TelegramClient {
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn new_bot(
         Env {
             telegram_bot:
@@ -97,7 +98,8 @@ impl TelegramClient {
         Ok(telegram_client)
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn new_user(
         Env {
             telegram_user:
@@ -155,7 +157,8 @@ impl TelegramClient {
         }
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn login(
         &self,
         message: TelegramMessage,
@@ -240,7 +243,8 @@ impl TelegramClient {
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn is_authorized(&self) -> Result<bool> {
         self.client().is_authorized().await.map_err(|e| {
             Error::new_telegram_invocation(

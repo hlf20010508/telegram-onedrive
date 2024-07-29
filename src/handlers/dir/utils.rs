@@ -5,12 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 
 use crate::error::Result;
 use crate::message::TelegramMessage;
 
-#[add_trace(context)]
+#[add_context]
+#[add_trace]
 pub async fn is_root_path_valid(root_path: &str, message: TelegramMessage) -> Result<bool> {
     if !root_path.starts_with('/') {
         let response = "directory path should start with /";

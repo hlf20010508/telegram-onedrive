@@ -7,7 +7,7 @@
 
 use grammers_client::InputMessage;
 use path_slash::PathBufExt;
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -39,7 +39,8 @@ impl Progress {
         }
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn set_current_length(&self, id: i64, current_length: u64) -> Result<()> {
         self.session.set_current_length(id, current_length).await
     }
@@ -62,7 +63,8 @@ impl Progress {
         }
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     async fn handle_chat_tasks_progress(
         &self,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
@@ -107,7 +109,8 @@ impl Progress {
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     async fn handle_chat_current_tasks(
         &self,
         current_tasks: Vec<tasks::Model>,
@@ -137,7 +140,8 @@ impl Progress {
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     async fn handle_chat_completed_tasks(
         &self,
         completed_tasks: Vec<tasks::Model>,
@@ -176,7 +180,8 @@ impl Progress {
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     async fn handle_chat_failed_tasks(
         &self,
         failed_tasks: Vec<tasks::Model>,
@@ -208,7 +213,8 @@ impl Progress {
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     async fn remove_chats_without_tasks(
         &self,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
@@ -246,7 +252,8 @@ impl Progress {
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     async fn sync_chat_progress(
         &self,
         chat_bot_hex: &str,
@@ -344,7 +351,8 @@ impl Progress {
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn update_filename(&self, id: i64, filename: &str) -> Result<()> {
         self.session.update_filename(id, filename).await
     }

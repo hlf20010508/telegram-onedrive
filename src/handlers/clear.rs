@@ -5,7 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 
 use crate::error::{Error, Result};
 use crate::message::TelegramMessage;
@@ -14,7 +14,8 @@ use crate::{check_in_group, check_senders, check_tg_login};
 
 pub const PATTERN: &str = "/clear";
 
-#[add_trace(context)]
+#[add_context]
+#[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     check_in_group!(message);
     check_senders!(message, state);

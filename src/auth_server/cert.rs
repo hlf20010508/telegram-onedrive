@@ -6,13 +6,14 @@
 */
 
 use axum_server::tls_rustls::RustlsConfig;
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 use rcgen::{generate_simple_self_signed, CertifiedKey};
 use std::path::Path;
 
 use crate::error::{Error, Result};
 
-#[add_trace(context)]
+#[add_context]
+#[add_trace]
 pub async fn get_rustls_config() -> Result<RustlsConfig> {
     let cert_path = Path::new("ssl/server.crt");
     let key_path = Path::new("ssl/server.key");
@@ -36,7 +37,8 @@ pub async fn get_rustls_config() -> Result<RustlsConfig> {
     Ok(config)
 }
 
-#[add_trace(context)]
+#[add_context]
+#[add_trace]
 fn gen_self_signed_cert() -> Result<(Vec<u8>, Vec<u8>)> {
     let subject_alt_names = vec!["127.0.0.1".to_string(), "localhost".to_string()];
 

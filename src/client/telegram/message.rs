@@ -11,7 +11,7 @@ use std::time::Duration;
 use grammers_client::client::messages::MessageIter;
 use grammers_client::types::{Chat, InputMessage, PackedChat};
 use grammers_client::Update;
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 use tokio::sync::mpsc;
 
 use super::TelegramClient;
@@ -19,7 +19,8 @@ use crate::error::{Error, Result};
 use crate::message::{QueuedMessage, QueuedMessageType, TelegramMessage};
 
 impl TelegramClient {
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn get_message<C>(&self, chat: C, message_id: i32) -> Result<TelegramMessage>
     where
         C: Into<PackedChat>,
@@ -39,7 +40,8 @@ impl TelegramClient {
         Ok(message)
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn get_chat(&self, message: TelegramMessage) -> Result<Chat> {
         let mut dialogs = self.client().iter_dialogs();
 
@@ -64,7 +66,8 @@ impl TelegramClient {
         self.client().iter_messages(chat)
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn delete_messages<C: Into<PackedChat>>(
         &self,
         chat: C,
@@ -76,7 +79,8 @@ impl TelegramClient {
             .map_err(|e| Error::new_telegram_invocation(e, "failed to delete messages"))
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn send_message<C: Into<PackedChat>, M: Into<InputMessage>>(
         &self,
         chat: C,
@@ -94,7 +98,8 @@ impl TelegramClient {
             .ok_or_else(|| Error::new("received message is None"))
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn edit_message<C: Into<PackedChat>, M: Into<InputMessage>>(
         &self,
         chat: C,
@@ -115,7 +120,8 @@ impl TelegramClient {
         Ok(())
     }
 
-    #[add_trace(context)]
+    #[add_context]
+    #[add_trace]
     pub async fn next_update(&self) -> Result<Option<Update>> {
         self.client()
             .next_update()

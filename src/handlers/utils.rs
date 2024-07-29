@@ -8,7 +8,7 @@
 use grammers_client::types::media::{Document, Media};
 use mime_guess::get_mime_extensions_str;
 use percent_encoding::percent_decode_str;
-use proc_macros::add_trace;
+use proc_macros::{add_context, add_trace};
 use regex::Regex;
 use reqwest::{header, Response, StatusCode};
 use std::collections::HashMap;
@@ -78,7 +78,8 @@ where
     }
 }
 
-#[add_trace(context)]
+#[add_context]
+#[add_trace]
 pub async fn get_filename(url: &str, response: &Response) -> Result<String> {
     if response.status() != StatusCode::OK {
         return Err(Error::new("file from url not found"));
@@ -140,7 +141,8 @@ pub async fn get_filename(url: &str, response: &Response) -> Result<String> {
     Ok(preprocess_url_file_name(&filename))
 }
 
-#[add_trace(context)]
+#[add_context]
+#[add_trace]
 fn get_filename_from_cd(response: &Response) -> Result<Option<String>> {
     if let Some(cd) = response.headers().get(header::CONTENT_DISPOSITION) {
         let cd = cd.to_str().map_err(|e| {
@@ -169,7 +171,8 @@ fn get_filename_from_cd(response: &Response) -> Result<Option<String>> {
     Ok(None)
 }
 
-#[add_trace(context)]
+#[add_context]
+#[add_trace]
 fn get_filename_from_url(url: &str) -> Result<Option<String>> {
     let parsed_url = Url::parse(url).map_err(|e| Error::new_parse_url(e, "failed to parse url"))?;
     let captured_value_dict = parsed_url
