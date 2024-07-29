@@ -18,22 +18,34 @@ impl OneDriveClient {
         let temp_root_path_exists = self.does_temp_root_path_exist().await;
 
         let root_path = if should_consume_temp && temp_root_path_exists {
+            tracing::debug!("get root path from temp and should be consumed");
+
             let temp_root_path = temp_root_path_read.clone();
             self.clear_temp_root_path().await?;
 
             temp_root_path
         } else if !should_consume_temp && temp_root_path_exists {
+            tracing::debug!("get root path from temp and should not be consumed");
+
             temp_root_path_read.clone()
         } else {
+            tracing::debug!("get root path");
+
             self.session.read().await.root_path.clone()
         };
+
+        tracing::debug!("got root path: {}", root_path);
 
         Ok(root_path)
     }
 
     #[add_trace]
     pub async fn does_temp_root_path_exist(&self) -> bool {
-        !self.temp_root_path.read().await.is_empty()
+        let is_exist = !self.temp_root_path.read().await.is_empty();
+
+        tracing::debug!("onedrive temp root path exists: {}", is_exist);
+
+        is_exist
     }
 
     #[add_context]
@@ -45,17 +57,27 @@ impl OneDriveClient {
         session.root_path = path.to_string();
         session.save().await?;
 
+        tracing::debug!("set onedrive root path: {}", path);
+
         Ok(())
     }
 
     #[add_context]
     #[add_trace]
     pub async fn reset_root_path(&self) -> Result<()> {
+        tracing::info!("reset onedrive root path to default");
+        tracing::debug!("default root path: {}", self.default_root_path);
+
         self.clear_temp_root_path().await?;
 
         let mut session = self.session.write().await;
         session.root_path.clone_from(&self.default_root_path);
         session.save().await?;
+
+        tracing::debug!(
+            "reset onedrive root path to default: {}",
+            self.default_root_path
+        );
 
         Ok(())
     }
@@ -63,7 +85,11 @@ impl OneDriveClient {
     #[add_context]
     #[add_trace]
     pub async fn set_temp_root_path(&self, path: &str) -> Result<()> {
+        tracing::info!("set onedrive temp root path");
+
         *self.temp_root_path.write().await = path.to_string();
+
+        tracing::debug!("onedrive temp root path: {}", path);
 
         Ok(())
     }
@@ -71,6 +97,8 @@ impl OneDriveClient {
     #[add_context]
     #[add_trace]
     pub async fn clear_temp_root_path(&self) -> Result<()> {
+        tracing::info!("clear onedrive temp root path");
+
         self.set_temp_root_path("").await
     }
 }

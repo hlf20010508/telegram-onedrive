@@ -23,10 +23,13 @@ pub const INDEX_PATH: &str = "/";
 #[add_context]
 #[add_trace]
 pub async fn index_handler() -> Result<Html<String>> {
+    tracing::info!("received index request");
+
     let html = fs::read_to_string("./index.html")
         .await
         .map_err(|e| Error::new_sys_io(e, "failed to read index.html"))?;
 
+    tracing::info!("index responsed");
     Ok(Html(html))
 }
 
@@ -39,6 +42,8 @@ pub async fn code_handler(
     Extension(socketio): Extension<Arc<SocketIo>>,
     Json(CodeParams { code }): Json<CodeParams>,
 ) -> Result<Response> {
+    tracing::info!("received tg code request");
+
     socketio
         .emit(TG_CODE_EVENT, code)
         .map_err(|e| Error::new_socket_io_server_broadcast(e, "failed to emit tg_code"))?;

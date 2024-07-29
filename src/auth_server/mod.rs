@@ -37,6 +37,8 @@ pub async fn spawn(
         ..
     }: &Env,
 ) -> Result<AutoAbortHandle> {
+    tracing::info!("spawning auth server");
+
     let (socketio_layer, socketio) = SocketIo::new_layer();
 
     socketio.ns("/", |_s: SocketRef| {});

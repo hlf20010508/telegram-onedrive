@@ -94,17 +94,29 @@ impl OneDriveClient {
         }: &Env,
         should_add: bool,
     ) -> Result<()> {
+        tracing::info!("logging in to onedrive");
+
         if !should_add {
+            tracing::debug!("onedrive account should not be added");
+
             if self.is_authorized().await {
+                tracing::debug!("onedrive account has been authorized");
+
                 return Ok(());
             }
+
+            tracing::info!("onedrive account is not authorized, auto login");
 
             let response = "Auto logging in to OneDrive...";
             message.respond(response).await.details(response)?;
 
             if self.auto_login().await.is_ok() {
+                tracing::info!("onedrive auto login successful");
+
                 return Ok(());
             }
+
+            tracing::info!("onedrive auto login failed, login manually");
 
             let response = "Auto login to OneDrive failed, login manually.";
             message.respond(response).await.details(response)?;
@@ -116,6 +128,8 @@ impl OneDriveClient {
         );
         message.respond(response.as_str()).await.details(response)?;
 
+        tracing::info!("onedrive authorization url sent");
+
         let (socketio_client, mut rx) =
             socketio_client(OD_CODE_EVENT, port.to_owned(), use_reverse_proxy.to_owned()).await?;
 
@@ -124,10 +138,15 @@ impl OneDriveClient {
             .await
             .ok_or_else(|| Error::new("failed to receive onedrive code"))?;
 
+        tracing::info!("onedrive code received");
+        tracing::debug!("onedrive code: {}", code);
+
         socketio_disconnect(socketio_client).await?;
 
         let response = "Code received, authorizing...";
         message.respond(response).await.details(response)?;
+
+        tracing::info!("onedrive authorizing");
 
         let TokenResponse {
             expires_in_secs,
@@ -150,6 +169,8 @@ impl OneDriveClient {
         })?;
 
         let client = Client::new(&access_token, DriveLocation::me());
+
+        tracing::info!("onedrive authorized");
 
         let session = OneDriveSession::new(
             &client,

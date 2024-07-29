@@ -34,6 +34,8 @@ impl OneDriveClient {
         *self.client.write().await =
             OneDrive::new(session.access_token.clone(), DriveLocation::me());
 
+        tracing::debug!("change account to {}", username);
+
         Ok(())
     }
 }
