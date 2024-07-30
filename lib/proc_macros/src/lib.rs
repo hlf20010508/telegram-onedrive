@@ -30,8 +30,10 @@ pub fn add_trace(_args: TokenStream, item: TokenStream) -> TokenStream {
             #(#fn_attrs)*
             #fn_visibility async fn #fn_name #fn_generics(#fn_inputs) #fn_output #fn_where_clause {
                 let func_path = module_path!().to_string() + "::" + #fn_name_str;
-                tracing::trace!("{}", func_path);
-                #fn_block
+                tracing::trace!("->|{}", func_path);
+                let result = #fn_block;
+                tracing::trace!("<-|{}", func_path);
+                result
             }
         }
     } else {
@@ -39,8 +41,10 @@ pub fn add_trace(_args: TokenStream, item: TokenStream) -> TokenStream {
             #(#fn_attrs)*
             #fn_visibility fn #fn_name #fn_generics(#fn_inputs) #fn_output #fn_where_clause {
                 let func_path = module_path!().to_string() + "::" + #fn_name_str;
-                tracing::trace!("{}", func_path);
-                #fn_block
+                tracing::trace!("->|{}", func_path);
+                let result = #fn_block;
+                tracing::trace!("<-|{}", func_path);
+                result
             }
         }
     };
