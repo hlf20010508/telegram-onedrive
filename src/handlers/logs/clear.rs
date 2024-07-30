@@ -15,9 +15,9 @@ use crate::message::TelegramMessage;
 #[add_context]
 #[add_trace]
 pub async fn clear_logs(message: TelegramMessage) -> Result<()> {
-    fs::remove_file(LOGS_PATH)
+    fs::remove_dir_all(LOGS_PATH)
         .await
-        .map_err(|e| Error::new_sys_io(e, "failed to remove log file"))?;
+        .map_err(|e| Error::new_sys_io(e, "failed to remove logs"))?;
 
     let response = "Logs cleared.";
     message.respond(response).await.details(response)?;

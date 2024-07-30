@@ -129,6 +129,12 @@ pub enum Error {
         contexts: Vec<String>,
         details: Vec<String>,
     },
+    Zip {
+        raw: zip::result::ZipError,
+        message: String,
+        contexts: Vec<String>,
+        details: Vec<String>,
+    },
 }
 
 impl Error {
@@ -363,6 +369,18 @@ impl Error {
         }
     }
 
+    pub fn new_zip<T>(e: zip::result::ZipError, message: T) -> Self
+    where
+        T: Display,
+    {
+        Self::Zip {
+            raw: e,
+            message: message.to_string(),
+            contexts: Vec::new(),
+            details: Vec::new(),
+        }
+    }
+
     pub fn details<T>(mut self, detail: T) -> Self
     where
         T: Display,
@@ -386,7 +404,8 @@ impl Error {
             | Self::Database { details, .. }
             | Self::Arg { details, .. }
             | Self::ParseInt { details, .. }
-            | Self::ParseUrl { details, .. } => details.push(detail.to_string()),
+            | Self::ParseUrl { details, .. }
+            | Self::Zip { details, .. } => details.push(detail.to_string()),
         }
 
         self
@@ -415,7 +434,8 @@ impl Error {
             | Self::Database { contexts, .. }
             | Self::Arg { contexts, .. }
             | Self::ParseInt { contexts, .. }
-            | Self::ParseUrl { contexts, .. } => contexts.insert(0, context.to_string()),
+            | Self::ParseUrl { contexts, .. }
+            | Self::Zip { contexts, .. } => contexts.insert(0, context.to_string()),
         }
 
         self
@@ -632,6 +652,15 @@ impl Display for Error {
                 write_fmt(f, base, contexts, details)
             }
             Self::ParseUrl {
+                raw,
+                message,
+                contexts,
+                details,
+            } => {
+                let base = format!("{}: {}", message, raw);
+                write_fmt(f, base, contexts, details)
+            }
+            Self::Zip {
                 raw,
                 message,
                 contexts,

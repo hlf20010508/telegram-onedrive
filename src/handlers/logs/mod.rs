@@ -14,11 +14,11 @@ use proc_macros::{add_context, add_trace, check_in_group, check_senders, check_t
 use tokio::fs;
 
 use clear::clear_logs;
-use send::send_log_file;
+use send::send_log_zip;
 
 use super::utils::cmd_parser;
 use crate::env::LOGS_PATH;
-use crate::error::Result;
+use crate::error::{Error, Result};
 use crate::message::TelegramMessage;
 use crate::state::AppState;
 
@@ -32,7 +32,12 @@ pub const PATTERN: &str = "/logs";
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     {
         let metadata = fs::metadata(LOGS_PATH).await;
-        if metadata.is_err() || (metadata.is_ok() && metadata.unwrap().len() == 0) {
+        if metadata.is_err()
+            || (metadata.is_ok()
+                && du::get_size(LOGS_PATH)
+                    .map_err(|e| Error::new_sys_io(e, "failed to get dir size"))?
+                    == 0)
+        {
             let response = "Logs not found.";
             message.respond(response).await.details(response)?;
 
@@ -46,7 +51,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     if cmd.len() == 1 {
         // /logs
-        send_log_file(telegram_bot, message).await?;
+        send_log_zip(telegram_bot, message).await?;
     } else if cmd.len() == 2 && cmd[1] == "clear" {
         // /logs clear
         clear_logs(message).await?;
