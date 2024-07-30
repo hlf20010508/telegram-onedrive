@@ -17,6 +17,7 @@ use tokio::sync::mpsc;
 use super::TelegramClient;
 use crate::error::{Error, Result};
 use crate::message::{QueuedMessage, QueuedMessageType, TelegramMessage};
+use crate::trace::indenter;
 
 impl TelegramClient {
     #[add_context]
@@ -140,70 +141,82 @@ impl TelegramClient {
         let telegram_client = self.clone();
 
         tokio::spawn(async move {
-            loop {
-                if let Some(QueuedMessage {
-                    message_type,
-                    input_message,
-                    chat,
-                    tx,
-                }) = message_queue.lock().await.pop_front()
-                {
-                    let message_result = match message_type {
-                        QueuedMessageType::Respond => {
-                            let result = telegram_client
-                                .client()
-                                .send_message(chat, input_message)
-                                .await
-                                .map_err(|e| {
-                                    Error::new_telegram_invocation(e, "failed to respond message")
-                                });
+            indenter::set_file_indenter(indenter::Coroutine::Message, async {
+                loop {
+                    if let Some(QueuedMessage {
+                        message_type,
+                        input_message,
+                        chat,
+                        tx,
+                    }) = message_queue.lock().await.pop_front()
+                    {
+                        let message_result = match message_type {
+                            QueuedMessageType::Respond => {
+                                let result = telegram_client
+                                    .client()
+                                    .send_message(chat, input_message)
+                                    .await
+                                    .map_err(|e| {
+                                        Error::new_telegram_invocation(
+                                            e,
+                                            "failed to respond message",
+                                        )
+                                    });
 
-                            match result {
-                                Ok(message_raw) => Ok(Some(TelegramMessage::new(
-                                    telegram_client.clone(),
-                                    message_raw,
-                                ))),
-                                Err(e) => Err(e),
+                                match result {
+                                    Ok(message_raw) => Ok(Some(TelegramMessage::new(
+                                        telegram_client.clone(),
+                                        message_raw,
+                                    ))),
+                                    Err(e) => Err(e),
+                                }
                             }
-                        }
-                        QueuedMessageType::Reply(message_id) => {
-                            let result = telegram_client
-                                .client()
-                                .send_message(chat, input_message.reply_to(Some(message_id)))
-                                .await
-                                .map_err(|e| {
-                                    Error::new_telegram_invocation(e, "failed to respond message")
-                                });
+                            QueuedMessageType::Reply(message_id) => {
+                                let result = telegram_client
+                                    .client()
+                                    .send_message(chat, input_message.reply_to(Some(message_id)))
+                                    .await
+                                    .map_err(|e| {
+                                        Error::new_telegram_invocation(
+                                            e,
+                                            "failed to respond message",
+                                        )
+                                    });
 
-                            match result {
-                                Ok(message_raw) => Ok(Some(TelegramMessage::new(
-                                    telegram_client.clone(),
-                                    message_raw,
-                                ))),
-                                Err(e) => Err(e),
+                                match result {
+                                    Ok(message_raw) => Ok(Some(TelegramMessage::new(
+                                        telegram_client.clone(),
+                                        message_raw,
+                                    ))),
+                                    Err(e) => Err(e),
+                                }
                             }
-                        }
-                        QueuedMessageType::Edit(message_id) => {
-                            let result = telegram_client
-                                .client()
-                                .edit_message(chat, message_id, input_message)
-                                .await
-                                .map_err(|e| {
-                                    Error::new_telegram_invocation(e, "failed to respond message")
-                                });
+                            QueuedMessageType::Edit(message_id) => {
+                                let result = telegram_client
+                                    .client()
+                                    .edit_message(chat, message_id, input_message)
+                                    .await
+                                    .map_err(|e| {
+                                        Error::new_telegram_invocation(
+                                            e,
+                                            "failed to respond message",
+                                        )
+                                    });
 
-                            match result {
-                                Ok(()) => Ok(None),
-                                Err(e) => Err(e),
+                                match result {
+                                    Ok(()) => Ok(None),
+                                    Err(e) => Err(e),
+                                }
                             }
-                        }
-                    };
+                        };
 
-                    tx.send(message_result).await.unwrap();
+                        tx.send(message_result).await.unwrap();
+                    }
+
+                    tokio::time::sleep(Duration::from_secs(2)).await;
                 }
-
-                tokio::time::sleep(Duration::from_secs(2)).await;
-            }
+            })
+            .await;
         });
     }
 }

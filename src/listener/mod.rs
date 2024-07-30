@@ -23,6 +23,7 @@ use crate::error::{Result, ResultUnwrapExt};
 use crate::message::TelegramMessage;
 use crate::state::{AppState, State};
 use crate::tasker::Tasker;
+use crate::trace::indenter;
 
 pub struct Listener {
     pub events: Rc<Events>,
@@ -44,7 +45,10 @@ impl Listener {
 
         let tasker = Tasker::new(self.state.clone()).await.unwrap();
         tokio::spawn(async move {
-            tasker.run().await;
+            indenter::set_file_indenter(indenter::Coroutine::Task, async {
+                tasker.run().await;
+            })
+            .await;
         });
 
         loop {

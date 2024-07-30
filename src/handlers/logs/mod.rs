@@ -17,7 +17,7 @@ use clear::clear_logs;
 use send::send_log_file;
 
 use super::utils::cmd_parser;
-use crate::env::LOG_PATH;
+use crate::env::LOGS_PATH;
 use crate::error::Result;
 use crate::message::TelegramMessage;
 use crate::state::AppState;
@@ -31,7 +31,7 @@ pub const PATTERN: &str = "/logs";
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     {
-        let metadata = fs::metadata(LOG_PATH).await;
+        let metadata = fs::metadata(LOGS_PATH).await;
         if metadata.is_err() || (metadata.is_ok() && metadata.unwrap().len() == 0) {
             let response = "Logs not found.";
             message.respond(response).await.details(response)?;

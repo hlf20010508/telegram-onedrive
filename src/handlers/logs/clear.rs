@@ -8,14 +8,14 @@
 use proc_macros::{add_context, add_trace};
 use tokio::fs;
 
-use crate::env::LOG_PATH;
+use crate::env::LOGS_PATH;
 use crate::error::{Error, Result};
 use crate::message::TelegramMessage;
 
 #[add_context]
 #[add_trace]
 pub async fn clear_logs(message: TelegramMessage) -> Result<()> {
-    fs::remove_file(LOG_PATH)
+    fs::remove_file(LOGS_PATH)
         .await
         .map_err(|e| Error::new_sys_io(e, "failed to remove log file"))?;
 

@@ -21,11 +21,11 @@ use std::collections::HashMap;
 
 use handlers::{auth, auto_delete, clear, dir, drive, file, help, logs, start, url};
 use listener::{EventType, HashMapExt, Listener};
-use trace::trace_registor;
+use trace::{indenter, trace_registor};
 
 #[tokio::main]
 async fn main() {
-    let _worker_guard = trace_registor();
+    trace_registor();
 
     let events = HashMap::new()
         .on(EventType::command(start::PATTERN), start::handler)
@@ -42,5 +42,8 @@ async fn main() {
         .on(EventType::command(url::PATTERN), url::handler)
         .on(EventType::media(), file::handler);
 
-    Listener::new(events).await.run().await;
+    indenter::set_file_indenter(indenter::Coroutine::Listener, async {
+        Listener::new(events).await.run().await;
+    })
+    .await;
 }

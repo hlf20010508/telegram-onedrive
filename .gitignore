@@ -1,5 +1,5 @@
 .DS_Store
-log.txt
+logs
 /session
 dev.*
 devrc.*

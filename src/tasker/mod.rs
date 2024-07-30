@@ -26,6 +26,7 @@ use crate::env::WORKER_NUM;
 use crate::error::{Result, ResultUnwrapExt};
 use crate::message::TelegramMessage;
 use crate::state::AppState;
+use crate::trace::indenter;
 
 pub struct Tasker {
     state: AppState,
@@ -55,14 +56,25 @@ impl Tasker {
 
         let progress_clone = self.progress.clone();
         tokio::spawn(async move {
-            progress_clone.run().await;
+            indenter::set_file_indenter(indenter::Coroutine::Progress, async {
+                progress_clone.run().await;
+            })
+            .await;
         });
 
-        let semaphore = Arc::new(Semaphore::new(WORKER_NUM));
+        let semaphore = Arc::new(Semaphore::new(WORKER_NUM as usize));
+
+        let mut handler_id = 0;
 
         loop {
-            if let Err(e) = self.handle_tasks(semaphore.clone()).await {
+            handler_id += 1;
+
+            if let Err(e) = self.handle_tasks(semaphore.clone(), handler_id).await {
                 e.trace();
+            }
+
+            if handler_id == WORKER_NUM {
+                handler_id = 0;
             }
 
             tokio::time::sleep(Duration::from_secs(1)).await;
@@ -71,7 +83,7 @@ impl Tasker {
 
     #[add_context]
     #[add_trace]
-    async fn handle_tasks(&self, semaphore: Arc<Semaphore>) -> Result<()> {
+    async fn handle_tasks(&self, semaphore: Arc<Semaphore>, handler_id: u8) -> Result<()> {
         let task = self.session.fetch_task().await?;
 
         if let Some(task) = task {
@@ -91,50 +103,61 @@ impl Tasker {
             macro_rules! handle_task {
                 ($handler_type: ident) => {
                     tokio::spawn(async move {
-                        async fn handler(
-                            task: tasks::Model,
-                            message: TelegramMessage,
-                            session: Arc<TaskSession>,
-                            progress: Arc<Progress>,
-                            state: AppState,
-                        ) -> Result<()> {
-                            let task_id = task.id;
-
-                            session
-                                .set_task_status(task_id, tasks::TaskStatus::Started)
-                                .await?;
-
-                            match handlers::$handler_type::handler(task, progress, state).await {
-                                Ok(_) => {
-                                    session
-                                        .set_task_status(task_id, tasks::TaskStatus::Completed)
-                                        .await?;
-                                }
-                                Err(e) => {
-                                    e.send(message.clone()).await.unwrap_both().trace();
+                        indenter::set_file_indenter(
+                            indenter::Coroutine::TaskWorker(handler_id),
+                            async {
+                                async fn handler(
+                                    task: tasks::Model,
+                                    message: TelegramMessage,
+                                    session: Arc<TaskSession>,
+                                    progress: Arc<Progress>,
+                                    state: AppState,
+                                ) -> Result<()> {
+                                    let task_id = task.id;
 
                                     session
-                                        .set_task_status(task_id, tasks::TaskStatus::Failed)
+                                        .set_task_status(task_id, tasks::TaskStatus::Started)
                                         .await?;
+
+                                    match handlers::$handler_type::handler(task, progress, state)
+                                        .await
+                                    {
+                                        Ok(_) => {
+                                            session
+                                                .set_task_status(
+                                                    task_id,
+                                                    tasks::TaskStatus::Completed,
+                                                )
+                                                .await?;
+                                        }
+                                        Err(e) => {
+                                            e.send(message.clone()).await.unwrap_both().trace();
+
+                                            session
+                                                .set_task_status(task_id, tasks::TaskStatus::Failed)
+                                                .await?;
+                                        }
+                                    }
+
+                                    Ok(())
                                 }
-                            }
 
-                            Ok(())
-                        }
+                                let _permit = semaphore_clone.acquire().await.unwrap();
 
-                        let _permit = semaphore_clone.acquire().await.unwrap();
-
-                        if let Err(e) = handler(
-                            task,
-                            message.clone(),
-                            session_clone,
-                            progress_clone,
-                            state_clone,
+                                if let Err(e) = handler(
+                                    task,
+                                    message.clone(),
+                                    session_clone,
+                                    progress_clone,
+                                    state_clone,
+                                )
+                                .await
+                                {
+                                    e.send(message).await.unwrap_both().trace();
+                                }
+                            },
                         )
-                        .await
-                        {
-                            e.send(message).await.unwrap_both().trace();
-                        }
+                        .await;
                     });
                 };
             }

@@ -6,38 +6,28 @@
 */
 
 mod formatter;
+pub mod indenter;
+mod visitor;
 
-use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::fmt;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
 use formatter::EventFormatter;
+use indenter::FileIndenterLayer;
 
-use crate::env::LOG_PATH;
-
-pub fn trace_registor() -> WorkerGuard {
-    let file_appender = tracing_appender::rolling::never(".", LOG_PATH);
-    let (file_writer, guard) = tracing_appender::non_blocking(file_appender);
-
+pub fn trace_registor() {
     let stdout_layer = fmt::layer()
         .with_writer(std::io::stdout)
         .event_format(EventFormatter::new(true));
 
-    let file_layer = fmt::layer()
-        .with_writer(file_writer)
-        .event_format(EventFormatter::new(false));
-
     tracing_subscriber::registry()
         .with(stdout_layer)
-        .with(file_layer)
+        .with(FileIndenterLayer)
         .with(
             EnvFilter::from_default_env()
                 .add_directive(format!("telegram_onedrive={}", "trace").parse().unwrap()),
         )
         .init();
-
-    // worker guard must be returned, or the file appender will be dropped and nothing will be written in file
-    guard
 }

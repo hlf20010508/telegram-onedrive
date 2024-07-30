@@ -27,6 +27,7 @@ use handlers::{onedrive, telegram};
 
 use crate::env::Env;
 use crate::error::{Error, Result};
+use crate::trace::indenter;
 
 #[add_context]
 #[add_trace]
@@ -60,11 +61,14 @@ pub async fn spawn(
         tracing::info!("auth server listening on http://0.0.0.0:{}", port);
 
         tokio::spawn(async move {
-            axum_server::from_tcp(server)
-                .handle(shutdown_handle_clone)
-                .serve(router.into_make_service())
-                .await
-                .unwrap();
+            indenter::set_file_indenter(indenter::Coroutine::AuthServer, async {
+                axum_server::from_tcp(server)
+                    .handle(shutdown_handle_clone)
+                    .serve(router.into_make_service())
+                    .await
+                    .unwrap();
+            })
+            .await;
         })
         .abort_handle()
     } else {
@@ -73,11 +77,14 @@ pub async fn spawn(
         tracing::info!("auth server listening on https://0.0.0.0:{}", port);
 
         tokio::spawn(async move {
-            axum_server::from_tcp_rustls(server, config)
-                .handle(shutdown_handle_clone)
-                .serve(router.into_make_service())
-                .await
-                .unwrap();
+            indenter::set_file_indenter(indenter::Coroutine::AuthServer, async {
+                axum_server::from_tcp_rustls(server, config)
+                    .handle(shutdown_handle_clone)
+                    .serve(router.into_make_service())
+                    .await
+                    .unwrap();
+            })
+            .await;
         })
         .abort_handle()
     };
