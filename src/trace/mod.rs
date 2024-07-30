@@ -23,11 +23,11 @@ pub fn trace_registor() -> WorkerGuard {
 
     let stdout_layer = fmt::layer()
         .with_writer(std::io::stdout)
-        .event_format(EventFormatter);
+        .event_format(EventFormatter::new(true));
 
     let file_layer = fmt::layer()
         .with_writer(file_writer)
-        .event_format(EventFormatter);
+        .event_format(EventFormatter::new(false));
 
     tracing_subscriber::registry()
         .with(stdout_layer)
