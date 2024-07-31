@@ -111,6 +111,7 @@ where
 }
 
 fn get_writer_for_coroutine(coroutine: &Coroutine) -> impl std::io::Write {
+    // TODO: date
     match coroutine {
         Coroutine::Listener => rolling::never(LOGS_PATH, "listener.log"),
         Coroutine::AuthServer => rolling::never(LOGS_PATH, "auth_server.log"),

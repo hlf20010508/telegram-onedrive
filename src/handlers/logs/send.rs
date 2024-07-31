@@ -6,10 +6,11 @@
 */
 
 use grammers_client::InputMessage;
+use path_slash::PathExt;
 use proc_macros::{add_context, add_trace};
 use std::io::{Read, Write};
 use std::path::Path;
-use zip::write::SimpleFileOptions;
+use zip::write::{FileOptions, SimpleFileOptions};
 
 use crate::client::TelegramClient;
 use crate::env::LOGS_PATH;
@@ -41,39 +42,61 @@ fn zip_dir<P: AsRef<Path>>(input_path: P, output_path: P) -> Result<()> {
 
     let options = SimpleFileOptions::default();
 
-    let mut buffer = Vec::new();
-
-    let entries =
-        std::fs::read_dir(&input_path).map_err(|e| Error::new_sys_io(e, "failed to read dir"))?;
-
-    for entry in entries {
-        let entry = entry.map_err(|e| Error::new_sys_io(e, "failed to read dir entry"))?;
-
-        let path = entry.path();
-        let name = path
-            .strip_prefix(&input_path)
-            .map_err(|_| Error::new("failed to strip prefix"))?;
-
-        if path.is_file() {
-            zip.start_file(name.to_string_lossy(), options)
-                .map_err(|e| Error::new_zip(e, "failed to start zip file"))?;
-
-            let mut file = std::fs::File::open(path)
-                .map_err(|e| Error::new_sys_io(e, "failed to open file"))?;
-
-            file.read_to_end(&mut buffer)
-                .map_err(|e| Error::new_sys_io(e, "failed to read file"))?;
-            zip.write_all(&buffer)
-                .map_err(|e| Error::new_sys_io(e, "failed to write file"))?;
-            buffer.clear();
-        } else {
-            zip.add_directory(name.to_string_lossy(), options)
-                .map_err(|e| Error::new_zip(e, "failed to add directory to zip"))?;
-        }
-    }
+    add_entry(input_path.as_ref(), input_path.as_ref(), &mut zip, options)?;
 
     zip.finish()
         .map_err(|e| Error::new_zip(e, "failed to finish zip"))?;
+
+    Ok(())
+}
+
+fn add_entry(
+    base_path: &Path,
+    path: &Path,
+    zip: &mut zip::ZipWriter<std::fs::File>,
+    options: FileOptions<()>,
+) -> Result<()> {
+    let mut buffer = [0; 8];
+
+    let name = path
+        .strip_prefix(base_path)
+        .map_err(|e| Error::new(format!("failed to strip prefix: {}", e)))?;
+
+    // path seperator in zip must be slash /, not backslash \
+
+    if path.is_file() {
+        zip.start_file(name.to_slash_lossy(), options)
+            .map_err(|e| Error::new_zip(e, "failed to start zip file"))?;
+
+        let mut file =
+            std::fs::File::open(path).map_err(|e| Error::new_sys_io(e, "failed to open file"))?;
+
+        loop {
+            let size = file
+                .read(&mut buffer)
+                .map_err(|e| Error::new_sys_io(e, "failed to read file"))?;
+
+            if size == 0 {
+                break;
+            }
+
+            zip.write_all(&buffer[..size])
+                .map_err(|e| Error::new_sys_io(e, "failed to write file"))?;
+        }
+    } else if path.is_dir() {
+        zip.add_directory(name.to_slash_lossy(), options)
+            .map_err(|e| Error::new_zip(e, "failed to add directory to zip"))?;
+
+        for entry in std::fs::read_dir(path)
+            .map_err(|e| Error::new_sys_io(e, "failed to read dir").context("sub dir"))?
+        {
+            let entry = entry.map_err(|e| {
+                Error::new_sys_io(e, "failed to read dir entry").context("sub dir entry")
+            })?;
+
+            add_entry(base_path, &entry.path(), zip, options)?;
+        }
+    }
 
     Ok(())
 }
