@@ -27,7 +27,6 @@ pub struct Progress {
 }
 
 impl Progress {
-    #[add_trace]
     pub fn new(state: AppState) -> Self {
         let session = state.task_session.clone();
         let last_progress_response = Arc::new(Mutex::new(String::new()));
@@ -45,7 +44,6 @@ impl Progress {
         self.session.set_current_length(id, current_length).await
     }
 
-    #[add_trace]
     pub async fn run(&self) {
         tracing::info!("progress started");
 

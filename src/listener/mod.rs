@@ -31,7 +31,6 @@ pub struct Listener {
 }
 
 impl Listener {
-    #[add_trace]
     pub async fn new(events: Events) -> Self {
         let events = Rc::new(events);
         let state = Arc::new(State::new().await);
@@ -39,7 +38,6 @@ impl Listener {
         Self { events, state }
     }
 
-    #[add_trace]
     pub async fn run(self) {
         tracing::info!("listener started");
 

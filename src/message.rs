@@ -21,7 +21,6 @@ pub struct TelegramMessage {
 }
 
 impl TelegramMessage {
-    #[add_trace]
     pub fn new(client: TelegramClient, message: Message) -> Self {
         Self {
             raw: Arc::new(message),
@@ -107,7 +106,6 @@ pub struct QueuedMessage {
 }
 
 impl QueuedMessage {
-    #[add_trace]
     pub fn new<M: Into<InputMessage>, C: Into<PackedChat>>(
         message_type: QueuedMessageType,
         input_message: M,

@@ -19,7 +19,6 @@ use super::var::{INVALID_COMPONENT, INVALID_NAME};
 use crate::error::{Error, Result};
 use crate::utils::{get_current_timestamp, get_ext};
 
-#[add_trace]
 pub fn cmd_parser<T>(cmd: T) -> Vec<String>
 where
     T: Display,
@@ -40,7 +39,6 @@ impl<T> TextExt for T
 where
     T: Display,
 {
-    #[add_trace]
     fn purify(&self) -> String {
         let text = self
             .to_string()
@@ -70,7 +68,6 @@ where
         re.replace_all(&text, "").to_string()
     }
 
-    #[add_trace]
     fn url_encode(&self) -> String {
         Url::parse(&self.to_string())
             .expect("Failed to parse URL")

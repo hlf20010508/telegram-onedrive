@@ -36,7 +36,6 @@ pub struct OneDriveSession {
 
 impl OneDriveSession {
     #[add_context]
-    #[add_trace]
     pub async fn new(
         client: &OneDrive,
         expires_in_secs: u64,

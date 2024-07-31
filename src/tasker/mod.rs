@@ -35,8 +35,6 @@ pub struct Tasker {
 }
 
 impl Tasker {
-    #[add_context]
-    #[add_trace]
     pub async fn new(state: AppState) -> Result<Self> {
         let session = state.task_session.clone();
         let progress = Arc::new(Progress::new(state.clone()));
@@ -48,7 +46,6 @@ impl Tasker {
         })
     }
 
-    #[add_trace]
     pub async fn run(&self) {
         tracing::info!("tasker started");
 

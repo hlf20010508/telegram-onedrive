@@ -15,7 +15,6 @@ pub struct AutoAbortHandle {
 }
 
 impl AutoAbortHandle {
-    #[add_trace]
     pub fn new(abort_handle: AbortHandle, shutdown_handle: Handle) -> Self {
         Self {
             abort_handle,

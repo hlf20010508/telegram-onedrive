@@ -22,7 +22,6 @@ pub struct TaskSession {
 
 impl TaskSession {
     #[add_context]
-    #[add_trace]
     pub async fn new(session_path: &str) -> Result<Self> {
         let connection = Self::connect_db(session_path).await?;
 

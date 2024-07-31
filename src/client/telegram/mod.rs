@@ -141,14 +141,12 @@ impl TelegramClient {
         Ok(telegram_client)
     }
 
-    #[add_trace]
     fn client(&self) -> &Client {
         match self {
             Self::Bot { client, .. } | Self::User { client, .. } => client,
         }
     }
 
-    #[add_trace]
     fn message_queue(&self) -> MessageQueue {
         match self {
             Self::Bot { message_queue, .. } | Self::User { message_queue, .. } => {

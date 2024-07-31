@@ -20,7 +20,6 @@ pub struct Handler {
 }
 
 impl Handler {
-    #[add_trace]
     pub fn new(events: Rc<Events>, state: AppState) -> Self {
         Self { events, state }
     }

@@ -227,7 +227,6 @@ pub struct MessageVecDeque {
 }
 
 impl MessageVecDeque {
-    #[add_trace]
     pub fn new() -> Self {
         Self {
             deque: VecDeque::new(),
