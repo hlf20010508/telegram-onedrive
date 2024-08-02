@@ -41,7 +41,7 @@ impl Listener {
     pub async fn run(self) {
         tracing::info!("listener started");
 
-        let tasker = Tasker::new(self.state.clone()).await.unwrap();
+        let tasker = Tasker::new(self.state.clone());
         tokio::spawn(async move {
             indenter::set_file_indenter(indenter::Coroutine::Task, async {
                 tasker.run().await;

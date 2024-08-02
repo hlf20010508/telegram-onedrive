@@ -18,7 +18,7 @@ pub fn get_current_timestamp() -> i64 {
 
 #[add_context]
 #[add_trace]
-pub async fn get_http_client() -> Result<reqwest::Client> {
+pub fn get_http_client() -> Result<reqwest::Client> {
     const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15";
 
     let headers = {

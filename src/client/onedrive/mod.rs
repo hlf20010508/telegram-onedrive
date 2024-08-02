@@ -187,13 +187,13 @@ impl OneDriveClient {
         match self.get_current_username().await? {
             Some(username) => {
                 if username == session.username {
-                    self.session.write().await.overwrite(session).await?;
+                    self.session.write().await.overwrite(session);
                     *self.client.write().await = client;
                 }
             }
             None => {
                 session.set_current_user().await?;
-                self.session.write().await.overwrite(session).await?;
+                self.session.write().await.overwrite(session);
                 *self.client.write().await = client;
             }
         }
@@ -220,7 +220,7 @@ impl OneDriveClient {
         session.set_expiration_timestamp(token_response.expires_in_secs);
         session.save().await?;
 
-        self.session.write().await.overwrite(session).await?;
+        self.session.write().await.overwrite(session);
 
         Ok(())
     }

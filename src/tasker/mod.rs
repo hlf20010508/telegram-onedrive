@@ -35,15 +35,15 @@ pub struct Tasker {
 }
 
 impl Tasker {
-    pub async fn new(state: AppState) -> Result<Self> {
+    pub fn new(state: AppState) -> Self {
         let session = state.task_session.clone();
         let progress = Arc::new(Progress::new(state.clone()));
 
-        Ok(Self {
+        Self {
             state,
             session,
             progress,
-        })
+        }
     }
 
     pub async fn run(&self) {

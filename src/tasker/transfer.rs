@@ -34,7 +34,7 @@ pub async fn multi_parts_uploader_from_url(
 ) -> Result<String> {
     const PART_SIZE: usize = 3276800;
 
-    let http_client = get_http_client().await?;
+    let http_client = get_http_client()?;
 
     let url = url.clone().ok_or_else(|| Error::new("url is none"))?;
 
@@ -114,7 +114,7 @@ pub async fn multi_parts_uploader_from_tg_file(
     progress: Arc<Progress>,
     state: AppState,
 ) -> Result<String> {
-    let http_client = get_http_client().await?;
+    let http_client = get_http_client()?;
 
     let upload_session = UploadSession::from_upload_url(upload_url);
 

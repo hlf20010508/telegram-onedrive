@@ -77,7 +77,7 @@ where
 
 #[add_context]
 #[add_trace]
-pub async fn get_filename(url: &str, response: &Response) -> Result<String> {
+pub fn get_filename(url: &str, response: &Response) -> Result<String> {
     if response.status() != StatusCode::OK {
         return Err(Error::new("file from url not found"));
     }

@@ -225,9 +225,8 @@ impl OneDriveSession {
         Ok(())
     }
 
-    #[add_context]
     #[add_trace]
-    pub async fn overwrite(
+    pub fn overwrite(
         &mut self,
         Self {
             username,
@@ -237,14 +236,12 @@ impl OneDriveSession {
             root_path,
             ..
         }: Self,
-    ) -> Result<()> {
+    ) {
         self.username = username;
         self.expiration_timestamp = expiration_timestamp;
         self.access_token = access_token;
         self.refresh_token = refresh_token;
         self.root_path = root_path;
-
-        Ok(())
     }
 
     #[add_context]
@@ -438,7 +435,7 @@ impl OneDriveSession {
             Ok(Some(session)) => {
                 tracing::debug!("new onedrive user: {}", session.username);
 
-                self.overwrite(Self::from(session)).await?;
+                self.overwrite(Self::from(session));
 
                 self.set_current_user().await?;
             }
@@ -447,7 +444,7 @@ impl OneDriveSession {
 
                 let session = Self::default();
 
-                self.overwrite(session).await?;
+                self.overwrite(session);
             }
             Err(e) => return Err(Error::new_database(e, "failed to query onedrive session")),
         }
@@ -480,7 +477,7 @@ impl OneDriveSession {
             session.username
         );
 
-        self.overwrite(Self::from(session)).await?;
+        self.overwrite(Self::from(session));
 
         self.set_current_user().await?;
 
