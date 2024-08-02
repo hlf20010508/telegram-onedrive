@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
-members = ["lib/proc_macros", "lint/unused_await"]
+members = ["lib/proc_macros", "lint/check", "lint/unused_await"]
 
 [lints.clippy]
 result_large_err = "allow"

@@ -1,8 +1,9 @@
 {
     "rust-analyzer.check.overrideCommand": [
-        "python",
-        "-c",
-        "import os;os.system('cargo dylint --all -- --all-targets --message-format=json');os.system('cargo clippy --all-targets --message-format=json')"
+        "cargo",
+        "run",
+        "--manifest-path",
+        "lint/check/Cargo.toml"
     ],
     "rust-analyzer.rustc.source": "discover",
 }
