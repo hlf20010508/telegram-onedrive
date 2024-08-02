@@ -88,7 +88,7 @@ impl TaskSession {
     }
 
     #[add_context]
-    #[add_trace]
+    // #[add_trace]
     pub async fn insert_task(
         &self,
         cmd_type: CmdType,

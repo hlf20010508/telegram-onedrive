@@ -1,0 +1,20 @@
+[package]
+name = "unused_async"
+version = "0.1.0"
+authors = ["authors go here"]
+description = "description goes here"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+clippy_utils = { git = "https://github.com/rust-lang/rust-clippy", rev = "1325425589efdaf4bba99c37f0d80030ab53aac5" }
+dylint_linting = "3.1.2"
+
+[dev-dependencies]
+dylint_testing = "3.1.2"
+
+[package.metadata.rust-analyzer]
+rustc_private = true
