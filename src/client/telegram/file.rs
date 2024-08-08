@@ -23,7 +23,7 @@ impl TelegramClient {
         self.client()
             .upload_file(path)
             .await
-            .map_err(|e| Error::new_sys_io(e, "failed to upload log file"))
+            .map_err(|e| Error::new_sys_io(e, "failed to upload file"))
     }
 
     #[add_context]
@@ -37,7 +37,7 @@ impl TelegramClient {
         self.client()
             .upload_stream(stream, size, name)
             .await
-            .map_err(|e| Error::new_sys_io(e, "failed to upload thumb"))
+            .map_err(|e| Error::new_sys_io(e, "failed to upload stream"))
     }
 
     #[add_trace]

@@ -41,6 +41,8 @@ impl OneDriveClient {
             .await
             .map_err(|e| Error::new_onedrive(e, "failed to create upload session"))?;
 
+        tracing::debug!("built upload session for {}", filename);
+
         Ok(session)
     }
 }

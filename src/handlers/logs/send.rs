@@ -24,7 +24,7 @@ pub async fn send_log_zip(telegram_bot: &TelegramClient, message: TelegramMessag
 
     zip_dir(LOGS_PATH, ZIP_PATH)?;
 
-    let file = telegram_bot.upload_file(ZIP_PATH).await?;
+    let file = telegram_bot.upload_file(ZIP_PATH).await.context("logs")?;
 
     message.respond(InputMessage::default().file(file)).await?;
 

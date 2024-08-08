@@ -16,7 +16,7 @@ use std::io::Cursor;
 
 use crate::client::TelegramClient;
 use crate::env::BYPASS_PREFIX;
-use crate::error::{Error, Result};
+use crate::error::{Error, Result, ResultExt};
 use crate::handlers::utils::{get_tg_file_size, preprocess_tg_file_name};
 use crate::message::TelegramMessage;
 use crate::state::AppState;
@@ -141,7 +141,8 @@ async fn upload_thumb(client: &TelegramClient, thumbs: Vec<PhotoSize>) -> Result
             let mut stream = Cursor::new(buffer);
             let uploaded = client
                 .upload_stream(&mut stream, size, "thumb.jpg".to_string())
-                .await?;
+                .await
+                .context("thumb")?;
 
             Some(uploaded)
         }

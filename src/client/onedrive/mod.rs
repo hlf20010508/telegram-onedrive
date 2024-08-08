@@ -247,7 +247,11 @@ impl OneDriveClient {
 
     #[add_trace]
     pub fn get_auth_url(&self) -> String {
-        self.auth_provider.code_auth_url().to_string()
+        let auth_url = self.auth_provider.code_auth_url().to_string();
+
+        tracing::info!("onedrive auth url: {}", auth_url);
+
+        auth_url
     }
 
     #[add_trace]
