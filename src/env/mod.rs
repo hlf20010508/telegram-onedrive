@@ -25,6 +25,7 @@ pub struct Env {
     pub telegram_bot: TelegramBotEnv,
     pub telegram_user: TelegramUserEnv,
     pub onedrive: OneDriveEnv,
+    pub trace_level: String,
     pub port: u16,
     pub server_uri: String,
     pub use_reverse_proxy: bool,
@@ -39,6 +40,7 @@ impl Env {
         let telegram_bot = TelegramBotEnv::new();
         let telegram_user = TelegramUserEnv::new();
         let onedrive = OneDriveEnv::new();
+        let trace_level = get_arg_value_option("--trace-level", "info".to_string());
         let port = get_arg_value_option("--port", 8080);
         let server_uri = get_arg_value("--server-uri").unwrap();
         let use_reverse_proxy = args_contains("--reverse-proxy");
@@ -49,6 +51,7 @@ impl Env {
             telegram_bot,
             telegram_user,
             onedrive,
+            trace_level,
             port,
             server_uri,
             use_reverse_proxy,
