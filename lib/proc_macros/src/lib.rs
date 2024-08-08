@@ -6,8 +6,8 @@
 */
 
 use proc_macro::TokenStream;
-use quote::quote;
-use syn::{parse_macro_input, ItemFn};
+use quote::{quote, quote_spanned};
+use syn::{parse_macro_input, spanned::Spanned, ItemFn};
 
 #[proc_macro_attribute]
 pub fn add_trace(_args: TokenStream, item: TokenStream) -> TokenStream {
@@ -15,41 +15,24 @@ pub fn add_trace(_args: TokenStream, item: TokenStream) -> TokenStream {
 
     let fn_attrs = &input.attrs;
     let fn_visibility = &input.vis;
-    let fn_is_async = input.sig.asyncness.is_some();
-    let fn_name = &input.sig.ident;
-    let fn_generics = &input.sig.generics;
-    let fn_inputs = &input.sig.inputs;
-    let fn_output = &input.sig.output;
-    let fn_where_clause = &input.sig.generics.where_clause;
+    let fn_sig = &input.sig;
+    let fn_name = &fn_sig.ident;
     let fn_block = &input.block;
 
     let fn_name_str = &fn_name.to_string();
 
-    let expanded = if fn_is_async {
-        quote! {
-            #(#fn_attrs)*
-            #fn_visibility async fn #fn_name #fn_generics(#fn_inputs) #fn_output #fn_where_clause {
-                let func_path = module_path!().to_string() + "::" + #fn_name_str;
-                tracing::trace!("->|{}", func_path);
-                let result = #fn_block;
-                tracing::trace!("<-|{}", func_path);
-                result
-            }
-        }
-    } else {
-        quote! {
-            #(#fn_attrs)*
-            #fn_visibility fn #fn_name #fn_generics(#fn_inputs) #fn_output #fn_where_clause {
-                let func_path = module_path!().to_string() + "::" + #fn_name_str;
-                tracing::trace!("->|{}", func_path);
-                let result = #fn_block;
-                tracing::trace!("<-|{}", func_path);
-                result
-            }
+    let tokens = quote_spanned! {input.span() =>
+        #(#fn_attrs)*
+        #fn_visibility #fn_sig {
+            let func_path = module_path!().to_string() + "::" + #fn_name_str;
+            tracing::trace!("->|{}", func_path);
+            let result = #fn_block;
+            tracing::trace!("<-|{}", func_path);
+            result
         }
     };
 
-    TokenStream::from(expanded)
+    tokens.into()
 }
 
 #[proc_macro_attribute]
@@ -58,29 +41,26 @@ pub fn add_context(_args: TokenStream, item: TokenStream) -> TokenStream {
 
     let fn_attrs = &input.attrs;
     let fn_visibility = &input.vis;
-    let fn_is_async = input.sig.asyncness.is_some();
-    let fn_name = &input.sig.ident;
-    let fn_generics = &input.sig.generics;
-    let fn_inputs = &input.sig.inputs;
-    let fn_output = &input.sig.output;
-    let fn_where_clause = &input.sig.generics.where_clause;
+    let fn_sig = &input.sig;
+    let fn_is_async = fn_sig.asyncness.is_some();
+    let fn_name = &fn_sig.ident;
     let fn_block = &input.block;
 
     let fn_name_str = &fn_name.to_string();
 
-    let expanded = if fn_is_async {
-        quote! {
+    let tokens = if fn_is_async {
+        quote_spanned! {input.span() =>
             #(#fn_attrs)*
-            #fn_visibility async fn #fn_name #fn_generics(#fn_inputs) #fn_output #fn_where_clause {
+            #fn_visibility #fn_sig {
                 use crate::error::ResultExt;
                 let func_path = module_path!().to_string() + "::" + #fn_name_str;
                 async #fn_block.await.context(func_path)
             }
         }
     } else {
-        quote! {
+        quote_spanned! {input.span() =>
             #(#fn_attrs)*
-            #fn_visibility fn #fn_name #fn_generics(#fn_inputs) #fn_output #fn_where_clause {
+            #fn_visibility #fn_sig {
                 use crate::error::ResultExt;
                 let func_path = module_path!().to_string() + "::" + #fn_name_str;
                 (|| #fn_block )().context(func_path)
@@ -88,7 +68,7 @@ pub fn add_context(_args: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    TokenStream::from(expanded)
+    tokens.into()
 }
 
 macro_rules! gen_checker {

@@ -11,6 +11,9 @@ members = ["lib/proc_macros", "lint/check", "lint/unused_await"]
 [lints.clippy]
 result_large_err = "allow"
 too_many_arguments = "allow"
+let_unit_value = "allow"
+redundant_closure_call = "allow"
+needless_pass_by_ref_mut = "allow"           # TODO
 pedantic = { level = "warn", priority = -1 }
 module_name_repetitions = "allow"
 uninlined_format_args = "allow"
