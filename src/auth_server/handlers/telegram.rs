@@ -8,7 +8,7 @@
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response};
 use axum::{debug_handler, Extension, Json};
-use proc_macros::{add_context, add_trace};
+use proc_macros::add_context;
 use socketioxide::SocketIo;
 use std::sync::Arc;
 use tokio::fs;
@@ -21,15 +21,11 @@ pub const INDEX_PATH: &str = "/";
 
 #[debug_handler]
 #[add_context]
-#[add_trace]
 pub async fn index_handler() -> Result<Html<String>> {
-    tracing::info!("received index request");
-
     let html = fs::read_to_string("./index.html")
         .await
         .map_err(|e| Error::new_sys_io(e, "failed to read index.html"))?;
 
-    tracing::info!("index responsed");
     Ok(Html(html))
 }
 
@@ -37,18 +33,13 @@ pub const CODE_PATH: &str = "/tg";
 
 #[debug_handler]
 #[add_context]
-#[add_trace]
 pub async fn code_handler(
     Extension(socketio): Extension<Arc<SocketIo>>,
     Json(CodeParams { code }): Json<CodeParams>,
 ) -> Result<Response> {
-    tracing::info!("received tg code request");
-
     socketio
         .emit(TG_CODE_EVENT, code)
         .map_err(|e| Error::new_socket_io_server_broadcast(e, "failed to emit tg_code"))?;
-
-    tracing::info!("tg code emitted");
 
     Ok(StatusCode::OK.into_response())
 }

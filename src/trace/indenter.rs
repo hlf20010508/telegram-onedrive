@@ -22,7 +22,6 @@ use crate::env::LOGS_PATH;
 
 pub enum Coroutine {
     Listener,
-    AuthServer,
     Message,
     Progress,
     Task,
@@ -114,7 +113,6 @@ fn get_writer_for_coroutine(coroutine: &Coroutine) -> impl std::io::Write {
     // TODO: date
     match coroutine {
         Coroutine::Listener => rolling::never(LOGS_PATH, "listener.log"),
-        Coroutine::AuthServer => rolling::never(LOGS_PATH, "auth_server.log"),
         Coroutine::Message => rolling::never(LOGS_PATH, "message.log"),
         Coroutine::Progress => rolling::never(LOGS_PATH, "progress.log"),
         Coroutine::Task => rolling::never(LOGS_PATH, "task.log"),
