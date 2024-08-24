@@ -93,7 +93,6 @@ impl Progress {
             )
             .await?;
 
-            // TODO: check if the media is in an album, if yes, update status to the caption of the album
             self.handle_chat_completed_tasks(completed_tasks, &chat_user_hex)
                 .await?;
 

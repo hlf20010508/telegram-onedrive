@@ -69,7 +69,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     let mut message_id_forward = None;
 
-    if message_user.forward_header().is_some() {
+    if message_user.forward_header().is_some() || message_user.raw.grouped_id().is_some() {
         message_id_forward = Some(message_id);
 
         let uploaded = match media {

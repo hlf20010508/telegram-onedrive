@@ -16,7 +16,7 @@ use crate::error::{Error, Result};
 
 #[derive(Clone)]
 pub struct TelegramMessage {
-    raw: Arc<Message>,
+    pub raw: Arc<Message>,
     client: TelegramClient,
 }
 
