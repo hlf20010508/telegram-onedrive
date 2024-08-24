@@ -107,9 +107,6 @@ impl OneDriveClient {
 
             tracing::info!("onedrive account is not authorized, auto login");
 
-            let response = "Auto logging in to OneDrive...";
-            message.respond(response).await.details(response)?;
-
             if self.auto_login().await.is_ok() {
                 tracing::info!("onedrive auto login successful");
 
@@ -117,9 +114,6 @@ impl OneDriveClient {
             }
 
             tracing::info!("onedrive auto login failed, login manually");
-
-            let response = "Auto login to OneDrive failed, login manually.";
-            message.respond(response).await.details(response)?;
         }
 
         let response = format!(
