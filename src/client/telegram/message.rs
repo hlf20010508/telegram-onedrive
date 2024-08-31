@@ -123,7 +123,7 @@ impl TelegramClient {
 
     #[add_context]
     #[add_trace]
-    pub async fn next_update(&self) -> Result<Option<Update>> {
+    pub async fn next_update(&self) -> Result<Update> {
         self.client()
             .next_update()
             .await

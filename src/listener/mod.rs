@@ -65,7 +65,7 @@ impl Listener {
 
         let update = client.next_update().await?;
 
-        if let Some(Update::NewMessage(message_raw)) = update {
+        if let Update::NewMessage(message_raw) = update {
             if !message_raw.outgoing() && !message_raw.text().starts_with(BYPASS_PREFIX) {
                 let message = TelegramMessage::new(client.clone(), message_raw);
 
