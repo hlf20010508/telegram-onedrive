@@ -77,8 +77,6 @@ macro_rules! gen_checker {
         pub fn $marcro_name(_attr: TokenStream, item: TokenStream) -> TokenStream {
             let input = parse_macro_input!(item as ItemFn);
 
-            let fn_attrs = &input.attrs;
-            let fn_name = &input.sig.ident;
             let fn_inputs = &input.sig.inputs;
 
             if fn_inputs.len() != 2 {
@@ -116,19 +114,21 @@ macro_rules! gen_checker {
                 }
             }
 
-            let fn_output = &input.sig.output;
+            let fn_attrs = &input.attrs;
+            let fn_visibility = &input.vis;
+            let fn_sig = &input.sig;
             let fn_block = &input.block;
 
-            let expanded = quote! {
+            let tokens = quote_spanned! {input.span() =>
                 #(#fn_attrs)*
-                pub async fn #fn_name(#fn_inputs) #fn_output {
+                #fn_visibility #fn_sig {
                     $code
 
                     #fn_block
                 }
             };
 
-            TokenStream::from(expanded)
+            tokens.into()
         }
     };
 }
@@ -158,7 +158,7 @@ gen_checker!(check_senders, {
 
     if let Some(sender) = message.sender() {
         if let Some(username) = sender.username() {
-            if users.len() > 0 && !users.contains(&username.to_string()) {
+            if !users.is_empty() && !users.contains(&username.to_string()) {
                 return Ok(());
             }
         }
