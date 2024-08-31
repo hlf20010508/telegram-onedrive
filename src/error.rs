@@ -477,8 +477,8 @@ impl Display for Error {
             details: &[String],
         ) -> std::fmt::Result {
             if !contexts.is_empty() {
-                let contexts = contexts.join("\n-");
-                base.push_str(&format!("\ncontexts:\n-{}", contexts));
+                let contexts = contexts.join("\n- ");
+                base.push_str(&format!("\ncontexts:\n- {}", contexts));
             }
 
             if !details.is_empty() {
