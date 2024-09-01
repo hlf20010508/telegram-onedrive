@@ -10,6 +10,7 @@ use path_slash::PathBufExt;
 use proc_macros::{add_context, add_trace};
 use std::collections::HashMap;
 use std::path::Path;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -147,28 +148,34 @@ impl Progress {
         let telegram_bot = &self.state.telegram_bot;
         let telegram_user = &self.state.telegram_user;
 
+        let should_auto_delete = self.state.should_auto_delete.load(Ordering::Acquire);
+
         for task in completed_tasks {
             let chat = chat_from_hex(chat_user_hex)?;
 
             let message_user = telegram_user.get_message(chat, task.message_id).await?;
 
-            let file_path_raw = Path::new(&task.root_path).join(task.filename);
-            let file_path = file_path_raw.to_slash_lossy();
+            if should_auto_delete {
+                message_user.delete().await?;
+            } else {
+                let file_path_raw = Path::new(&task.root_path).join(task.filename);
+                let file_path = file_path_raw.to_slash_lossy();
 
-            let response = format!(
-                "{}\n\nDone.\nFile uploaded to {}\nSize {:.2}MB.",
-                message_user.text(),
-                file_path,
-                task.total_length as f64 / 1024.0 / 1024.0
-            );
-            if let Err(e) = telegram_user
-                .edit_message(chat, task.message_id, response.as_str())
-                .await
-                .details(response)
-            {
-                let chat = chat_from_hex(chat_user_hex)?;
+                let response = format!(
+                    "{}\n\nDone.\nFile uploaded to {}\nSize {:.2}MB.",
+                    message_user.text(),
+                    file_path,
+                    task.total_length as f64 / 1024.0 / 1024.0
+                );
+                if let Err(e) = telegram_user
+                    .edit_message(chat, task.message_id, response.as_str())
+                    .await
+                    .details(response)
+                {
+                    let chat = chat_from_hex(chat_user_hex)?;
 
-                e.send_chat(telegram_bot, chat).await.unwrap_both().trace();
+                    e.send_chat(telegram_bot, chat).await.unwrap_both().trace();
+                }
             }
 
             self.session.delete_task(task.id).await?;
