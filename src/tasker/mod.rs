@@ -163,10 +163,9 @@ impl Tasker {
                 CmdType::Url => {
                     handle_task!(url);
                 }
-                CmdType::File => {
+                CmdType::File | CmdType::Link => {
                     handle_task!(file);
                 }
-                CmdType::Link => todo!(),
             }
         }
 

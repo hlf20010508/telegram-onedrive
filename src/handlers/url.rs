@@ -87,7 +87,9 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                     total_length,
                     &chat_bot_hex,
                     &chat_user_hex,
+                    None,
                     message.id(),
+                    None,
                     None,
                 )
                 .await

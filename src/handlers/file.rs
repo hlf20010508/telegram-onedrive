@@ -5,18 +5,15 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::media::Uploaded;
-use grammers_client::types::photo_sizes::{PhotoSize, VecExt};
-use grammers_client::types::{Downloadable, Media};
+use grammers_client::types::Media;
 use grammers_client::InputMessage;
 use proc_macros::{
     add_context, add_trace, check_in_group, check_od_login, check_senders, check_tg_login,
 };
-use std::io::Cursor;
 
-use crate::client::TelegramClient;
+use super::utils::upload_thumb;
 use crate::env::BYPASS_PREFIX;
-use crate::error::{Error, Result, ResultExt};
+use crate::error::{Error, Result};
 use crate::handlers::utils::{get_tg_file_size, preprocess_tg_file_name};
 use crate::message::TelegramMessage;
 use crate::state::AppState;
@@ -116,38 +113,12 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             total_length,
             &chat_bot_hex,
             &chat_user_hex,
+            None,
             message_id,
             message_id_forward,
+            None,
         )
         .await?;
 
     Ok(())
-}
-
-async fn upload_thumb(client: &TelegramClient, thumbs: Vec<PhotoSize>) -> Result<Option<Uploaded>> {
-    let uploaded = match thumbs.largest() {
-        Some(thumb) => {
-            let downloadable = Downloadable::PhotoSize(thumb.clone());
-            let mut download = client.iter_download(&downloadable);
-
-            let mut buffer = Vec::new();
-            while let Some(chunk) = download.next().await.map_err(|e| {
-                Error::new_telegram_invocation(e, "failed to download chunk for thumb")
-            })? {
-                buffer.extend(chunk);
-            }
-
-            let size = buffer.len();
-            let mut stream = Cursor::new(buffer);
-            let uploaded = client
-                .upload_stream(&mut stream, size, "thumb.jpg".to_string())
-                .await
-                .context("thumb")?;
-
-            Some(uploaded)
-        }
-        None => None,
-    };
-
-    Ok(uploaded)
 }

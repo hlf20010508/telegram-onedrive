@@ -5,7 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::media::{Document, Media};
+use grammers_client::types::media::{Document, Media, Uploaded};
+use grammers_client::types::photo_sizes::{PhotoSize, VecExt};
+use grammers_client::types::Downloadable;
 use mime_guess::get_mime_extensions_str;
 use percent_encoding::percent_decode_str;
 use proc_macros::{add_context, add_trace};
@@ -13,9 +15,11 @@ use regex::Regex;
 use reqwest::{header, Response, StatusCode};
 use std::collections::HashMap;
 use std::fmt::Display;
+use std::io::Cursor;
 use url::Url;
 
 use super::var::{INVALID_COMPONENT, INVALID_NAME};
+use crate::client::TelegramClient;
 use crate::error::{Error, Result};
 use crate::utils::{get_current_timestamp, get_ext};
 
@@ -323,4 +327,37 @@ pub fn get_tg_file_size(media: &Media) -> u64 {
     };
 
     size as u64
+}
+
+#[add_context]
+#[add_trace]
+pub async fn upload_thumb(
+    client: &TelegramClient,
+    thumbs: Vec<PhotoSize>,
+) -> Result<Option<Uploaded>> {
+    let uploaded = match thumbs.largest() {
+        Some(thumb) => {
+            let downloadable = Downloadable::PhotoSize(thumb.clone());
+            let mut download = client.iter_download(&downloadable);
+
+            let mut buffer = Vec::new();
+            while let Some(chunk) = download.next().await.map_err(|e| {
+                Error::new_telegram_invocation(e, "failed to download chunk for thumb")
+            })? {
+                buffer.extend(chunk);
+            }
+
+            let size = buffer.len();
+            let mut stream = Cursor::new(buffer);
+            let uploaded = client
+                .upload_stream(&mut stream, size, "thumb.jpg".to_string())
+                .await
+                .context("thumb")?;
+
+            Some(uploaded)
+        }
+        None => None,
+    };
+
+    Ok(uploaded)
 }

@@ -62,6 +62,45 @@ impl TelegramClient {
         Err(Error::new("chat not found"))
     }
 
+    #[add_context]
+    #[add_trace]
+    pub async fn get_chat_from_id(&self, chat_id: i64) -> Result<Chat> {
+        let mut dialogs = self.client().iter_dialogs();
+
+        while let Some(dialog) = dialogs
+            .next()
+            .await
+            .map_err(|e| Error::new_telegram_invocation(e, "failed to get dialog"))?
+        {
+            let chat = dialog.chat();
+            if chat.id() == chat_id {
+                return Ok(chat.to_owned());
+            }
+        }
+
+        Err(Error::new("chat not found"))
+    }
+
+    #[add_context]
+    #[add_trace]
+    pub async fn get_chat_from_name(&self, chat_name: &str) -> Result<Chat> {
+        let mut dialogs = self.client().iter_dialogs();
+
+        while let Some(dialog) = dialogs
+            .next()
+            .await
+            .map_err(|e| Error::new_telegram_invocation(e, "failed to get dialog"))?
+        {
+            let chat = dialog.chat();
+
+            if chat.username() == Some(chat_name) {
+                return Ok(chat.to_owned());
+            }
+        }
+
+        Err(Error::new("chat not found"))
+    }
+
     #[add_trace]
     pub fn iter_messages<C: Into<PackedChat>>(&self, chat: C) -> MessageIter {
         self.client().iter_messages(chat)

@@ -103,12 +103,15 @@ pub async fn multi_parts_uploader_from_url(
 pub async fn multi_parts_uploader_from_tg_file(
     tasks::Model {
         id,
+        cmd_type,
         upload_url,
         current_length,
         total_length,
         chat_user_hex,
+        chat_origin_hex,
         message_id,
         message_id_forward,
+        message_id_origin,
         ..
     }: &tasks::Model,
     progress: Arc<Progress>,
@@ -129,13 +132,32 @@ pub async fn multi_parts_uploader_from_tg_file(
 
     let telegram_user = &state.telegram_user;
 
-    let chat = chat_from_hex(chat_user_hex)?;
+    let message = match cmd_type {
+        tasks::CmdType::File => {
+            let chat = chat_from_hex(chat_user_hex)?;
 
-    let message_id = message_id_forward
-        .as_ref()
-        .map_or(message_id, |message_id| message_id);
+            let message_id = message_id_forward
+                .as_ref()
+                .map_or(message_id, |message_id| message_id);
 
-    let message = telegram_user.get_message(chat, *message_id).await?;
+            telegram_user.get_message(chat, *message_id).await?
+        }
+        tasks::CmdType::Link => {
+            let chat = chat_from_hex(
+                chat_origin_hex
+                    .as_ref()
+                    .ok_or_else(|| Error::new("chat_origin_hex is None"))?,
+            )?;
+
+            let message_id = message_id_origin
+                .as_ref()
+                .ok_or_else(|| Error::new("message_id_origin is None"))?;
+
+            telegram_user.get_message(chat, *message_id).await?
+        }
+        tasks::CmdType::Url => return Err(Error::new("invalid cmd type")),
+    };
+
     let media = message
         .media()
         .ok_or_else(|| Error::new("message does not contain any media"))?;

@@ -32,7 +32,9 @@ impl Handler {
                 Media::Photo(_) | Media::Document(_) | Media::Sticker(_) => {
                     self.handle_media(message).await?;
                 }
-                _ => {}
+                // when sending link from public group, the link might be wrapped as a web page
+                Media::WebPage(_) => self.handle_text(message).await?,
+                _ => tracing::debug!("unsupported media type when handle message"),
             },
             None => {
                 let text = message.text();

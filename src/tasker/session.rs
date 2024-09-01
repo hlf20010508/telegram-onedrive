@@ -9,8 +9,8 @@ use std::collections::HashMap;
 
 use proc_macros::{add_context, add_trace};
 use sea_orm::{
-    sea_query::Expr, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection, EntityName,
-    EntityTrait, PaginatorTrait, QueryFilter, Schema, Set,
+    sea_query::Expr, ActiveValue, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection,
+    EntityName, EntityTrait, PaginatorTrait, QueryFilter, Schema, Set,
 };
 
 use super::tasks::{self, CmdType, TaskStatus};
@@ -100,10 +100,13 @@ impl TaskSession {
         total_length: u64,
         chat_bot_hex: &str,
         chat_user_hex: &str,
+        chat_origin_hex: Option<String>,
         message_id: i32,
         message_id_forward: Option<i32>,
+        message_id_origin: Option<i32>,
     ) -> Result<()> {
         let insert_item = tasks::ActiveModel {
+            id: ActiveValue::default(),
             cmd_type: Set(cmd_type),
             filename: Set(filename.to_string()),
             root_path: Set(root_path.to_string()),
@@ -113,10 +116,11 @@ impl TaskSession {
             total_length: Set(total_length as i64),
             chat_bot_hex: Set(chat_bot_hex.to_string()),
             chat_user_hex: Set(chat_user_hex.to_string()),
+            chat_origin_hex: Set(chat_origin_hex),
             message_id: Set(message_id),
             message_id_forward: Set(message_id_forward),
+            message_id_origin: Set(message_id_origin),
             status: Set(TaskStatus::Waiting),
-            ..Default::default()
         };
 
         tasks::Entity::insert(insert_item)

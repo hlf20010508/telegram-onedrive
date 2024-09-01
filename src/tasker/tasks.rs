@@ -27,8 +27,10 @@ pub struct Model {
     pub total_length: i64,
     pub chat_bot_hex: String,
     pub chat_user_hex: String,
+    pub chat_origin_hex: Option<String>,
     pub message_id: i32,
     pub message_id_forward: Option<i32>,
+    pub message_id_origin: Option<i32>,
     pub status: TaskStatus,
 }
 

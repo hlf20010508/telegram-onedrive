@@ -19,7 +19,7 @@ mod utils;
 
 use std::collections::HashMap;
 
-use handlers::{auth, auto_delete, clear, dir, drive, file, help, logs, start, url};
+use handlers::{auth, auto_delete, clear, dir, drive, file, help, link, logs, start, url};
 use listener::{EventType, HashMapExt, Listener};
 use trace::{indenter, trace_registor};
 
@@ -40,7 +40,8 @@ async fn main() {
         .on(EventType::command(dir::PATTERN), dir::handler)
         .on(EventType::command(drive::PATTERN), drive::handler)
         .on(EventType::command(url::PATTERN), url::handler)
-        .on(EventType::media(), file::handler);
+        .on(EventType::media(), file::handler)
+        .on(EventType::text(), link::handler);
 
     indenter::set_file_indenter(indenter::Coroutine::Listener, async {
         Listener::new(events).await.run().await;
