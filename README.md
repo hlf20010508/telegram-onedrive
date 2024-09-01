@@ -2,6 +2,7 @@
 A Telegram Bot to transfer files to OneDrive.
 
 ## Attention
+- **This project is being rewritten in Rust in branch [rust](https://github.com/hlf20010508/telegram-onedrive/tree/rust).**
 - **Please read [Preparation](#preparation) carefully and don't omit any steps.**
 - **Please read [Usage - Before Start](#before-start-important), or the bot may not work.**
 
