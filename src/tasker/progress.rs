@@ -289,6 +289,8 @@ impl Progress {
             .get_mut(chat_bot_hex)
             .ok_or_else(|| Error::new("chat_bot_hex not in chat_progress_message_id"))?;
 
+        let mut last_progress_response = self.last_progress_response.lock().await;
+
         match progress_message_id {
             Some(progress_message_id) => {
                 let chat_user = chat_from_hex(chat_user_hex)?;
@@ -307,8 +309,6 @@ impl Progress {
 
                 if let Some(latest_message) = latest_message {
                     if latest_message.id() == *progress_message_id {
-                        let mut last_progress_response = self.last_progress_response.lock().await;
-
                         if *last_progress_response != response {
                             telegram_bot
                                 .edit_message(
@@ -318,8 +318,6 @@ impl Progress {
                                 )
                                 .await
                                 .details(&response)?;
-
-                            *last_progress_response = response;
                         }
                     } else {
                         telegram_bot
@@ -329,7 +327,7 @@ impl Progress {
                         let message = telegram_bot
                             .send_message(chat, InputMessage::html(response.as_str()))
                             .await
-                            .details(response)?;
+                            .details(&response)?;
 
                         *progress_message_id = message.id();
                     }
@@ -339,11 +337,13 @@ impl Progress {
                 let message = telegram_bot
                     .send_message(chat, InputMessage::html(response.as_str()))
                     .await
-                    .details(response)?;
+                    .details(&response)?;
 
                 *progress_message_id = Some(message.id());
             }
         }
+
+        *last_progress_response = response;
 
         Ok(())
     }
