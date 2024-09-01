@@ -5,10 +5,12 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use grammers_client::client::files::MAX_CHUNK_SIZE;
 use grammers_client::types::Downloadable;
 use onedrive_api::resource::DriveItem;
 use onedrive_api::UploadSession;
 use proc_macros::{add_context, add_trace};
+use std::collections::VecDeque;
 use std::ops::Range;
 use std::sync::Arc;
 use std::time::Duration;
@@ -18,6 +20,8 @@ use crate::client::ext::chat_from_hex;
 use crate::error::{Error, Result};
 use crate::state::AppState;
 use crate::utils::get_http_client;
+
+const MAX_RETRIES: i32 = 5;
 
 #[add_context]
 #[add_trace]
@@ -53,8 +57,6 @@ pub async fn multi_parts_uploader_from_url(
         .await
         .map_err(|e| Error::new_http_request(e, "failed to send head request for /url"))?;
 
-    let max_retries = 5;
-
     let upload_response = loop {
         let mut buffer = Vec::with_capacity(PART_SIZE);
 
@@ -76,7 +78,6 @@ pub async fn multi_parts_uploader_from_url(
             current_length,
             total_length,
             &http_client,
-            max_retries,
         )
         .await?;
 
@@ -117,6 +118,8 @@ pub async fn multi_parts_uploader_from_tg_file(
     progress: Arc<Progress>,
     state: AppState,
 ) -> Result<String> {
+    const WORKER_COUNT: i32 = 10;
+
     let http_client = get_http_client()?;
 
     let upload_session = UploadSession::from_upload_url(upload_url);
@@ -161,30 +164,64 @@ pub async fn multi_parts_uploader_from_tg_file(
     let media = message
         .media()
         .ok_or_else(|| Error::new("message does not contain any media"))?;
-    let mut download = telegram_user.iter_download(&Downloadable::Media(media));
 
-    let max_retries = 5;
+    let downloadable = Arc::new(Downloadable::Media(media));
 
-    while let Some(chunk) = download.next().await.map_err(|e| {
-        Error::new_telegram_invocation(e, "failed to get next chunk from tg file downloader")
-    })? {
-        upload_response = upload_file(
-            &upload_session,
-            &chunk,
-            current_length,
-            total_length,
-            &http_client,
-            max_retries,
-        )
-        .await?;
+    let mut work_handles = VecDeque::new();
 
-        current_length += chunk.len() as u64;
-        progress
-            .set_current_length(id.to_owned(), current_length)
+    let total_chunks_num = if total_length > MAX_CHUNK_SIZE as u64 {
+        (total_length as f32 / MAX_CHUNK_SIZE as f32).ceil() as i32
+    } else {
+        1
+    };
+    let mut current_chunk_num = 0;
+
+    while current_chunk_num < total_chunks_num {
+        let telegram_user_clone = telegram_user.clone();
+        let downloadable_clone = downloadable.clone();
+
+        work_handles.push_back(tokio::spawn(async move {
+            let download = telegram_user_clone.iter_download(downloadable_clone.as_ref());
+
+            download
+                .skip_chunks(current_chunk_num)
+                .next()
+                .await
+                .map_err(|e| {
+                    Error::new_telegram_invocation(
+                        e,
+                        "failed to get next chunk from tg file downloader",
+                    )
+                })
+        }));
+
+        current_chunk_num += 1;
+
+        if current_chunk_num % WORKER_COUNT == 0 || current_chunk_num == total_chunks_num {
+            let mut chunk = Vec::new();
+
+            while let Some(handle) = work_handles.pop_front() {
+                let mut chunk_part = handle
+                    .await
+                    .map_err(|e| Error::new(format!("failed to join handle: {}", e)))??
+                    .ok_or_else(|| Error::new("failed to get chunk from tg file downloader"))?;
+
+                chunk.append(&mut chunk_part);
+            }
+
+            upload_response = upload_file(
+                &upload_session,
+                &chunk,
+                current_length,
+                total_length,
+                &http_client,
+            )
             .await?;
 
-        if current_length >= total_length {
-            break;
+            current_length += chunk.len() as u64;
+            progress
+                .set_current_length(id.to_owned(), current_length)
+                .await?;
         }
     }
 
@@ -208,7 +245,6 @@ async fn upload_file(
     current_length: u64,
     total_length: u64,
     http_client: &reqwest::Client,
-    max_retries: i32,
 ) -> Result<Option<DriveItem>> {
     let mut upload_response = None;
 
@@ -254,7 +290,7 @@ async fn upload_file(
                     }
                 }
 
-                if tries < max_retries {
+                if tries < MAX_RETRIES {
                     tokio::time::sleep(Duration::from_secs(2)).await;
 
                     continue;
