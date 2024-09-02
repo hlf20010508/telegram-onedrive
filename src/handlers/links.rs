@@ -144,6 +144,12 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 .await?;
         }
 
+        telegram_user
+            .get_message(chat_user, message.id())
+            .await?
+            .delete()
+            .await?;
+
         Ok(())
     } else {
         Err(Error::new("Unknown command for /links"))
