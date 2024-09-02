@@ -32,21 +32,11 @@ impl Handler {
                 Media::Photo(_) | Media::Document(_) | Media::Sticker(_) => {
                     self.handle_media(message).await?;
                 }
-                // when sending link from public group, the link might be wrapped as a web page
+                // sending a task with a link may cause the text being wrapped as a web page
                 Media::WebPage(_) => self.handle_text(message).await?,
                 _ => tracing::debug!("unsupported media type when handle message"),
             },
-            None => {
-                let text = message.text();
-
-                if !text.is_empty() {
-                    if text.starts_with('/') {
-                        self.handle_command(message).await?;
-                    } else {
-                        self.handle_text(message).await?;
-                    }
-                }
-            }
+            None => self.handle_text(message).await?,
         }
 
         Ok(())
@@ -54,7 +44,7 @@ impl Handler {
 
     #[add_context]
     #[add_trace]
-    pub async fn handle_command(&self, message: TelegramMessage) -> Result<()> {
+    async fn handle_command(&self, message: TelegramMessage) -> Result<()> {
         let text = message.text();
 
         for event in self.get_event_names() {
@@ -69,13 +59,23 @@ impl Handler {
 
     #[add_context]
     #[add_trace]
-    pub async fn handle_text(&self, message: TelegramMessage) -> Result<()> {
-        self.trigger(EventType::Text, message).await
+    async fn handle_text(&self, message: TelegramMessage) -> Result<()> {
+        let text = message.text();
+
+        if !text.is_empty() {
+            if text.starts_with('/') {
+                self.handle_command(message).await?;
+            } else {
+                self.trigger(EventType::Text, message).await?;
+            }
+        }
+
+        Ok(())
     }
 
     #[add_context]
     #[add_trace]
-    pub async fn handle_media(&self, message: TelegramMessage) -> Result<()> {
+    async fn handle_media(&self, message: TelegramMessage) -> Result<()> {
         self.trigger(EventType::Media, message).await
     }
 
