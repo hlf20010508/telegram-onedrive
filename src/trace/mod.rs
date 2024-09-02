@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
+mod cleaner;
 mod formatter;
 pub mod indenter;
 mod visitor;
@@ -37,4 +38,6 @@ pub fn trace_registor() {
             ),
         )
         .init();
+
+    cleaner::run();
 }

@@ -10,7 +10,7 @@ use std::sync::Mutex;
 use tokio::task::futures::TaskLocalFuture;
 use tokio::task_local;
 use tracing::{Event, Subscriber};
-use tracing_appender::rolling;
+use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::fmt::format;
 use tracing_subscriber::layer::Context;
 use tracing_subscriber::registry::LookupSpan;
@@ -109,14 +109,21 @@ where
     }
 }
 
+fn log_builder(name: &str) -> RollingFileAppender {
+    RollingFileAppender::builder()
+        .rotation(Rotation::DAILY)
+        .filename_suffix(format!("{}.log", name))
+        .build(LOGS_PATH)
+        .unwrap()
+}
+
 fn get_writer_for_coroutine(coroutine: &Coroutine) -> impl std::io::Write {
-    // TODO: date
     match coroutine {
-        Coroutine::Listener => rolling::never(LOGS_PATH, "listener.log"),
-        Coroutine::Message => rolling::never(LOGS_PATH, "message.log"),
-        Coroutine::Progress => rolling::never(LOGS_PATH, "progress.log"),
-        Coroutine::Task => rolling::never(LOGS_PATH, "task.log"),
-        Coroutine::TaskWorker(id) => rolling::never(LOGS_PATH, format!("task_worker_{}.log", id)),
+        Coroutine::Listener => log_builder("listener"),
+        Coroutine::Message => log_builder("message"),
+        Coroutine::Progress => log_builder("progress"),
+        Coroutine::Task => log_builder("task"),
+        Coroutine::TaskWorker(id) => log_builder(&format!("task_worker_{}", id)),
     }
 }
 
