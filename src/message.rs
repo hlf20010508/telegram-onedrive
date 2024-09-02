@@ -126,3 +126,39 @@ pub enum QueuedMessageType {
     Reply(i32),
     Edit(i32),
 }
+
+#[derive(Clone)]
+pub enum ChatEntity {
+    Chat(Chat),
+    Id(i64),
+    Username(String),
+}
+
+impl From<Chat> for ChatEntity {
+    fn from(chat: Chat) -> Self {
+        Self::Chat(chat)
+    }
+}
+
+impl From<i64> for ChatEntity {
+    fn from(id: i64) -> Self {
+        Self::Id(id)
+    }
+}
+
+impl From<String> for ChatEntity {
+    fn from(username: String) -> Self {
+        Self::Username(username)
+    }
+}
+
+pub struct MessageInfo {
+    pub chat_entity: ChatEntity,
+    pub id: i32,
+}
+
+impl MessageInfo {
+    pub fn new(chat_entity: ChatEntity, id: i32) -> Self {
+        Self { chat_entity, id }
+    }
+}

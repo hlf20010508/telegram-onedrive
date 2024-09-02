@@ -13,6 +13,7 @@ pub mod drive;
 pub mod file;
 pub mod help;
 pub mod link;
+pub mod links;
 pub mod logs;
 pub mod start;
 pub mod url;

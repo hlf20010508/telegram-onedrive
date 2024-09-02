@@ -15,7 +15,7 @@ use super::utils::upload_thumb;
 use crate::env::BYPASS_PREFIX;
 use crate::error::{Error, Result};
 use crate::handlers::utils::{get_tg_file_size, preprocess_tg_file_name};
-use crate::message::TelegramMessage;
+use crate::message::{ChatEntity, TelegramMessage};
 use crate::state::AppState;
 use crate::tasker::CmdType;
 
@@ -30,7 +30,9 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let onedrive = &state.onedrive;
     let task_session = state.task_session.clone();
 
-    let chat_user = telegram_user.get_chat(message.clone()).await?;
+    let chat_user = telegram_user
+        .get_chat(&ChatEntity::from(message.chat()))
+        .await?;
 
     let message_user = telegram_user.get_message(&chat_user, message.id()).await?;
 

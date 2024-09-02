@@ -11,12 +11,11 @@ use proc_macros::{
     add_context, add_trace, check_in_group, check_od_login, check_senders, check_tg_login,
 };
 
-use super::utils::upload_thumb;
-use crate::client::TelegramClient;
+use super::utils::{get_message_from_link, upload_thumb};
 use crate::env::BYPASS_PREFIX;
 use crate::error::{Error, Result};
 use crate::handlers::utils::{get_tg_file_size, preprocess_tg_file_name};
-use crate::message::TelegramMessage;
+use crate::message::{ChatEntity, TelegramMessage};
 use crate::state::AppState;
 use crate::tasker::CmdType;
 
@@ -35,7 +34,9 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     let message_origin = get_message_from_link(telegram_user, link).await?;
 
-    let chat_user = telegram_user.get_chat(message.clone()).await?;
+    let chat_user = telegram_user
+        .get_chat(&ChatEntity::from(message.chat()))
+        .await?;
 
     let message_user = telegram_user.get_message(&chat_user, message.id()).await?;
 
@@ -118,57 +119,4 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         .await?;
 
     Ok(())
-}
-
-#[add_context]
-#[add_trace]
-async fn get_message_from_link(
-    telegram_user: &TelegramClient,
-    link: &str,
-) -> Result<TelegramMessage> {
-    let message = if let Some(message_info) = link.to_string().strip_prefix("https://t.me/c/") {
-        // link from private group
-        let message_info_vec = message_info
-            .split('/')
-            .map(|s| s.to_string())
-            .collect::<Vec<String>>();
-
-        if message_info_vec.len() == 2 {
-            let chat_id = message_info_vec[0]
-                .parse()
-                .map_err(|e| Error::new_parse_int(e, "failed to parse chat id"))?;
-            let message_id = message_info_vec[1]
-                .parse()
-                .map_err(|e| Error::new_parse_int(e, "failed to parse message id"))?;
-
-            let chat = telegram_user.get_chat_from_id(chat_id).await?;
-
-            telegram_user.get_message(chat, message_id).await?
-        } else {
-            return Err(Error::new("message info doesn't contain 2 elements"))?;
-        }
-    } else if let Some(message_info) = link.to_string().strip_prefix("https://t.me/") {
-        // link from public group
-        let message_info_vec = message_info
-            .split('/')
-            .map(|s| s.to_string())
-            .collect::<Vec<String>>();
-
-        if message_info_vec.len() == 2 {
-            let chat_name = &message_info_vec[0];
-            let message_id = message_info_vec[1]
-                .parse()
-                .map_err(|e| Error::new_parse_int(e, "failed to parse message id"))?;
-
-            let chat = telegram_user.get_chat_from_name(chat_name).await?;
-
-            telegram_user.get_message(chat, message_id).await?
-        } else {
-            return Err(Error::new("message info doesn't contain 2 elements"))?;
-        }
-    } else {
-        return Err(Error::new("not a message link"));
-    };
-
-    Ok(message)
 }

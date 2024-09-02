@@ -5,18 +5,17 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use std::collections::{HashMap, VecDeque};
-use std::time::Duration;
-
 use grammers_client::client::messages::MessageIter;
 use grammers_client::types::{Chat, InputMessage, PackedChat};
 use grammers_client::Update;
 use proc_macros::{add_context, add_trace};
+use std::collections::{HashMap, VecDeque};
+use std::time::Duration;
 use tokio::sync::mpsc;
 
 use super::TelegramClient;
 use crate::error::{Error, Result};
-use crate::message::{QueuedMessage, QueuedMessageType, TelegramMessage};
+use crate::message::{ChatEntity, QueuedMessage, QueuedMessageType, TelegramMessage};
 use crate::trace::indenter;
 
 impl TelegramClient {
@@ -43,47 +42,7 @@ impl TelegramClient {
 
     #[add_context]
     #[add_trace]
-    pub async fn get_chat(&self, message: TelegramMessage) -> Result<Chat> {
-        let mut dialogs = self.client().iter_dialogs();
-
-        let chat_old = message.chat();
-
-        while let Some(dialog) = dialogs
-            .next()
-            .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to get dialog"))?
-        {
-            let chat_new = dialog.chat();
-            if chat_new.id() == chat_old.id() {
-                return Ok(chat_new.to_owned());
-            }
-        }
-
-        Err(Error::new("chat not found"))
-    }
-
-    #[add_context]
-    #[add_trace]
-    pub async fn get_chat_from_id(&self, chat_id: i64) -> Result<Chat> {
-        let mut dialogs = self.client().iter_dialogs();
-
-        while let Some(dialog) = dialogs
-            .next()
-            .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to get dialog"))?
-        {
-            let chat = dialog.chat();
-            if chat.id() == chat_id {
-                return Ok(chat.to_owned());
-            }
-        }
-
-        Err(Error::new("chat not found"))
-    }
-
-    #[add_context]
-    #[add_trace]
-    pub async fn get_chat_from_name(&self, chat_name: &str) -> Result<Chat> {
+    pub async fn get_chat(&self, chat_entity: &ChatEntity) -> Result<Chat> {
         let mut dialogs = self.client().iter_dialogs();
 
         while let Some(dialog) = dialogs
@@ -93,7 +52,11 @@ impl TelegramClient {
         {
             let chat = dialog.chat();
 
-            if chat.username() == Some(chat_name) {
+            if match chat_entity {
+                ChatEntity::Chat(chat_old) => chat.id() == chat_old.id(),
+                ChatEntity::Id(chat_id) => chat.id() == *chat_id,
+                ChatEntity::Username(chat_username) => chat.username() == Some(chat_username),
+            } {
                 return Ok(chat.to_owned());
             }
         }

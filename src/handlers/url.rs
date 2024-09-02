@@ -12,7 +12,7 @@ use reqwest::header;
 
 use super::utils::{cmd_parser, get_filename, TextExt};
 use crate::error::{Error, Result};
-use crate::message::TelegramMessage;
+use crate::message::{ChatEntity, TelegramMessage};
 use crate::state::AppState;
 use crate::tasker::CmdType;
 use crate::utils::get_http_client;
@@ -71,7 +71,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
             let chat_bot_hex = message.chat().pack().to_hex();
             let chat_user_hex = telegram_user
-                .get_chat(message.clone())
+                .get_chat(&ChatEntity::from(message.chat()))
                 .await?
                 .pack()
                 .to_hex();

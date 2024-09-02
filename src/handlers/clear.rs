@@ -8,7 +8,7 @@
 use proc_macros::{add_context, add_trace, check_in_group, check_senders, check_tg_login};
 
 use crate::error::{Error, Result};
-use crate::message::TelegramMessage;
+use crate::message::{ChatEntity, TelegramMessage};
 use crate::state::AppState;
 
 pub const PATTERN: &str = "/clear";
@@ -24,7 +24,9 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     task_session.clear().await?;
 
-    let chat = telegram_user.get_chat(message).await?;
+    let chat = telegram_user
+        .get_chat(&ChatEntity::from(message.chat()))
+        .await?;
 
     loop {
         let mut messages = telegram_user.iter_messages(&chat).limit(100);
