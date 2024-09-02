@@ -44,20 +44,8 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     let total_length = get_tg_file_size(&media);
 
-    let root_path = onedrive.get_root_path(true).await?;
-
-    let (upload_session, upload_session_meta) = onedrive
-        .multipart_upload_session_builder(&root_path, &filename)
-        .await?;
-
-    let current_length = upload_session_meta
-        .next_expected_ranges
-        .first()
-        .map_or(0, |range| range.start);
-
     let mut message_id = message.id();
-    let chat_bot_hex = message.chat().pack().to_hex();
-    let chat_user_hex = chat_user.pack().to_hex();
+    let mut message_id_forward = None;
 
     let cmd_type = match media {
         Media::Photo(_) | Media::Document(_) | Media::Sticker(_) => CmdType::File,
@@ -65,8 +53,6 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             "media type is not one of photo, document and sticker",
         ))?,
     };
-
-    let mut message_id_forward = None;
 
     if message_user.forward_header().is_some() || message_user.raw.grouped_id().is_some() {
         message_id_forward = Some(message_id);
@@ -85,7 +71,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             Some(uploaded) => {
                 message_id = telegram_user
                     .send_message(
-                        chat_user,
+                        &chat_user,
                         InputMessage::text(response.as_str()).photo(uploaded),
                     )
                     .await
@@ -95,7 +81,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             }
             None => {
                 message_id = telegram_user
-                    .send_message(chat_user, response.as_str())
+                    .send_message(&chat_user, response.as_str())
                     .await
                     .context("forwarded message without thumn")
                     .details(response)?
@@ -103,6 +89,20 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             }
         }
     }
+
+    let root_path = onedrive.get_root_path(true).await?;
+
+    let (upload_session, upload_session_meta) = onedrive
+        .multipart_upload_session_builder(&root_path, &filename)
+        .await?;
+
+    let current_length = upload_session_meta
+        .next_expected_ranges
+        .first()
+        .map_or(0, |range| range.start);
+
+    let chat_bot_hex = message.chat().pack().to_hex();
+    let chat_user_hex = chat_user.pack().to_hex();
 
     task_session
         .insert_task(

@@ -48,21 +48,6 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     let total_length = get_tg_file_size(&media);
 
-    let root_path = onedrive.get_root_path(true).await?;
-
-    let (upload_session, upload_session_meta) = onedrive
-        .multipart_upload_session_builder(&root_path, &filename)
-        .await?;
-
-    let current_length = upload_session_meta
-        .next_expected_ranges
-        .first()
-        .map_or(0, |range| range.start);
-
-    let chat_bot_hex = message.chat().pack().to_hex();
-    let chat_user_hex = chat_user.pack().to_hex();
-    let chat_origin_hex = message_origin.chat().pack().to_hex();
-
     let cmd_type = match media {
         Media::Photo(_) | Media::Document(_) | Media::Sticker(_) => CmdType::Link,
         _ => Err(Error::new(
@@ -83,7 +68,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let message_id = match uploaded {
         Some(uploaded) => telegram_user
             .send_message(
-                chat_user,
+                &chat_user,
                 InputMessage::text(response.as_str()).photo(uploaded),
             )
             .await
@@ -91,7 +76,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             .details(response)?
             .id(),
         None => telegram_user
-            .send_message(chat_user, response.as_str())
+            .send_message(&chat_user, response.as_str())
             .await
             .context("linked message without thumn")
             .details(response)?
@@ -99,6 +84,21 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     };
 
     message_user.delete().await?;
+
+    let root_path = onedrive.get_root_path(true).await?;
+
+    let (upload_session, upload_session_meta) = onedrive
+        .multipart_upload_session_builder(&root_path, &filename)
+        .await?;
+
+    let current_length = upload_session_meta
+        .next_expected_ranges
+        .first()
+        .map_or(0, |range| range.start);
+
+    let chat_bot_hex = message.chat().pack().to_hex();
+    let chat_user_hex = chat_user.pack().to_hex();
+    let chat_origin_hex = message_origin.chat().pack().to_hex();
 
     task_session
         .insert_task(
