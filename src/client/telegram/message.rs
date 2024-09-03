@@ -55,7 +55,10 @@ impl TelegramClient {
             if match chat_entity {
                 ChatEntity::Chat(chat_old) => chat.id() == chat_old.id(),
                 ChatEntity::Id(chat_id) => chat.id() == *chat_id,
-                ChatEntity::Username(chat_username) => chat.username() == Some(chat_username),
+                ChatEntity::Username(chat_username) => match chat.username() {
+                    Some(username) => username == chat_username,
+                    None => chat.usernames().contains(&chat_username.as_str()),
+                },
             } {
                 return Ok(chat.to_owned());
             }
