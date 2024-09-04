@@ -13,7 +13,9 @@ mod upload;
 use onedrive_api::{
     Auth, ClientCredential, DriveLocation, OneDrive as Client, Permission, Tenant, TokenResponse,
 };
+use path_slash::PathBufExt;
 use proc_macros::{add_context, add_trace};
+use std::path::Path;
 use tokio::sync::RwLock;
 
 use session::OneDriveSession;
@@ -63,7 +65,7 @@ impl OneDriveClient {
                 .write(true)
                 .access_shared(true)
                 .offline_access(true),
-            format!("{}/auth", server_uri),
+            Path::new(server_uri).join("auth").to_slash_lossy(),
             Tenant::Common,
         );
 
