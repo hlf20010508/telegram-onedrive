@@ -1,4 +1,6 @@
 *
 !src
+!lib
 !Cargo.toml
 !Cargo.lock
+!index.html
