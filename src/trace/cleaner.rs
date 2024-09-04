@@ -8,6 +8,7 @@
 use chrono::{Local, NaiveDate};
 use regex::Regex;
 use std::fs;
+use std::path::Path;
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
@@ -20,16 +21,18 @@ pub fn run() {
 
         let cutoff_date = Local::now().naive_local().date() - chrono::Duration::days(7);
 
-        for entry in fs::read_dir(LOGS_PATH).unwrap() {
-            let entry = entry.unwrap();
-            let path = entry.path();
+        if Path::new(LOGS_PATH).exists() {
+            for entry in fs::read_dir(LOGS_PATH).unwrap() {
+                let entry = entry.unwrap();
+                let path = entry.path();
 
-            if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
-                if let Some(caps) = re.captures(filename) {
-                    if let Some(date_str) = caps.get(1).map(|m| m.as_str()) {
-                        if let Ok(file_date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                            if file_date < cutoff_date {
-                                fs::remove_file(&path).unwrap();
+                if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
+                    if let Some(caps) = re.captures(filename) {
+                        if let Some(date_str) = caps.get(1).map(|m| m.as_str()) {
+                            if let Ok(file_date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+                                if file_date < cutoff_date {
+                                    fs::remove_file(&path).unwrap();
+                                }
                             }
                         }
                     }
