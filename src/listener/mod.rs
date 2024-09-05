@@ -52,7 +52,11 @@ impl Listener {
         let telegram_user = self.state.telegram_user.raw().clone();
 
         tokio::spawn(async move {
-            telegram_user.run_until_disconnected().await.unwrap();
+            loop {
+                telegram_user.step().await.unwrap();
+
+                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+            }
         });
 
         loop {
