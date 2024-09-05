@@ -141,7 +141,7 @@ impl TelegramClient {
         Ok(telegram_client)
     }
 
-    fn client(&self) -> &Client {
+    pub fn raw(&self) -> &Client {
         match self {
             Self::Bot { client, .. } | Self::User { client, .. } => client,
         }
@@ -174,7 +174,7 @@ impl TelegramClient {
             ..
         }: &Env,
     ) -> Result<()> {
-        let client = self.client();
+        let client = self.raw();
 
         let response = "Logining into Telegram...";
         message.respond(response).await.details(response)?;
@@ -244,7 +244,7 @@ impl TelegramClient {
     #[add_context]
     #[add_trace]
     pub async fn is_authorized(&self) -> Result<bool> {
-        self.client().is_authorized().await.map_err(|e| {
+        self.raw().is_authorized().await.map_err(|e| {
             Error::new_telegram_invocation(
                 e,
                 "failed to check telegram user client authorization state",

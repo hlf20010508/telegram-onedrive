@@ -20,7 +20,7 @@ impl TelegramClient {
     #[add_context]
     #[add_trace]
     pub async fn upload_file<P: AsRef<Path>>(&self, path: P) -> Result<Uploaded> {
-        self.client()
+        self.raw()
             .upload_file(path)
             .await
             .map_err(|e| Error::new_sys_io(e, "failed to upload file"))
@@ -34,7 +34,7 @@ impl TelegramClient {
         size: usize,
         name: String,
     ) -> Result<Uploaded> {
-        self.client()
+        self.raw()
             .upload_stream(stream, size, name)
             .await
             .map_err(|e| Error::new_sys_io(e, "failed to upload stream"))
@@ -42,6 +42,6 @@ impl TelegramClient {
 
     #[add_trace]
     pub fn iter_download(&self, downloadable: &Downloadable) -> DownloadIter {
-        self.client().iter_download(downloadable)
+        self.raw().iter_download(downloadable)
     }
 }

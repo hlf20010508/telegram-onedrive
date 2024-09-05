@@ -26,7 +26,7 @@ impl TelegramClient {
         C: Into<PackedChat>,
     {
         let message_raw = self
-            .client()
+            .raw()
             .get_messages_by_id(chat, &[message_id])
             .await
             .map_err(|e| Error::new_telegram_invocation(e, "failed to get message by id"))?
@@ -43,7 +43,7 @@ impl TelegramClient {
     #[add_context]
     #[add_trace]
     pub async fn get_chat(&self, chat_entity: &ChatEntity) -> Result<Chat> {
-        let mut dialogs = self.client().iter_dialogs();
+        let mut dialogs = self.raw().iter_dialogs();
 
         while let Some(dialog) = dialogs
             .next()
@@ -69,7 +69,7 @@ impl TelegramClient {
 
     #[add_trace]
     pub fn iter_messages<C: Into<PackedChat>>(&self, chat: C) -> MessageIter {
-        self.client().iter_messages(chat)
+        self.raw().iter_messages(chat)
     }
 
     #[add_context]
@@ -79,7 +79,7 @@ impl TelegramClient {
         chat: C,
         message_ids: &[i32],
     ) -> Result<usize> {
-        self.client()
+        self.raw()
             .delete_messages(chat, message_ids)
             .await
             .map_err(|e| Error::new_telegram_invocation(e, "failed to delete messages"))
@@ -129,7 +129,7 @@ impl TelegramClient {
     #[add_context]
     #[add_trace]
     pub async fn next_update(&self) -> Result<Update> {
-        self.client()
+        self.raw()
             .next_update()
             .await
             .map_err(|e| Error::new_telegram_invocation(e, "Failed to get next update"))
@@ -158,7 +158,7 @@ impl TelegramClient {
                         let message_result = match message_type {
                             QueuedMessageType::Respond => {
                                 let result = telegram_client
-                                    .client()
+                                    .raw()
                                     .send_message(chat, input_message)
                                     .await
                                     .map_err(|e| {
@@ -178,7 +178,7 @@ impl TelegramClient {
                             }
                             QueuedMessageType::Reply(message_id) => {
                                 let result = telegram_client
-                                    .client()
+                                    .raw()
                                     .send_message(chat, input_message.reply_to(Some(message_id)))
                                     .await
                                     .map_err(|e| {
@@ -198,7 +198,7 @@ impl TelegramClient {
                             }
                             QueuedMessageType::Edit(message_id) => {
                                 let result = telegram_client
-                                    .client()
+                                    .raw()
                                     .edit_message(chat, message_id, input_message)
                                     .await
                                     .map_err(|e| {
