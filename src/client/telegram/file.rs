@@ -40,7 +40,6 @@ impl TelegramClient {
             .map_err(|e| Error::new_sys_io(e, "failed to upload stream"))
     }
 
-    #[add_trace]
     pub fn iter_download(&self, downloadable: &Downloadable) -> DownloadIter {
         self.raw().iter_download(downloadable)
     }
