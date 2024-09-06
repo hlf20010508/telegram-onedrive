@@ -9,6 +9,8 @@ use grammers_client::client::messages::MessageIter;
 use grammers_client::types::{Chat, InputMessage, PackedChat};
 use grammers_client::Update;
 use proc_macros::{add_context, add_trace};
+use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 use std::collections::{HashMap, VecDeque};
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -145,6 +147,11 @@ impl TelegramClient {
         let message_queue = self.message_queue();
         let telegram_client = self.clone();
 
+        let mut rng = {
+            let rng = rand::thread_rng();
+            StdRng::from_rng(rng).unwrap()
+        };
+
         tokio::spawn(async move {
             indenter::set_file_indenter(indenter::Coroutine::Message, async {
                 loop {
@@ -218,7 +225,8 @@ impl TelegramClient {
                         tx.send(message_result).await.unwrap();
                     }
 
-                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    let millis = rng.gen_range(1500..4000);
+                    tokio::time::sleep(Duration::from_millis(millis)).await;
                 }
             })
             .await;
