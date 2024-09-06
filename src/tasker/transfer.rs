@@ -118,7 +118,7 @@ pub async fn multi_parts_uploader_from_tg_file(
     progress: Arc<Progress>,
     state: AppState,
 ) -> Result<String> {
-    const WORKER_COUNT: i32 = 10;
+    const WORKER_COUNT: i32 = 4;
 
     let http_client = get_http_client()?;
 
