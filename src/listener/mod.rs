@@ -53,7 +53,15 @@ impl Listener {
 
         tokio::spawn(async move {
             loop {
-                telegram_user.step().await.unwrap();
+                telegram_user
+                    .invoke(
+                        &grammers_client::grammers_tl_types::functions::PingDelayDisconnect {
+                            ping_id: 0,
+                            disconnect_delay: 75,
+                        },
+                    )
+                    .await
+                    .unwrap();
 
                 tokio::time::sleep(std::time::Duration::from_secs(60)).await;
             }
