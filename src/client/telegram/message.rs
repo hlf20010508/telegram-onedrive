@@ -121,9 +121,9 @@ impl TelegramClient {
 
         self.push_queued_message(queued_message).await;
 
-        rx.recv()
-            .await
-            .ok_or_else(|| Error::new("failed to receive message result"))??;
+        if let Some(result) = rx.recv().await {
+            result?;
+        }
 
         Ok(())
     }
@@ -270,6 +270,10 @@ impl MessageVecDeque {
         self.deque.pop_front().map(|queued_message| {
             if let QueuedMessageType::Edit(message_id) = queued_message.message_type {
                 self.key_map.remove(&message_id);
+            }
+
+            for value in self.key_map.values_mut() {
+                *value -= 1;
             }
 
             queued_message
