@@ -49,24 +49,6 @@ impl Listener {
             .await;
         });
 
-        let telegram_user = self.state.telegram_user.raw().clone();
-
-        tokio::spawn(async move {
-            loop {
-                telegram_user
-                    .invoke(
-                        &grammers_client::grammers_tl_types::functions::PingDelayDisconnect {
-                            ping_id: 0,
-                            disconnect_delay: 75,
-                        },
-                    )
-                    .await
-                    .unwrap();
-
-                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
-            }
-        });
-
         loop {
             if let Err(e) = self.handle_message().await {
                 e.trace();

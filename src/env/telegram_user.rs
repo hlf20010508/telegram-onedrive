@@ -5,8 +5,16 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use grammers_client::FixedReconnect;
+use std::time::Duration;
+
 use super::utils::get_arg_value;
 use super::var::TG_USER_SESSION_PATH;
+
+static RECONNECTION_POLICY: FixedReconnect = FixedReconnect {
+    attempts: 5,
+    delay: Duration::from_secs(1),
+};
 
 pub struct TelegramUserEnv {
     pub api_id: i32,
@@ -26,7 +34,11 @@ impl TelegramUserEnv {
         let phone_number = get_arg_value("--tg-user-phone").unwrap();
         let password = get_arg_value("--tg-user-password").ok();
         let session_path = TG_USER_SESSION_PATH.to_string();
-        let params = grammers_client::InitParams::default();
+
+        let params = grammers_client::InitParams {
+            reconnection_policy: &RECONNECTION_POLICY,
+            ..Default::default()
+        };
 
         Self {
             api_id,
