@@ -16,6 +16,7 @@ pub mod link;
 pub mod links;
 pub mod logs;
 pub mod start;
+pub mod test_edit;
 pub mod url;
 mod utils;
 mod var;

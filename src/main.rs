@@ -19,7 +19,9 @@ mod utils;
 
 use std::collections::HashMap;
 
-use handlers::{auth, auto_delete, clear, dir, drive, file, help, link, links, logs, start, url};
+use handlers::{
+    auth, auto_delete, clear, dir, drive, file, help, link, links, logs, start, test_edit, url,
+};
 use listener::{EventType, HashMapExt, Listener};
 use trace::{indenter, trace_registor};
 
@@ -41,6 +43,7 @@ async fn main() {
         .on(EventType::command(drive::PATTERN), drive::handler)
         .on(EventType::command(url::PATTERN), url::handler)
         .on(EventType::command(links::PATTERN), links::handler)
+        .on(EventType::command(test_edit::PATTERN), test_edit::handler)
         .on(EventType::media(), file::handler)
         .on(EventType::text(), link::handler);
 
