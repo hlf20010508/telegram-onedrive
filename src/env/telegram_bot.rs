@@ -6,7 +6,7 @@
 */
 
 use super::utils::get_arg_value;
-use super::var::TG_BOT_SESSION_PATH;
+use super::var::{RECONNECTION_POLICY, TG_BOT_SESSION_PATH};
 
 pub struct TelegramBotEnv {
     pub api_id: i32,
@@ -22,7 +22,10 @@ impl TelegramBotEnv {
         let api_hash = get_arg_value("--tg-api-hash").unwrap();
         let token = get_arg_value("--tg-bot-token").unwrap();
         let session_path = TG_BOT_SESSION_PATH.to_string();
-        let params = grammers_client::InitParams::default();
+        let params = grammers_client::InitParams {
+            reconnection_policy: &RECONNECTION_POLICY,
+            ..Default::default()
+        };
 
         Self {
             api_id,

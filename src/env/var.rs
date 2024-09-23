@@ -5,6 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use grammers_client::FixedReconnect;
+use std::time::Duration;
+
 pub const LOGS_PATH: &str = "./logs";
 
 pub const SESSION_DIR: &str = "./session";
@@ -16,3 +19,8 @@ pub const TASKER_SESSION_PATH: &str = "./session/tasker.session";
 pub const WORKER_NUM: u8 = 5;
 
 pub const BYPASS_PREFIX: &str = "\u{200B}";
+
+pub const RECONNECTION_POLICY: FixedReconnect = FixedReconnect {
+    attempts: 5,
+    delay: Duration::from_secs(1),
+};
