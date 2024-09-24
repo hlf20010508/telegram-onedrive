@@ -23,7 +23,7 @@ use handlers::{auth, auto_delete, clear, dir, drive, file, help, link, links, lo
 use listener::{EventType, HashMapExt, Listener};
 use trace::{indenter, trace_registor};
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
     trace_registor();
 
