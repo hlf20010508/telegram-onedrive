@@ -49,6 +49,11 @@ impl Listener {
             .await;
         });
 
+        let telegram_user = self.state.telegram_user.raw().clone();
+        tokio::spawn(async move {
+            telegram_user.run_until_disconnected().await.unwrap();
+        });
+
         loop {
             if let Err(e) = self.handle_message().await {
                 e.trace();
