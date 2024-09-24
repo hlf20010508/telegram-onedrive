@@ -72,6 +72,8 @@ impl Listener {
                 if let Err(e) = handler.handle_message(message.clone()).await {
                     e.send(message).await.unwrap_both().trace();
                 }
+
+                // return Err::<(), Error>(Error::new("stop"));
             }
         }
 

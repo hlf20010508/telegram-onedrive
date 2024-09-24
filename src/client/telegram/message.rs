@@ -204,6 +204,7 @@ impl TelegramClient {
                                 }
                             }
                             QueuedMessageType::Edit(message_id) => {
+                                println!("call edit inner");
                                 let result = telegram_client
                                     .raw()
                                     .edit_message(chat, message_id, input_message)
@@ -214,6 +215,7 @@ impl TelegramClient {
                                             "failed to respond message",
                                         )
                                     });
+                                println!("edit inner finished");
 
                                 match result {
                                     Ok(()) => Ok(None),

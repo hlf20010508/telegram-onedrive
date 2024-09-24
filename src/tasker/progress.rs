@@ -317,6 +317,7 @@ impl Progress {
                 if let Some(latest_message) = latest_message {
                     if latest_message.id() == *progress_message_id {
                         if *last_progress_response != response {
+                            println!("different response");
                             telegram_bot
                                 .edit_message(
                                     chat,
@@ -325,6 +326,9 @@ impl Progress {
                                 )
                                 .await
                                 .details(&response)?;
+                            println!("editted");
+                        } else {
+                            println!("same response");
                         }
                     } else {
                         telegram_bot

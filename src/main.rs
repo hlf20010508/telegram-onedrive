@@ -25,9 +25,9 @@ use handlers::{
 use listener::{EventType, HashMapExt, Listener};
 use trace::{indenter, trace_registor};
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
-    trace_registor();
+    let _guard = trace_registor();
 
     let events = HashMap::new()
         .on(EventType::command(start::PATTERN), start::handler)

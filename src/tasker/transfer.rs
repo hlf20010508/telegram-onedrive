@@ -57,6 +57,7 @@ pub async fn multi_parts_uploader_from_url(
         .await
         .map_err(|e| Error::new_http_request(e, "failed to send head request for /url"))?;
 
+    println!("current length: {}", current_length);
     let upload_response = loop {
         let mut buffer = Vec::with_capacity(PART_SIZE);
 
@@ -82,6 +83,7 @@ pub async fn multi_parts_uploader_from_url(
         .await?;
 
         current_length += buffer.len() as u64;
+        println!("current length latest: {}", current_length);
         progress
             .set_current_length(id.to_owned(), current_length)
             .await?;

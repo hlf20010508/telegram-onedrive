@@ -59,7 +59,7 @@ axum-server = { version = "0.6.0", default-features = false, features = [
 ] }
 chrono = { version = "0.4.38", default-features = false }
 futures = { version = "0.3.30", default-features = false }
-grammers-client = { git = "https://github.com/Lonami/grammers.git", rev = "b20b7e0fa88a1e39ce2b1f7b2490bae7b8933a0e", default-features = false, features = [
+grammers-client = { path = "../grammers/lib/grammers-client", default-features = false, features = [
     "html",
 ] }
 onedrive-api = { version = "0.10.0", default-features = false }
@@ -107,3 +107,4 @@ ansi_term = { version = "0.12.1", default-features = false }
 du = { version = "0.1.1", default-features = false }
 zip = { version = "2.1.5", default-features = false, features = ["time"] }
 rand = { version = "0.8.5", default-features = false }
+tracing-log = "0.2.0"
