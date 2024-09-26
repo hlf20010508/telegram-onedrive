@@ -83,6 +83,10 @@ tracing-subscriber = { version = "0.3.18", default-features = false, features = 
     "env-filter",
     "chrono",
 ] }
+tracing-log = { version = "0.2.0", default-features = false, features = [
+    "std",
+    "log-tracer",
+] }
 sea-orm = { version = "0.12.15", default-features = false, features = [
     "sqlx-sqlite",
     "runtime-tokio-rustls",

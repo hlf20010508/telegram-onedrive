@@ -25,3 +25,33 @@ impl Visit for MessageVisitor {
         }
     }
 }
+
+#[derive(Default)]
+pub struct MetaVisitor {
+    pub target: String,
+    pub module_path: String,
+    pub file: String,
+    pub line: String,
+}
+
+impl Visit for MetaVisitor {
+    fn record_str(&mut self, field: &Field, value: &str) {
+        match field.name() {
+            "log.target" => self.target.push_str(value),
+            "log.module_path" => self.module_path.push_str(value),
+            "log.file" => self.file.push_str(value),
+            "log.line" => self.line.push_str(value),
+            _ => {}
+        }
+    }
+
+    fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
+        match field.name() {
+            "log.target" => self.target.push_str(&format!("{:?}", value)),
+            "log.module_path" => self.module_path.push_str(&format!("{:?}", value)),
+            "log.file" => self.file.push_str(&format!("{:?}", value)),
+            "log.line" => self.line.push_str(&format!("{:?}", value)),
+            _ => {}
+        }
+    }
+}

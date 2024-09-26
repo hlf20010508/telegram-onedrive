@@ -16,8 +16,8 @@ use tracing_subscriber::layer::Context;
 use tracing_subscriber::registry::LookupSpan;
 use tracing_subscriber::Layer;
 
-use super::formatter::{write_colored_message, write_level, write_time};
-use super::visitor::MessageVisitor;
+use super::formatter::write_message;
+use super::visitor::{MessageVisitor, MetaVisitor};
 use crate::env::LOGS_PATH;
 
 pub enum Coroutine {
@@ -52,60 +52,67 @@ where
 
 pub struct FileIndenterLayer;
 
-impl FileIndenterLayer {
-    fn write_fmt(
-        writer: &mut format::Writer<'_>,
-        event: &tracing::Event<'_>,
-        message: String,
-    ) -> std::fmt::Result {
-        write_time(writer)?;
-        write_level(writer, event)?;
-
-        let level = event.metadata().level();
-
-        write_colored_message(writer, *level, message)?;
-
-        writeln!(writer)
-    }
-}
-
 impl<S> Layer<S> for FileIndenterLayer
 where
     S: Subscriber + for<'lookup> LookupSpan<'lookup>,
 {
     fn on_event(&self, event: &Event<'_>, _: Context<'_, S>) {
-        EVENT_INDENTER.with(|indenter| {
-            let mut visitor = MessageVisitor::default();
-            event.record(&mut visitor);
+        let mut visitor = MessageVisitor::default();
+        event.record(&mut visitor);
 
-            let mut indent = indenter.indent.lock().unwrap();
+        let mut meta_visitor = MetaVisitor::default();
+        event.record(&mut meta_visitor);
+        let module_path = event
+            .metadata()
+            .module_path()
+            .map_or_else(|| meta_visitor.module_path, |s| s.to_string());
 
-            if visitor.message.contains("<-") {
-                *indent -= 1;
-            }
+        let (writer, log_message) = if module_path.starts_with("telegram_onedrive") {
+            EVENT_INDENTER.with(|indenter| {
+                let mut indent = indenter.indent.lock().unwrap();
 
-            let mut indent_spaces = "-".repeat(*indent);
+                if visitor.message.contains("<-") {
+                    *indent -= 1;
+                }
 
-            if !visitor.message.contains("->") && !visitor.message.contains("<-") {
-                indent_spaces.push_str("--|");
-            }
+                let mut indent_spaces = "-".repeat(*indent);
 
-            let log_message = if visitor.message.contains("<-") {
-                let message = visitor.message.replace("<-", "");
-                format!("<-{}{}", indent_spaces, message)
+                if !visitor.message.contains("->") && !visitor.message.contains("<-") {
+                    indent_spaces.push_str("--|");
+                }
+
+                let log_message = if visitor.message.contains("<-") {
+                    let message = visitor.message.replace("<-", "");
+                    format!("<-{}{}", indent_spaces, message)
+                } else {
+                    format!("{}{}", indent_spaces, visitor.message)
+                };
+
+                if visitor.message.contains("->") {
+                    *indent += 1;
+                }
+
+                let writer = get_writer_for_coroutine(&indenter.coroutine);
+
+                (writer, log_message)
+            })
+        } else {
+            let writer = if module_path.starts_with("grammers") {
+                log_builder("grammers")
+            } else if module_path.starts_with("hyper_util") {
+                log_builder("hyper_util")
+            } else if module_path.starts_with("reqwest") {
+                log_builder("reqwest")
             } else {
-                format!("{}{}", indent_spaces, visitor.message)
+                log_builder("others")
             };
 
-            let writer = get_writer_for_coroutine(&indenter.coroutine);
-            let mut fmt_writer = FmtWriter::new(writer);
-            let mut writer = format::Writer::new(&mut fmt_writer);
-            Self::write_fmt(&mut writer, event, log_message).unwrap();
+            (writer, visitor.message)
+        };
 
-            if visitor.message.contains("->") {
-                *indent += 1;
-            }
-        });
+        let mut fmt_writer = FmtWriter::new(writer);
+        let writer = format::Writer::new(&mut fmt_writer);
+        write_message(writer, event, log_message).unwrap();
     }
 }
 
@@ -117,7 +124,7 @@ fn log_builder(name: &str) -> RollingFileAppender {
         .unwrap()
 }
 
-fn get_writer_for_coroutine(coroutine: &Coroutine) -> impl std::io::Write {
+fn get_writer_for_coroutine(coroutine: &Coroutine) -> RollingFileAppender {
     match coroutine {
         Coroutine::Listener => log_builder("listener"),
         Coroutine::Message => log_builder("message"),

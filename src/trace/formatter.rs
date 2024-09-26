@@ -12,17 +12,9 @@ use tracing_subscriber::fmt::{self, FormatFields};
 use tracing_subscriber::fmt::{format, FormatEvent};
 use tracing_subscriber::registry::LookupSpan;
 
-use super::visitor::MessageVisitor;
+use super::visitor::{MessageVisitor, MetaVisitor};
 
-pub struct EventFormatter {
-    color: bool,
-}
-
-impl EventFormatter {
-    pub fn new(color: bool) -> Self {
-        Self { color }
-    }
-}
+pub struct EventFormatter;
 
 impl<S, N> FormatEvent<S, N> for EventFormatter
 where
@@ -31,30 +23,34 @@ where
 {
     fn format_event(
         &self,
-        ctx: &fmt::FmtContext<'_, S, N>,
-        mut writer: format::Writer<'_>,
+        _ctx: &fmt::FmtContext<'_, S, N>,
+        writer: format::Writer<'_>,
         event: &tracing::Event<'_>,
     ) -> std::fmt::Result {
-        write_time(&mut writer)?;
-        write_level(&mut writer, event)?;
+        let mut message_visitor = MessageVisitor::default();
+        event.record(&mut message_visitor);
+        let message = message_visitor.message;
 
-        if self.color {
-            let level = event.metadata().level();
-
-            let mut message_visitor = MessageVisitor::default();
-            event.record(&mut message_visitor);
-            let message = message_visitor.message;
-
-            write_colored_message(&mut writer, *level, message)?;
-        } else {
-            ctx.field_format().format_fields(writer.by_ref(), event)?;
-        }
-
-        writeln!(writer)
+        write_message(writer, event, message)
     }
 }
 
-pub fn write_time(writer: &mut format::Writer<'_>) -> std::fmt::Result {
+pub fn write_message(
+    mut writer: format::Writer<'_>,
+    event: &tracing::Event<'_>,
+    message: String,
+) -> std::fmt::Result {
+    let level = event.metadata().level();
+
+    write_time(&mut writer)?;
+    write_meta(&mut writer, event)?;
+    write!(writer, "{:>5} ", level)?;
+    write_colored_message(&mut writer, *level, message)?;
+
+    writeln!(writer)
+}
+
+fn write_time(writer: &mut format::Writer<'_>) -> std::fmt::Result {
     if ChronoLocal::new("%Y-%m-%d %H:%M:%S%.3f ".to_string())
         .format_time(writer)
         .is_err()
@@ -65,15 +61,7 @@ pub fn write_time(writer: &mut format::Writer<'_>) -> std::fmt::Result {
     Ok(())
 }
 
-pub fn write_level(
-    writer: &mut format::Writer<'_>,
-    event: &tracing::Event<'_>,
-) -> std::fmt::Result {
-    let level = event.metadata().level();
-    write!(writer, "{:>5} ", level)
-}
-
-pub fn write_colored_message(
+fn write_colored_message(
     writer: &mut format::Writer<'_>,
     level: Level,
     mut message: String,
@@ -88,9 +76,33 @@ pub fn write_colored_message(
                 message = Color::Purple.paint(message).to_string();
             } else if message.contains("<-") {
                 message = Color::Cyan.paint(message).to_string();
+            } else {
+                message = Color::Yellow.paint(message).to_string();
             }
         }
     }
 
     write!(writer, "{}", message)
+}
+
+fn write_meta(writer: &mut format::Writer<'_>, event: &tracing::Event<'_>) -> std::fmt::Result {
+    let mut meta_visitor = MetaVisitor::default();
+    event.record(&mut meta_visitor);
+
+    let module_path = event
+        .metadata()
+        .module_path()
+        .map_or_else(|| meta_visitor.module_path, |s| s.to_string());
+
+    let file = event
+        .metadata()
+        .file()
+        .map_or_else(|| meta_visitor.file, |s| s.to_string());
+
+    let line = event
+        .metadata()
+        .line()
+        .map_or_else(|| meta_visitor.line, |u| u.to_string());
+
+    writeln!(writer, " {} {}:{}", module_path, file, line)
 }
