@@ -10,7 +10,7 @@ mod docs;
 mod send;
 
 use grammers_client::InputMessage;
-use proc_macros::{add_context, add_trace, check_in_group, check_senders, check_tg_login};
+use proc_macros::{add_context, add_trace, check_in_group, check_senders};
 use tokio::fs;
 
 use clear::clear_logs;
@@ -24,7 +24,6 @@ use crate::state::AppState;
 
 pub const PATTERN: &str = "/logs";
 
-#[check_tg_login]
 #[check_senders]
 #[check_in_group]
 #[add_context]
