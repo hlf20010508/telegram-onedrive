@@ -15,7 +15,7 @@ use grammers_client::InputMessage;
 
 use add::add_drive;
 use logout::{logout_current_drive, logout_drive};
-use proc_macros::{add_context, add_trace, check_in_group, check_od_login, check_senders};
+use proc_macros::{add_context, add_trace, check_in_group, check_senders};
 use set::set_drive;
 use show::show_drive;
 
@@ -26,7 +26,6 @@ use crate::state::AppState;
 
 pub const PATTERN: &str = "/drive";
 
-#[check_od_login]
 #[check_senders]
 #[check_in_group]
 #[add_context]
