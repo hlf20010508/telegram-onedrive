@@ -32,6 +32,7 @@ future_not_send = "allow"
 derive_partial_eq_without_eq = "allow"
 missing_const_for_fn = "allow"
 option_if_let_else = "allow"
+or_fun_call = "allow"
 
 [workspace.metadata.dylint]
 libraries = [{ path = "./lint", pattern = "unused_await" }]

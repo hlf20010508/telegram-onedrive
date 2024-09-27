@@ -143,12 +143,15 @@ impl TelegramClient {
 
     #[add_trace]
     pub async fn push_queued_message(&self, queued_message: QueuedMessage) {
-        self.message_queue().lock().await.push_back(queued_message);
+        self.chat_message_queue()
+            .lock()
+            .await
+            .push_back(queued_message);
     }
 
     #[add_trace]
     pub fn run_message_loop(&self) {
-        let message_queue = self.message_queue();
+        let chat_message_queue = self.chat_message_queue();
         let telegram_client = self.clone();
 
         let mut rng = {
@@ -159,74 +162,86 @@ impl TelegramClient {
         tokio::spawn(async move {
             indenter::set_file_indenter(indenter::Coroutine::Message, async {
                 loop {
-                    if let Some(QueuedMessage {
-                        message_type,
-                        input_message,
-                        chat,
-                        tx,
-                    }) = message_queue.lock().await.pop_front()
-                    {
-                        let message_result = match message_type {
-                            QueuedMessageType::Respond => {
-                                let result = telegram_client
-                                    .raw()
-                                    .send_message(chat, input_message)
-                                    .await
-                                    .map_err(|e| {
-                                        Error::new_telegram_invocation(
-                                            e,
-                                            "failed to respond message",
-                                        )
-                                    });
+                    let mut chat_message_queue = chat_message_queue.lock().await;
 
-                                match result {
-                                    Ok(message_raw) => Ok(Some(TelegramMessage::new(
-                                        telegram_client.clone(),
-                                        message_raw,
-                                    ))),
-                                    Err(e) => Err(e),
+                    let chat_ids = chat_message_queue.keys().copied().collect::<Vec<i64>>();
+                    for chat_id in chat_ids {
+                        if let Some(QueuedMessage {
+                            message_type,
+                            input_message,
+                            chat,
+                            tx,
+                        }) = chat_message_queue.pop_front(chat_id)
+                        {
+                            let message_result = match message_type {
+                                QueuedMessageType::Respond => {
+                                    let result = telegram_client
+                                        .raw()
+                                        .send_message(chat, input_message)
+                                        .await
+                                        .map_err(|e| {
+                                            Error::new_telegram_invocation(
+                                                e,
+                                                "failed to respond message",
+                                            )
+                                        });
+
+                                    match result {
+                                        Ok(message_raw) => Ok(Some(TelegramMessage::new(
+                                            telegram_client.clone(),
+                                            message_raw,
+                                        ))),
+                                        Err(e) => Err(e),
+                                    }
                                 }
-                            }
-                            QueuedMessageType::Reply(message_id) => {
-                                let result = telegram_client
-                                    .raw()
-                                    .send_message(chat, input_message.reply_to(Some(message_id)))
-                                    .await
-                                    .map_err(|e| {
-                                        Error::new_telegram_invocation(
-                                            e,
-                                            "failed to respond message",
+                                QueuedMessageType::Reply(message_id) => {
+                                    let result = telegram_client
+                                        .raw()
+                                        .send_message(
+                                            chat,
+                                            input_message.reply_to(Some(message_id)),
                                         )
-                                    });
+                                        .await
+                                        .map_err(|e| {
+                                            Error::new_telegram_invocation(
+                                                e,
+                                                "failed to respond message",
+                                            )
+                                        });
 
-                                match result {
-                                    Ok(message_raw) => Ok(Some(TelegramMessage::new(
-                                        telegram_client.clone(),
-                                        message_raw,
-                                    ))),
-                                    Err(e) => Err(e),
+                                    match result {
+                                        Ok(message_raw) => Ok(Some(TelegramMessage::new(
+                                            telegram_client.clone(),
+                                            message_raw,
+                                        ))),
+                                        Err(e) => Err(e),
+                                    }
                                 }
-                            }
-                            QueuedMessageType::Edit(message_id) => {
-                                let result = telegram_client
-                                    .raw()
-                                    .edit_message(chat, message_id, input_message)
-                                    .await
-                                    .map_err(|e| {
-                                        Error::new_telegram_invocation(
-                                            e,
-                                            "failed to respond message",
-                                        )
-                                    });
+                                QueuedMessageType::Edit(message_id) => {
+                                    let result = telegram_client
+                                        .raw()
+                                        .edit_message(chat, message_id, input_message)
+                                        .await
+                                        .map_err(|e| {
+                                            Error::new_telegram_invocation(
+                                                e,
+                                                "failed to respond message",
+                                            )
+                                        });
 
-                                match result {
-                                    Ok(()) => Ok(None),
-                                    Err(e) => Err(e),
+                                    match result {
+                                        Ok(()) => Ok(None),
+                                        Err(e) => Err(e),
+                                    }
                                 }
-                            }
-                        };
+                            };
 
-                        tx.send(message_result).await.unwrap();
+                            tx.send(message_result).await.unwrap();
+                        }
+
+                        if chat_message_queue.get(&chat_id).unwrap().is_empty() {
+                            chat_message_queue.remove(&chat_id);
+                        }
                     }
 
                     let millis = rng.gen_range(1500..4000);
@@ -251,8 +266,7 @@ impl MessageVecDeque {
         }
     }
 
-    #[add_trace]
-    pub fn push_back(&mut self, queued_message: QueuedMessage) {
+    fn push_back(&mut self, queued_message: QueuedMessage) {
         match queued_message.message_type {
             QueuedMessageType::Respond | QueuedMessageType::Reply(_) => {
                 self.deque.push_back(queued_message);
@@ -269,7 +283,7 @@ impl MessageVecDeque {
         }
     }
 
-    pub fn pop_front(&mut self) -> Option<QueuedMessage> {
+    fn pop_front(&mut self) -> Option<QueuedMessage> {
         self.deque.pop_front().map(|queued_message| {
             if let QueuedMessageType::Edit(message_id) = queued_message.message_type {
                 self.key_map.remove(&message_id);
@@ -281,5 +295,30 @@ impl MessageVecDeque {
 
             queued_message
         })
+    }
+
+    fn is_empty(&self) -> bool {
+        self.deque.is_empty()
+    }
+}
+
+pub type ChatMessageVecDeque = HashMap<i64, MessageVecDeque>;
+
+trait ChatMessageHashMapExt {
+    fn push_back(&mut self, queued_message: QueuedMessage);
+
+    fn pop_front(&mut self, chat_id: i64) -> Option<QueuedMessage>;
+}
+
+impl ChatMessageHashMapExt for ChatMessageVecDeque {
+    #[add_trace]
+    fn push_back(&mut self, queued_message: QueuedMessage) {
+        self.entry(queued_message.chat.id)
+            .or_insert(MessageVecDeque::new())
+            .push_back(queued_message);
+    }
+
+    fn pop_front(&mut self, chat_id: i64) -> Option<QueuedMessage> {
+        self.get_mut(&chat_id)?.pop_front()
     }
 }

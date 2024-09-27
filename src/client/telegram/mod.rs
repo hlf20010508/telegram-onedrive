@@ -14,7 +14,7 @@ use proc_macros::{add_context, add_trace};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use message::MessageVecDeque;
+use message::ChatMessageVecDeque;
 
 use super::utils::{socketio_client, socketio_disconnect};
 use crate::auth_server::TG_CODE_EVENT;
@@ -22,18 +22,18 @@ use crate::env::{Env, TelegramBotEnv, TelegramUserEnv};
 use crate::error::{Error, Result};
 use crate::message::TelegramMessage;
 
-// messages to be sent or edited
-type MessageQueue = Arc<Mutex<MessageVecDeque>>;
+// messages to be sent or edited in each chat
+type ChatMessageQueue = Arc<Mutex<ChatMessageVecDeque>>;
 
 #[derive(Clone)]
 pub enum TelegramClient {
     Bot {
         client: Client,
-        message_queue: MessageQueue,
+        chat_message_queue: ChatMessageQueue,
     },
     User {
         client: Client,
-        message_queue: MessageQueue,
+        chat_message_queue: ChatMessageQueue,
     },
 }
 
@@ -90,7 +90,7 @@ impl TelegramClient {
 
         let telegram_client = Self::Bot {
             client,
-            message_queue: Arc::new(Mutex::new(MessageVecDeque::new())),
+            chat_message_queue: Arc::new(Mutex::new(ChatMessageVecDeque::new())),
         };
 
         telegram_client.run_message_loop();
@@ -133,7 +133,7 @@ impl TelegramClient {
 
         let telegram_client = Self::User {
             client,
-            message_queue: Arc::new(Mutex::new(MessageVecDeque::new())),
+            chat_message_queue: Arc::new(Mutex::new(ChatMessageVecDeque::new())),
         };
 
         telegram_client.run_message_loop();
@@ -147,11 +147,14 @@ impl TelegramClient {
         }
     }
 
-    fn message_queue(&self) -> MessageQueue {
+    fn chat_message_queue(&self) -> ChatMessageQueue {
         match self {
-            Self::Bot { message_queue, .. } | Self::User { message_queue, .. } => {
-                message_queue.clone()
+            Self::Bot {
+                chat_message_queue, ..
             }
+            | Self::User {
+                chat_message_queue, ..
+            } => chat_message_queue.clone(),
         }
     }
 
