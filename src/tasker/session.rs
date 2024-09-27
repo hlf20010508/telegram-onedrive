@@ -71,7 +71,6 @@ impl TaskSession {
     }
 
     #[add_context]
-    #[add_trace]
     pub async fn fetch_task(&self) -> Result<Option<tasks::Model>> {
         let task = tasks::Entity::find()
             .filter(tasks::Column::Status.eq(TaskStatus::Waiting))
@@ -161,7 +160,6 @@ impl TaskSession {
     }
 
     #[add_context]
-    #[add_trace]
     pub async fn get_chats_tasks(&self) -> Result<HashMap<ChatHex, ChatTasks>> {
         let mut chats = HashMap::new();
 

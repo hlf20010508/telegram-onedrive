@@ -269,7 +269,6 @@ impl MessageVecDeque {
         }
     }
 
-    #[add_trace]
     pub fn pop_front(&mut self) -> Option<QueuedMessage> {
         self.deque.pop_front().map(|queued_message| {
             if let QueuedMessageType::Edit(message_id) = queued_message.message_type {

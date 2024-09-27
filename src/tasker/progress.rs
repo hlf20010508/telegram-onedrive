@@ -63,7 +63,6 @@ impl Progress {
     }
 
     #[add_context]
-    #[add_trace]
     async fn handle_chat_tasks_progress(
         &self,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
@@ -218,7 +217,6 @@ impl Progress {
     }
 
     #[add_context]
-    #[add_trace]
     async fn remove_chats_without_tasks(
         &self,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
@@ -244,6 +242,8 @@ impl Progress {
                         e.send_chat(telegram_bot, chat).await.unwrap_both().trace();
                     }
                 }
+
+                tracing::debug!("chat without tasks to be removed: {}", chat.id);
 
                 chat_to_be_removed.push(chat_bot_hex.clone());
             }

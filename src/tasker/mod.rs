@@ -11,7 +11,7 @@ mod session;
 mod tasks;
 mod transfer;
 
-use proc_macros::{add_context, add_trace};
+use proc_macros::add_context;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Semaphore;
@@ -79,7 +79,6 @@ impl Tasker {
     }
 
     #[add_context]
-    #[add_trace]
     async fn handle_tasks(&self, semaphore: Arc<Semaphore>, handler_id: u8) -> Result<()> {
         let task = self.session.fetch_task().await?;
 
