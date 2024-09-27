@@ -22,6 +22,8 @@ use crate::message::TelegramMessage;
 pub async fn send_log_zip(telegram_bot: &TelegramClient, message: TelegramMessage) -> Result<()> {
     const ZIP_PATH: &str = "./logs.zip";
 
+    message.respond("Sending logs...").await?;
+
     zip_dir(LOGS_PATH, ZIP_PATH)?;
 
     let file = telegram_bot.upload_file(ZIP_PATH).await.context("logs")?;
