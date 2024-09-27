@@ -92,7 +92,11 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                     None,
                     None,
                 )
-                .await
+                .await?;
+
+            tracing::info!("inserted url task: {} size: {}", filename, total_length);
+
+            Ok(())
         } else {
             Err(Error::new("not an http url"))
         }

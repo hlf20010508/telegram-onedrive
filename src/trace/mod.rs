@@ -33,15 +33,7 @@ pub fn trace_registor() {
     tracing_subscriber::registry()
         .with(stdout_layer)
         .with(FileIndenterLayer)
-        .with(
-            EnvFilter::new("trace")
-                .add_directive(
-                    format!("telegram_onedrive={}", trace_level)
-                        .parse()
-                        .unwrap(),
-                )
-                .add_directive("sqlx=error".parse().unwrap()),
-        )
+        .with(EnvFilter::new(trace_level).add_directive("sqlx=error".parse().unwrap()))
         .init();
 
     cleaner::run();

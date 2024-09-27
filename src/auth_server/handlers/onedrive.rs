@@ -24,6 +24,8 @@ pub async fn code_handler(
     Extension(socketio): Extension<Arc<SocketIo>>,
     Query(CodeParams { code }): Query<CodeParams>,
 ) -> Result<String> {
+    tracing::debug!("received od auth code: {}", code);
+
     socketio
         .emit(OD_CODE_EVENT, code)
         .map_err(|e| Error::new_socket_io_server_broadcast(e, "failed to emit od_code"))?;

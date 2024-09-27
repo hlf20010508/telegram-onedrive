@@ -39,6 +39,8 @@ impl TelegramClient {
 
         let message = TelegramMessage::new(self.clone(), message_raw);
 
+        tracing::debug!("got message {} in chat {}", message_id, message.chat().id());
+
         Ok(message)
     }
 
@@ -62,6 +64,8 @@ impl TelegramClient {
                     None => chat.usernames().contains(&chat_username.as_str()),
                 },
             } {
+                tracing::debug!("got chat {}", chat.id());
+
                 return Ok(chat.to_owned());
             }
         }

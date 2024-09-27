@@ -72,6 +72,8 @@ pub async fn multi_parts_uploader_from_url(
             }
         }
 
+        tracing::debug!("downloaded chunk from url");
+
         let upload_response = upload_file(
             &upload_session,
             &buffer,
@@ -80,6 +82,8 @@ pub async fn multi_parts_uploader_from_url(
             &http_client,
         )
         .await?;
+
+        tracing::debug!("uploaded chunk from url");
 
         current_length += buffer.len() as u64;
         progress
@@ -95,6 +99,12 @@ pub async fn multi_parts_uploader_from_url(
         .ok_or_else(|| Error::new("failed to get drive item after upload"))?
         .name
         .ok_or_else(|| Error::new("drive item name not found"))?;
+
+    tracing::info!(
+        "uploaded file from url: {} size: {}",
+        filename,
+        total_length
+    );
 
     Ok(filename)
 }
@@ -209,6 +219,8 @@ pub async fn multi_parts_uploader_from_tg_file(
                 chunk.append(&mut chunk_part);
             }
 
+            tracing::debug!("downloaded chunk from telegram");
+
             upload_response = upload_file(
                 &upload_session,
                 &chunk,
@@ -217,6 +229,8 @@ pub async fn multi_parts_uploader_from_tg_file(
                 &http_client,
             )
             .await?;
+
+            tracing::debug!("uploaded chunk from telegram");
 
             current_length += chunk.len() as u64;
             progress
@@ -233,6 +247,12 @@ pub async fn multi_parts_uploader_from_tg_file(
     if message_id_forward.is_some() {
         message.delete().await?;
     }
+
+    tracing::info!(
+        "uploaded file from telegram: {} size: {}",
+        filename,
+        total_length
+    );
 
     Ok(filename)
 }

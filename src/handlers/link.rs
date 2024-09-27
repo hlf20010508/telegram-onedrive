@@ -118,5 +118,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         )
         .await?;
 
+    tracing::info!("inserted link task: {} size: {}", filename, total_length);
+
     Ok(())
 }

@@ -20,6 +20,8 @@ impl TelegramClient {
     #[add_context]
     #[add_trace]
     pub async fn upload_file<P: AsRef<Path>>(&self, path: P) -> Result<Uploaded> {
+        tracing::info!("uploading file: {}", path.as_ref().to_string_lossy());
+
         self.raw()
             .upload_file(path)
             .await
@@ -34,6 +36,8 @@ impl TelegramClient {
         size: usize,
         name: String,
     ) -> Result<Uploaded> {
+        tracing::info!("uploading stream: {} size: {}", name, size);
+
         self.raw()
             .upload_stream(stream, size, name)
             .await

@@ -165,6 +165,8 @@ fn get_filename_from_cd(response: &Response) -> Result<Option<String>> {
                     .trim_matches('"')
                     .to_string();
 
+                tracing::debug!("got url filename from Content-Disposition: {}", filename);
+
                 return Ok(Some(filename));
             }
         }
@@ -215,6 +217,8 @@ fn get_filename_from_url(url: &str) -> Result<Option<String>> {
     if filename.is_empty() {
         Ok(None)
     } else {
+        tracing::debug!("got url filename from url: {}", filename);
+
         Ok(Some(filename))
     }
 }

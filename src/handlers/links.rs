@@ -53,6 +53,8 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
         let chat_origin = telegram_user.get_chat(&chat_entity).await?;
 
+        tracing::info!("processing links task...");
+
         for offset in 0..link_num {
             let message_origin_id = head_message_id + offset as i32;
 
@@ -142,6 +144,12 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                     Some(message_origin.id()),
                 )
                 .await?;
+
+            tracing::info!(
+                "inserted link task for links: {} size: {}",
+                filename,
+                total_length
+            );
         }
 
         telegram_user

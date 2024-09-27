@@ -49,6 +49,8 @@ impl Handler {
 
         for event in self.get_event_names() {
             if text.starts_with(event.to_str()) {
+                tracing::info!("handle command {}", event);
+
                 self.trigger(event, message).await?;
                 break;
             }
@@ -66,6 +68,8 @@ impl Handler {
             if text.starts_with('/') {
                 self.handle_command(message).await?;
             } else {
+                tracing::info!("handle text");
+
                 self.trigger(EventType::Text, message).await?;
             }
         }
@@ -76,6 +80,8 @@ impl Handler {
     #[add_context]
     #[add_trace]
     async fn handle_media(&self, message: TelegramMessage) -> Result<()> {
+        tracing::info!("handle media");
+
         self.trigger(EventType::Media, message).await
     }
 

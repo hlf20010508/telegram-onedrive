@@ -161,9 +161,13 @@ impl Tasker {
 
             match task.cmd_type {
                 CmdType::Url => {
+                    tracing::info!("handle url task");
+
                     handle_task!(url);
                 }
                 CmdType::File | CmdType::Link => {
+                    tracing::info!("handle file or link task");
+
                     handle_task!(file);
                 }
             }

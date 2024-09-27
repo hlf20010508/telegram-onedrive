@@ -39,6 +39,8 @@ pub async fn code_handler(
     Extension(socketio): Extension<Arc<SocketIo>>,
     Json(CodeParams { code }): Json<CodeParams>,
 ) -> Result<Response> {
+    tracing::debug!("received tg auth code: {}", code);
+
     socketio
         .emit(TG_CODE_EVENT, code)
         .map_err(|e| Error::new_socket_io_server_broadcast(e, "failed to emit tg_code"))?;
