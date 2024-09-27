@@ -67,7 +67,9 @@ where
             .module_path()
             .map_or_else(|| meta_visitor.module_path, |s| s.to_string());
 
-        let (writer, log_message) = if module_path.starts_with("telegram_onedrive") {
+        let (writer, log_message) = if module_path.starts_with("telegram_onedrive")
+            && !module_path.contains("auth_server::handlers")
+        {
             EVENT_INDENTER.with(|indenter| {
                 let mut indent = indenter.indent.lock().unwrap();
 
@@ -103,6 +105,8 @@ where
                 log_builder("hyper_util")
             } else if module_path.starts_with("reqwest") {
                 log_builder("reqwest")
+            } else if module_path.starts_with("telegram_onedrive::auth_server::handlers") {
+                log_builder("auth_server")
             } else {
                 log_builder("others")
             };
