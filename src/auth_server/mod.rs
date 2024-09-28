@@ -64,7 +64,8 @@ pub async fn spawn(
                 .handle(shutdown_handle_clone)
                 .serve(router.into_make_service())
                 .await
-                .unwrap();
+                .map_err(|e| Error::new("auth server failed to serve").raw(e))
+                .trace();
         })
         .abort_handle()
     } else {
@@ -77,7 +78,8 @@ pub async fn spawn(
                 .handle(shutdown_handle_clone)
                 .serve(router.into_make_service())
                 .await
-                .unwrap();
+                .map_err(|e| Error::new("auth server failed to serve").raw(e))
+                .trace();
         })
         .abort_handle()
     };

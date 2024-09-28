@@ -5,6 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::error::ResultExt;
+
 use super::utils::get_arg_value;
 use super::var::{RECONNECTION_POLICY, TG_BOT_SESSION_PATH};
 
@@ -18,9 +20,9 @@ pub struct TelegramBotEnv {
 
 impl TelegramBotEnv {
     pub fn new() -> Self {
-        let api_id = get_arg_value("--tg-api-id").unwrap();
-        let api_hash = get_arg_value("--tg-api-hash").unwrap();
-        let token = get_arg_value("--tg-bot-token").unwrap();
+        let api_id = get_arg_value("--tg-api-id").unwrap_or_trace();
+        let api_hash = get_arg_value("--tg-api-hash").unwrap_or_trace();
+        let token = get_arg_value("--tg-bot-token").unwrap_or_trace();
         let session_path = TG_BOT_SESSION_PATH.to_string();
         let params = grammers_client::InitParams {
             reconnection_policy: &RECONNECTION_POLICY,

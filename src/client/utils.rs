@@ -40,9 +40,16 @@ pub async fn socketio_client(
             async move {
                 if let Payload::Text(values) = payload {
                     if let Some(value) = values.first() {
-                        let code = serde_json::from_value::<String>(value.to_owned()).unwrap();
+                        let code = serde_json::from_value::<String>(value.to_owned())
+                            .map_err(|e| {
+                                Error::new("failed to parse code from socketio payload").raw(e)
+                            })
+                            .unwrap_or_trace();
 
-                        tx.send(code).await.unwrap();
+                        tx.send(code)
+                            .await
+                            .map_err(|e| Error::new("failed to send code to rx in socketio").raw(e))
+                            .trace();
                     }
                 }
             }

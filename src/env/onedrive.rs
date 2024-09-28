@@ -5,6 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::error::ResultExt;
+
 use super::utils::{get_arg_value, get_arg_value_option};
 use super::var::OD_SESSION_PATH;
 
@@ -17,8 +19,8 @@ pub struct OneDriveEnv {
 
 impl OneDriveEnv {
     pub fn new() -> Self {
-        let client_id = get_arg_value("--od-client-id").unwrap();
-        let client_secret = get_arg_value("--od-client-secret").unwrap();
+        let client_id = get_arg_value("--od-client-id").unwrap_or_trace();
+        let client_secret = get_arg_value("--od-client-secret").unwrap_or_trace();
         let root_path = get_arg_value_option("--od-root-path", "/".to_string());
         let session_path = OD_SESSION_PATH.to_string();
 

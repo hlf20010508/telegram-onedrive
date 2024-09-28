@@ -21,6 +21,8 @@ pub use var::{BYPASS_PREFIX, LOGS_PATH, WORKER_NUM};
 use utils::{args_contains, get_arg_value, get_arg_value_option};
 use var::SESSION_DIR;
 
+use crate::error::{Error, ResultExt};
+
 pub struct Env {
     pub telegram_bot: TelegramBotEnv,
     pub telegram_user: TelegramUserEnv,
@@ -42,7 +44,7 @@ impl Env {
         let onedrive = OneDriveEnv::new();
         let trace_level = get_arg_value_option("--trace-level", "info".to_string());
         let port = get_arg_value_option("--port", 8080);
-        let server_uri = get_arg_value("--server-uri").unwrap();
+        let server_uri = get_arg_value("--server-uri").unwrap_or_trace();
         let use_reverse_proxy = args_contains("--reverse-proxy");
         let should_auto_delete = args_contains("--auto-delete");
         let tasker_session_path = var::TASKER_SESSION_PATH.to_string();
@@ -61,6 +63,8 @@ impl Env {
     }
 
     fn init() {
-        fs::create_dir_all(SESSION_DIR).unwrap();
+        fs::create_dir_all(SESSION_DIR)
+            .map_err(|e| Error::new("failed to create session dir").raw(e))
+            .unwrap_or_trace();
     }
 }

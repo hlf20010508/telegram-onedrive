@@ -23,7 +23,7 @@ pub use tasks::CmdType;
 
 use crate::client::ext::chat_from_hex;
 use crate::env::WORKER_NUM;
-use crate::error::{Result, ResultUnwrapExt};
+use crate::error::{Error, Result, ResultExt, ResultUnwrapExt};
 use crate::message::TelegramMessage;
 use crate::state::AppState;
 use crate::trace::indenter;
@@ -49,7 +49,7 @@ impl Tasker {
     pub async fn run(&self) {
         tracing::info!("tasker started");
 
-        self.session.clear().await.unwrap();
+        self.session.clear().await.unwrap_or_trace();
 
         let progress_clone = self.progress.clone();
         tokio::spawn(async move {
@@ -66,9 +66,9 @@ impl Tasker {
         loop {
             handler_id += 1;
 
-            if let Err(e) = self.handle_tasks(semaphore.clone(), handler_id).await {
-                e.trace();
-            }
+            self.handle_tasks(semaphore.clone(), handler_id)
+                .await
+                .trace();
 
             if handler_id == WORKER_NUM {
                 handler_id = 0;
@@ -138,7 +138,14 @@ impl Tasker {
                                     Ok(())
                                 }
 
-                                let _permit = semaphore_clone.acquire().await.unwrap();
+                                let _permit = semaphore_clone
+                                    .acquire()
+                                    .await
+                                    .map_err(|e| {
+                                        Error::new("failed to acquire semaphore for task handler")
+                                            .raw(e)
+                                    })
+                                    .unwrap_or_trace();
 
                                 if let Err(e) = handler(
                                     task,

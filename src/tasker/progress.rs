@@ -18,7 +18,7 @@ use tokio::sync::Mutex;
 use super::session::{ChatHex, ChatTasks};
 use super::{tasks, TaskSession};
 use crate::client::ext::chat_from_hex;
-use crate::error::{Error, Result, ResultUnwrapExt};
+use crate::error::{Error, Result, ResultExt, ResultUnwrapExt};
 use crate::state::AppState;
 
 pub struct Progress {
@@ -51,12 +51,9 @@ impl Progress {
         let mut chat_progress_message_id = HashMap::new();
 
         loop {
-            if let Err(e) = self
-                .handle_chat_tasks_progress(&mut chat_progress_message_id)
+            self.handle_chat_tasks_progress(&mut chat_progress_message_id)
                 .await
-            {
-                e.trace();
-            }
+                .trace();
 
             tokio::time::sleep(Duration::from_secs(5)).await;
         }

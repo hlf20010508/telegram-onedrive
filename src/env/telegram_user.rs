@@ -5,6 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::error::ResultExt;
+
 use super::utils::get_arg_value;
 use super::var::{RECONNECTION_POLICY, TG_USER_SESSION_PATH};
 
@@ -20,10 +22,10 @@ pub struct TelegramUserEnv {
 
 impl TelegramUserEnv {
     pub fn new() -> Self {
-        let api_id = get_arg_value("--tg-api-id").unwrap();
-        let api_hash = get_arg_value("--tg-api-hash").unwrap();
+        let api_id = get_arg_value("--tg-api-id").unwrap_or_trace();
+        let api_hash = get_arg_value("--tg-api-hash").unwrap_or_trace();
         let users = Self::parse_users();
-        let phone_number = get_arg_value("--tg-user-phone").unwrap();
+        let phone_number = get_arg_value("--tg-user-phone").unwrap_or_trace();
         let password = get_arg_value("--tg-user-password").ok();
         let session_path = TG_USER_SESSION_PATH.to_string();
         let params = grammers_client::InitParams {

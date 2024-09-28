@@ -13,17 +13,26 @@ use std::thread::{sleep, spawn};
 use std::time::Duration;
 
 use crate::env::LOGS_PATH;
+use crate::error::{Error, ResultExt};
 
 pub fn run() {
     // remove logs older than 7 days
     spawn(|| loop {
-        let re = Regex::new(r"(\d{4}-\d{2}-\d{2})\.\w+\.log").unwrap();
+        let pattern = r"(\d{4}-\d{2}-\d{2})\.\w+\.log";
+        let re = Regex::new(pattern)
+            .map_err(|e| Error::new("invalid regex pattern").raw(e).details(pattern))
+            .unwrap_or_trace();
 
         let cutoff_date = Local::now().naive_local().date() - chrono::Duration::days(7);
 
         if Path::new(LOGS_PATH).exists() {
-            for entry in fs::read_dir(LOGS_PATH).unwrap() {
-                let entry = entry.unwrap();
+            for entry in fs::read_dir(LOGS_PATH)
+                .map_err(|e| Error::new("failed to read logs dir").raw(e))
+                .unwrap_or_trace()
+            {
+                let entry = entry
+                    .map_err(|e| Error::new("failed to visit log file entry").raw(e))
+                    .unwrap_or_trace();
                 let path = entry.path();
 
                 if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
@@ -31,7 +40,13 @@ pub fn run() {
                         if let Some(date_str) = caps.get(1).map(|m| m.as_str()) {
                             if let Ok(file_date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
                                 if file_date < cutoff_date {
-                                    fs::remove_file(&path).unwrap();
+                                    fs::remove_file(&path)
+                                        .map_err(|e| {
+                                            Error::new("failed to remove file")
+                                                .raw(e)
+                                                .details(path.to_string_lossy())
+                                        })
+                                        .trace();
                                 }
                             }
                         }

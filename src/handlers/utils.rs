@@ -20,7 +20,7 @@ use url::Url;
 
 use super::var::{INVALID_COMPONENT, INVALID_NAME};
 use crate::client::TelegramClient;
-use crate::error::{Error, Result};
+use crate::error::{Error, Result, ResultExt};
 use crate::message::{ChatEntity, MessageInfo, TelegramMessage};
 use crate::utils::{get_current_timestamp, get_ext};
 
@@ -69,7 +69,10 @@ where
             .replace("</u>", "")
             .replace("</pre>", "");
 
-        let re = Regex::new("<pre[^>]*>").unwrap();
+        let pattern = "<pre[^>]*>";
+        let re = Regex::new(pattern)
+            .map_err(|e| Error::new("invalid regex pattern").raw(e).details(pattern))
+            .unwrap_or_trace();
         re.replace_all(&text, "").to_string()
     }
 
@@ -151,7 +154,10 @@ fn get_filename_from_cd(response: &Response) -> Result<Option<String>> {
             Error::new("header Content-Disposition has invisible ASCII chars").raw(e)
         })?;
 
-        let re = Regex::new(r"filename=(.+)").unwrap();
+        let pattern = r"filename=(.+)";
+        let re = Regex::new(pattern)
+            .map_err(|e| Error::new("invalid regex pattern").raw(e).details(pattern))
+            .unwrap_or_trace();
 
         let filename = re
             .captures(cd)
@@ -230,7 +236,10 @@ fn guess_exts(content_type: &str) -> Vec<String> {
         let mut content_type = content_type.trim().to_string();
 
         // text/html; charset=utf-8
-        let re = Regex::new(r"([^;]+)").unwrap();
+        let pattern = r"([^;]+)";
+        let re = Regex::new(pattern)
+            .map_err(|e| Error::new("invalid regex pattern").raw(e).details(pattern))
+            .unwrap_or_trace();
 
         if let Some(cap) = re.captures(&content_type) {
             if let Some(mime_type) = cap.get(1) {

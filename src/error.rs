@@ -71,8 +71,8 @@ impl Error {
         self
     }
 
-    pub fn trace(self) {
-        tracing::error!("{}", self.to_string());
+    pub fn trace(&self) {
+        tracing::error!("{}", self);
     }
 
     #[add_context]
@@ -148,6 +148,10 @@ pub trait ResultExt<T> {
     fn context<U>(self, message_context: U) -> Result<T>
     where
         U: Display;
+
+    fn trace(self);
+
+    fn unwrap_or_trace(self) -> T;
 }
 
 impl<T> ResultExt<T> for Result<T> {
@@ -163,6 +167,19 @@ impl<T> ResultExt<T> for Result<T> {
         U: Display,
     {
         self.map_err(|e| e.context(message_context))
+    }
+
+    fn trace(self) {
+        if let Err(e) = self {
+            e.trace();
+        }
+    }
+
+    fn unwrap_or_trace(self) -> T {
+        self.unwrap_or_else(|e| {
+            e.trace();
+            panic!("{}", e);
+        })
     }
 }
 

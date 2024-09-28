@@ -16,7 +16,7 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 
 use super::TelegramClient;
-use crate::error::{Error, Result};
+use crate::error::{Error, Result, ResultExt};
 use crate::message::{ChatEntity, QueuedMessage, QueuedMessageType, TelegramMessage};
 use crate::trace::indenter;
 
@@ -156,7 +156,9 @@ impl TelegramClient {
 
         let mut rng = {
             let rng = rand::thread_rng();
-            StdRng::from_rng(rng).unwrap()
+            StdRng::from_rng(rng)
+                .map_err(|e| Error::new("failed to create rng").raw(e))
+                .unwrap_or_trace()
         };
 
         tokio::spawn(async move {
@@ -227,7 +229,12 @@ impl TelegramClient {
                                 }
                             };
 
-                            tx.send(message_result).await.unwrap();
+                            tx.send(message_result)
+                                .await
+                                .map_err(|e| {
+                                    Error::new("failed to send message result to rx").raw(e)
+                                })
+                                .trace();
                         }
 
                         if chat_message_queue.get(&chat_id).unwrap().is_empty() {

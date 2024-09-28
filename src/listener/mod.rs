@@ -19,7 +19,7 @@ use events::Events;
 use handler::Handler;
 
 use crate::env::BYPASS_PREFIX;
-use crate::error::{Result, ResultUnwrapExt};
+use crate::error::{Error, Result, ResultExt, ResultUnwrapExt};
 use crate::message::TelegramMessage;
 use crate::state::{AppState, State};
 use crate::tasker::Tasker;
@@ -51,13 +51,15 @@ impl Listener {
 
         let telegram_user = self.state.telegram_user.raw().clone();
         tokio::spawn(async move {
-            telegram_user.run_until_disconnected().await.unwrap();
+            telegram_user
+                .run_until_disconnected()
+                .await
+                .map_err(|e| Error::new("telegram user disconnected").raw(e))
+                .trace();
         });
 
         loop {
-            if let Err(e) = self.handle_message().await {
-                e.trace();
-            }
+            self.handle_message().await.trace();
         }
     }
 
