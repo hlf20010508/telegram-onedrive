@@ -51,7 +51,7 @@ pub async fn spawn(
         .layer(Extension(Arc::new(socketio)));
 
     let server = TcpListener::bind(format!("0.0.0.0:{}", port))
-        .map_err(|e| Error::new_sys_io(e, "failed to create tcp listener"))?;
+        .map_err(|e| Error::new("failed to create tcp listener").raw(e))?;
 
     let shutdown_handle = Handle::new();
     let shutdown_handle_clone = shutdown_handle.clone();

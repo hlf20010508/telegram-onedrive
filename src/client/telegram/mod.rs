@@ -54,10 +54,7 @@ impl TelegramClient {
         }: &Env,
     ) -> Result<Self> {
         let session = Session::load_file_or_create(session_path).map_err(|e| {
-            Error::new_sys_io(
-                e,
-                "failed to load or create session for telegram bot client",
-            )
+            Error::new("failed to load or create session for telegram bot client").raw(e)
         })?;
 
         let config = Config {
@@ -67,25 +64,24 @@ impl TelegramClient {
             params: params.clone(),
         };
 
-        let client = Client::connect(config).await.map_err(|e| {
-            Error::new_telegram_authorization(e, "failed to create telegram bot client")
-        })?;
+        let client = Client::connect(config)
+            .await
+            .map_err(|e| Error::new("failed to create telegram bot client").raw(e))?;
 
         let is_authorized = client.is_authorized().await.map_err(|e| {
-            Error::new_telegram_invocation(
-                e,
-                "failed to check telegram bot client authorization state",
-            )
+            Error::new("failed to check telegram bot client authorization state").raw(e)
         })?;
 
         if !is_authorized {
-            client.bot_sign_in(token).await.map_err(|e| {
-                Error::new_telegram_authorization(e, "failed to sign in telegram bot")
-            })?;
+            client
+                .bot_sign_in(token)
+                .await
+                .map_err(|e| Error::new("failed to sign in telegram bot").raw(e))?;
 
-            client.session().save_to_file(session_path).map_err(|e| {
-                Error::new_sys_io(e, "failed to save session for telegram bot client")
-            })?;
+            client
+                .session()
+                .save_to_file(session_path)
+                .map_err(|e| Error::new("failed to save session for telegram bot client").raw(e))?;
         }
 
         let telegram_client = Self::Bot {
@@ -114,10 +110,7 @@ impl TelegramClient {
         }: &Env,
     ) -> Result<Self> {
         let session = Session::load_file_or_create(session_path).map_err(|e| {
-            Error::new_sys_io(
-                e,
-                "failed to load or create session for telegram user client",
-            )
+            Error::new("failed to load or create session for telegram user client").raw(e)
         })?;
 
         let config = Config {
@@ -127,9 +120,9 @@ impl TelegramClient {
             params: params.clone(),
         };
 
-        let client = Client::connect(config).await.map_err(|e| {
-            Error::new_telegram_authorization(e, "failed to create telegram user client")
-        })?;
+        let client = Client::connect(config)
+            .await
+            .map_err(|e| Error::new("failed to create telegram user client").raw(e))?;
 
         let telegram_client = Self::User {
             client,
@@ -183,9 +176,10 @@ impl TelegramClient {
         message.respond(response).await.details(response)?;
 
         if !self.is_authorized().await? {
-            let token = client.request_login_code(phone_number).await.map_err(|e| {
-                Error::new_telegram_authorization(e, "failed to request telegram user login code")
-            })?;
+            let token = client
+                .request_login_code(phone_number)
+                .await
+                .map_err(|e| Error::new("failed to request telegram user login code").raw(e))?;
 
             let response = format!(
                 "Please visit {} to input your code to login to Telegram.",
@@ -214,10 +208,7 @@ impl TelegramClient {
                                 .check_password(password_token, password)
                                 .await
                                 .map_err(|e| {
-                                    Error::new_telegram_sign_in(
-                                        e,
-                                        "failed to pass telegram user 2FA",
-                                    )
+                                    Error::new("failed to pass telegram user 2FA").raw(e)
                                 })?;
 
                             break;
@@ -227,17 +218,14 @@ impl TelegramClient {
                     Err(SignInError::InvalidCode) => {
                         message.respond("Code invalid, please input again.").await?;
                     }
-                    Err(e) => Err(Error::new_telegram_sign_in(
-                        e,
-                        "failed to sign in telegram user",
-                    ))?,
+                    Err(e) => Err(Error::new("failed to sign in telegram user").raw(e))?,
                 };
             }
 
             socketio_disconnect(socketio_client).await?;
 
             client.session().save_to_file(session_path).map_err(|e| {
-                Error::new_sys_io(e, "failed to save session for telegram user client")
+                Error::new("failed to save session for telegram user client").raw(e)
             })?;
         }
 
@@ -248,10 +236,7 @@ impl TelegramClient {
     #[add_trace]
     pub async fn is_authorized(&self) -> Result<bool> {
         self.raw().is_authorized().await.map_err(|e| {
-            Error::new_telegram_invocation(
-                e,
-                "failed to check telegram user client authorization state",
-            )
+            Error::new("failed to check telegram user client authorization state").raw(e)
         })
     }
 }

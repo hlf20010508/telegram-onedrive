@@ -34,7 +34,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         if metadata.is_err()
             || (metadata.is_ok()
                 && du::get_size(LOGS_PATH)
-                    .map_err(|e| Error::new_sys_io(e, "failed to get dir size"))?
+                    .map_err(|e| Error::new("failed to get dir size").raw(e))?
                     == 0)
         {
             let response = "Logs not found.";

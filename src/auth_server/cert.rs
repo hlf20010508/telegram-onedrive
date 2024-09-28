@@ -23,7 +23,7 @@ pub async fn get_rustls_config() -> Result<RustlsConfig> {
 
         RustlsConfig::from_pem_file(cert_path, key_path)
             .await
-            .map_err(|e| Error::new_sys_io(e, "failed to create rustls config from pem file"))?
+            .map_err(|e| Error::new("failed to create rustls config from pem file").raw(e))?
     } else {
         tracing::info!("auth server uses self signed cert");
 
@@ -31,7 +31,7 @@ pub async fn get_rustls_config() -> Result<RustlsConfig> {
 
         RustlsConfig::from_pem(cert, key)
             .await
-            .map_err(|e| Error::new_sys_io(e, "failed to create self signed rustls config"))?
+            .map_err(|e| Error::new("failed to create self signed rustls config").raw(e))?
     };
 
     Ok(config)
@@ -43,7 +43,7 @@ fn gen_self_signed_cert() -> Result<(Vec<u8>, Vec<u8>)> {
     let subject_alt_names = vec!["127.0.0.1".to_string(), "localhost".to_string()];
 
     let CertifiedKey { cert, key_pair } = generate_simple_self_signed(subject_alt_names)
-        .map_err(|e| Error::new_cert_gen(e, "failed to generate self signed cert"))?;
+        .map_err(|e| Error::new("failed to generate self signed cert").raw(e))?;
 
     Ok((
         cert.pem().into_bytes(),

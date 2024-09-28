@@ -90,7 +90,7 @@ impl TelegramMessage {
         self.raw
             .delete()
             .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to delete message"))
+            .map_err(|e| Error::new("failed to delete message").raw(e))
     }
 
     pub fn forward_header(&self) -> Option<tl::enums::MessageFwdHeader> {

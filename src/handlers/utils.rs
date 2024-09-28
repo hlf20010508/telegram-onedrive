@@ -93,9 +93,9 @@ pub fn get_filename(url: &str, response: &Response) -> Result<String> {
     };
 
     let content_type = match response.headers().get(header::CONTENT_TYPE) {
-        Some(content_type) => content_type.to_str().map_err(|e| {
-            Error::new_http_header_to_str(e, "header Content-Type has invisible ASCII chars")
-        })?,
+        Some(content_type) => content_type
+            .to_str()
+            .map_err(|e| Error::new("header Content-Type has invisible ASCII chars").raw(e))?,
         None => "application/octet-stream",
     };
 
@@ -148,7 +148,7 @@ pub fn get_filename(url: &str, response: &Response) -> Result<String> {
 fn get_filename_from_cd(response: &Response) -> Result<Option<String>> {
     if let Some(cd) = response.headers().get(header::CONTENT_DISPOSITION) {
         let cd = cd.to_str().map_err(|e| {
-            Error::new_http_header_to_str(e, "header Content-Disposition has invisible ASCII chars")
+            Error::new("header Content-Disposition has invisible ASCII chars").raw(e)
         })?;
 
         let re = Regex::new(r"filename=(.+)").unwrap();
@@ -178,7 +178,7 @@ fn get_filename_from_cd(response: &Response) -> Result<Option<String>> {
 #[add_context]
 #[add_trace]
 fn get_filename_from_url(url: &str) -> Result<Option<String>> {
-    let parsed_url = Url::parse(url).map_err(|e| Error::new_parse_url(e, "failed to parse url"))?;
+    let parsed_url = Url::parse(url).map_err(|e| Error::new("failed to parse url").raw(e))?;
     let captured_value_dict = parsed_url
         .query_pairs()
         .into_iter()
@@ -346,9 +346,11 @@ pub async fn upload_thumb(
             let mut download = client.iter_download(&downloadable);
 
             let mut buffer = Vec::new();
-            while let Some(chunk) = download.next().await.map_err(|e| {
-                Error::new_telegram_invocation(e, "failed to download chunk for thumb")
-            })? {
+            while let Some(chunk) = download
+                .next()
+                .await
+                .map_err(|e| Error::new("failed to download chunk for thumb").raw(e))?
+            {
                 buffer.extend(chunk);
             }
 
@@ -393,7 +395,7 @@ pub fn get_message_info(link: &str) -> Result<MessageInfo> {
     let chat_entity = if is_private {
         let chat_id = message_info_vec[0]
             .parse::<i64>()
-            .map_err(|e| Error::new_parse_int(e, "failed to parse chat id"))?;
+            .map_err(|e| Error::new("failed to parse chat id").raw(e))?;
 
         ChatEntity::from(chat_id)
     } else {
@@ -404,7 +406,7 @@ pub fn get_message_info(link: &str) -> Result<MessageInfo> {
 
     let message_id = message_info_vec[1]
         .parse()
-        .map_err(|e| Error::new_parse_int(e, "failed to parse message id"))?;
+        .map_err(|e| Error::new("failed to parse message id").raw(e))?;
 
     Ok(MessageInfo::new(chat_entity, message_id))
 }

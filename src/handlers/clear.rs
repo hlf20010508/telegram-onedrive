@@ -36,7 +36,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         while let Some(message) = messages
             .next()
             .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to get next message"))?
+            .map_err(|e| Error::new("failed to get next message").raw(e))?
         {
             let id = message.id();
             // id 1 message is a service message that always exists when the group was created and it cannot be deleted

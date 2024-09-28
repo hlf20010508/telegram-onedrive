@@ -28,7 +28,7 @@ pub async fn code_handler(
 
     socketio
         .emit(OD_CODE_EVENT, code)
-        .map_err(|e| Error::new_socket_io_server_broadcast(e, "failed to emit od_code"))?;
+        .map_err(|e| Error::new("failed to emit od_code").raw(e))?;
 
     Ok("Authorization successful!".to_string())
 }

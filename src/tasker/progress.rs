@@ -307,12 +307,7 @@ impl Progress {
                     .limit(1)
                     .next()
                     .await
-                    .map_err(|e| {
-                        Error::new_telegram_invocation(
-                            e,
-                            "failed to iter messages for latest message",
-                        )
-                    })?;
+                    .map_err(|e| Error::new("failed to iter messages for latest message").raw(e))?;
 
                 if let Some(latest_message) = latest_message {
                     if latest_message.id() == *progress_message_id {

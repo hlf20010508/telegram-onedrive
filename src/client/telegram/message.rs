@@ -31,7 +31,7 @@ impl TelegramClient {
             .raw()
             .get_messages_by_id(chat, &[message_id])
             .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to get message by id"))?
+            .map_err(|e| Error::new("failed to get message by id").raw(e))?
             .first()
             .ok_or_else(|| Error::new("message vec is empty"))?
             .to_owned()
@@ -52,7 +52,7 @@ impl TelegramClient {
         while let Some(dialog) = dialogs
             .next()
             .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to get dialog"))?
+            .map_err(|e| Error::new("failed to get dialog").raw(e))?
         {
             let chat = dialog.chat();
 
@@ -88,7 +88,7 @@ impl TelegramClient {
         self.raw()
             .delete_messages(chat, message_ids)
             .await
-            .map_err(|e| Error::new_telegram_invocation(e, "failed to delete messages"))
+            .map_err(|e| Error::new("failed to delete messages").raw(e))
     }
 
     #[add_context]
@@ -138,7 +138,7 @@ impl TelegramClient {
         self.raw()
             .next_update()
             .await
-            .map_err(|e| Error::new_telegram_invocation(e, "Failed to get next update"))
+            .map_err(|e| Error::new("Failed to get next update").raw(e))
     }
 
     #[add_trace]
@@ -180,10 +180,7 @@ impl TelegramClient {
                                         .send_message(chat, input_message)
                                         .await
                                         .map_err(|e| {
-                                            Error::new_telegram_invocation(
-                                                e,
-                                                "failed to respond message",
-                                            )
+                                            Error::new("failed to respond message").raw(e)
                                         });
 
                                     match result {
@@ -203,10 +200,7 @@ impl TelegramClient {
                                         )
                                         .await
                                         .map_err(|e| {
-                                            Error::new_telegram_invocation(
-                                                e,
-                                                "failed to respond message",
-                                            )
+                                            Error::new("failed to respond message").raw(e)
                                         });
 
                                     match result {
@@ -223,10 +217,7 @@ impl TelegramClient {
                                         .edit_message(chat, message_id, input_message)
                                         .await
                                         .map_err(|e| {
-                                            Error::new_telegram_invocation(
-                                                e,
-                                                "failed to respond message",
-                                            )
+                                            Error::new("failed to respond message").raw(e)
                                         });
 
                                     match result {

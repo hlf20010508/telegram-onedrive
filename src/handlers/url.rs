@@ -38,19 +38,20 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         if url.starts_with("http://") || url.starts_with("https://") {
             let http_client = get_http_client()?;
 
-            let response =
-                http_client.head(&url).send().await.map_err(|e| {
-                    Error::new_http_request(e, "failed to send head request for /url")
-                })?;
+            let response = http_client
+                .head(&url)
+                .send()
+                .await
+                .map_err(|e| Error::new("failed to send head request for /url").raw(e))?;
 
             let filename = get_filename(&url, &response)?;
 
             let total_length = match response.headers().get(header::CONTENT_LENGTH) {
                 Some(content_length) => content_length
                     .to_str()
-                    .map_err(|e| Error::new_http_header_to_str(e, "header Content-Length has invisible ASCII chars"))?
+                    .map_err(|e| Error::new( "header Content-Length has invisible ASCII chars").raw(e))?
                     .parse::<u64>()
-                    .map_err(|e| Error::new_parse_int(e, "failed to parse header Content-Length to u64"))?,
+                    .map_err(|e| Error::new( "failed to parse header Content-Length to u64").raw(e))?,
                 None => return Err(Error::new(format!(
                     "Content-Length not found in response headers.\nStatus code:\n{}\nResponse headers:\n{:#?}",
                     response.status(),

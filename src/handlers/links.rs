@@ -44,7 +44,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         let link_head = &cmd[1];
         let link_num = cmd[2]
             .parse::<usize>()
-            .map_err(|e| Error::new_parse_int(e, "failed to parse link number"))?;
+            .map_err(|e| Error::new("failed to parse link number").raw(e))?;
 
         let MessageInfo {
             chat_entity,

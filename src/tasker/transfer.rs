@@ -55,7 +55,7 @@ pub async fn multi_parts_uploader_from_url(
         .get(url)
         .send()
         .await
-        .map_err(|e| Error::new_http_request(e, "failed to send head request for /url"))?;
+        .map_err(|e| Error::new("failed to send head request for /url").raw(e))?;
 
     let upload_response = loop {
         let mut buffer = Vec::with_capacity(PART_SIZE);
@@ -63,7 +63,7 @@ pub async fn multi_parts_uploader_from_url(
         while let Some(chunk) = response
             .chunk()
             .await
-            .map_err(|e| Error::new_http_request(e, "failed to get chunk"))?
+            .map_err(|e| Error::new("failed to get chunk").raw(e))?
         {
             buffer.extend_from_slice(&chunk);
 
@@ -197,12 +197,7 @@ pub async fn multi_parts_uploader_from_tg_file(
                 .skip_chunks(current_chunk_num)
                 .next()
                 .await
-                .map_err(|e| {
-                    Error::new_telegram_invocation(
-                        e,
-                        "failed to get next chunk from tg file downloader",
-                    )
-                })
+                .map_err(|e| Error::new("failed to get next chunk from tg file downloader").raw(e))
         }));
 
         current_chunk_num += 1;
@@ -213,7 +208,7 @@ pub async fn multi_parts_uploader_from_tg_file(
             while let Some(handle) = work_handles.pop_front() {
                 let mut chunk_part = handle
                     .await
-                    .map_err(|e| Error::new(format!("failed to join handle: {}", e)))??
+                    .map_err(|e| Error::new("failed to join handle").raw(e))??
                     .ok_or_else(|| Error::new("failed to get chunk from tg file downloader"))?;
 
                 chunk.append(&mut chunk_part);
@@ -316,7 +311,7 @@ async fn upload_file(
                     continue;
                 }
 
-                return Err(Error::new_onedrive(e, "failed to upload part"));
+                return Err(Error::new("failed to upload part").raw(e));
             }
         }
     }

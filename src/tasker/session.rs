@@ -33,7 +33,7 @@ impl TaskSession {
     async fn connect_db(path: &str) -> Result<DatabaseConnection> {
         let connection = sea_orm::Database::connect(format!("sqlite://{}?mode=rwc", path))
             .await
-            .map_err(|e| Error::new_database(e, "failed to connect to task session"))?;
+            .map_err(|e| Error::new("failed to connect to task session").raw(e))?;
 
         Self::create_table_if_not_exists(&connection).await?;
 
@@ -53,10 +53,11 @@ impl TaskSession {
                 .execute(backend.build(&table_create_statement))
                 .await
                 .map_err(|e| {
-                    Error::new_database(
-                        e,
-                        format!("failed to create table {}", tasks::Entity.table_name()),
-                    )
+                    Error::new(format!(
+                        "failed to create table {}",
+                        tasks::Entity.table_name()
+                    ))
+                    .raw(e)
                 })?;
         }
 
@@ -76,7 +77,7 @@ impl TaskSession {
             .filter(tasks::Column::Status.eq(TaskStatus::Waiting))
             .one(&self.connection)
             .await
-            .map_err(|e| Error::new_database(e, "failed to get a task"))?;
+            .map_err(|e| Error::new("failed to get a task").raw(e))?;
 
         if let Some(task) = &task {
             self.set_task_status(task.id, tasks::TaskStatus::Fetched)
@@ -125,7 +126,7 @@ impl TaskSession {
         tasks::Entity::insert(insert_item)
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new_database(e, "failed to insert url task"))?;
+            .map_err(|e| Error::new("failed to insert url task").raw(e))?;
 
         Ok(())
     }
@@ -138,7 +139,7 @@ impl TaskSession {
             .col_expr(tasks::Column::Status, Expr::value(status))
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new_database(e, "failed to update task status"))?;
+            .map_err(|e| Error::new("failed to update task status").raw(e))?;
 
         Ok(())
     }
@@ -154,7 +155,7 @@ impl TaskSession {
             )
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new_database(e, "failed to update current length"))?;
+            .map_err(|e| Error::new("failed to update current length").raw(e))?;
 
         Ok(())
     }
@@ -169,7 +170,7 @@ impl TaskSession {
                     .filter(tasks::Column::Status.eq(TaskStatus::$status))
                     .all(&self.connection)
                     .await
-                    .map_err(|e| Error::new_database(e, "failed to get chat current tasks"))?;
+                    .map_err(|e| Error::new("failed to get chat current tasks").raw(e))?;
 
                 for task in tasks {
                     chats
@@ -210,7 +211,7 @@ impl TaskSession {
             )
             .count(&self.connection)
             .await
-            .map_err(|e| Error::new_database(e, "failed to get pending tasks number"))
+            .map_err(|e| Error::new("failed to get pending tasks number").raw(e))
     }
 
     #[add_context]
@@ -224,7 +225,7 @@ impl TaskSession {
             )
             .count(&self.connection)
             .await
-            .map_err(|e| Error::new_database(e, "failed to get chat started tasks number"))?
+            .map_err(|e| Error::new("failed to get chat started tasks number").raw(e))?
             > 0;
 
         Ok(has_started_tasks)
@@ -238,7 +239,7 @@ impl TaskSession {
             .col_expr(tasks::Column::Filename, Expr::value(filename))
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new_database(e, "failed to update filename"))?;
+            .map_err(|e| Error::new("failed to update filename").raw(e))?;
 
         Ok(())
     }
@@ -249,7 +250,7 @@ impl TaskSession {
         tasks::Entity::delete_by_id(id)
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new_database(e, "failed to delete task"))?;
+            .map_err(|e| Error::new("failed to delete task").raw(e))?;
 
         Ok(())
     }
@@ -260,7 +261,7 @@ impl TaskSession {
         tasks::Entity::delete_many()
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new_database(e, "failed to clear tasks"))?;
+            .map_err(|e| Error::new("failed to clear tasks").raw(e))?;
 
         Ok(())
     }

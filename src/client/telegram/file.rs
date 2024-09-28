@@ -25,7 +25,7 @@ impl TelegramClient {
         self.raw()
             .upload_file(path)
             .await
-            .map_err(|e| Error::new_sys_io(e, "failed to upload file"))
+            .map_err(|e| Error::new("failed to upload file").raw(e))
     }
 
     #[add_context]
@@ -41,7 +41,7 @@ impl TelegramClient {
         self.raw()
             .upload_stream(stream, size, name)
             .await
-            .map_err(|e| Error::new_sys_io(e, "failed to upload stream"))
+            .map_err(|e| Error::new("failed to upload stream").raw(e))
     }
 
     pub fn iter_download(&self, downloadable: &Downloadable) -> DownloadIter {

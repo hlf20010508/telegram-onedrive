@@ -39,7 +39,7 @@ impl OneDriveClient {
                 DriveItemPutOption::new().conflict_behavior(ConflictBehavior::Rename),
             )
             .await
-            .map_err(|e| Error::new_onedrive(e, "failed to create upload session"))?;
+            .map_err(|e| Error::new("failed to create upload session").raw(e))?;
 
         tracing::debug!("built upload session for {}", filename);
 

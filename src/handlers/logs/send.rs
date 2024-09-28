@@ -30,7 +30,7 @@ pub async fn send_log_zip(telegram_bot: &TelegramClient, message: TelegramMessag
 
     message.respond(InputMessage::default().file(file)).await?;
 
-    std::fs::remove_file(ZIP_PATH).map_err(|e| Error::new_sys_io(e, "failed to remove file"))?;
+    std::fs::remove_file(ZIP_PATH).map_err(|e| Error::new("failed to remove file").raw(e))?;
 
     Ok(())
 }
@@ -39,7 +39,7 @@ pub async fn send_log_zip(telegram_bot: &TelegramClient, message: TelegramMessag
 #[add_trace]
 fn zip_dir<P: AsRef<Path>>(input_path: P, output_path: P) -> Result<()> {
     let zip_file = std::fs::File::create(&output_path)
-        .map_err(|e| Error::new_sys_io(e, "failed to create file"))?;
+        .map_err(|e| Error::new("failed to create file").raw(e))?;
     let mut zip = zip::ZipWriter::new(zip_file);
 
     let options = SimpleFileOptions::default();
@@ -47,7 +47,7 @@ fn zip_dir<P: AsRef<Path>>(input_path: P, output_path: P) -> Result<()> {
     add_entry(input_path.as_ref(), input_path.as_ref(), &mut zip, options)?;
 
     zip.finish()
-        .map_err(|e| Error::new_zip(e, "failed to finish zip"))?;
+        .map_err(|e| Error::new("failed to finish zip").raw(e))?;
 
     Ok(())
 }
@@ -68,32 +68,34 @@ fn add_entry(
 
     if path.is_file() {
         zip.start_file(name.to_slash_lossy(), options)
-            .map_err(|e| Error::new_zip(e, "failed to start zip file"))?;
+            .map_err(|e| Error::new("failed to start zip file").raw(e))?;
 
         let mut file =
-            std::fs::File::open(path).map_err(|e| Error::new_sys_io(e, "failed to open file"))?;
+            std::fs::File::open(path).map_err(|e| Error::new("failed to open file").raw(e))?;
 
         loop {
             let size = file
                 .read(&mut buffer)
-                .map_err(|e| Error::new_sys_io(e, "failed to read file"))?;
+                .map_err(|e| Error::new("failed to read file").raw(e))?;
 
             if size == 0 {
                 break;
             }
 
             zip.write_all(&buffer[..size])
-                .map_err(|e| Error::new_sys_io(e, "failed to write file"))?;
+                .map_err(|e| Error::new("failed to write file").raw(e))?;
         }
     } else if path.is_dir() {
         zip.add_directory(name.to_slash_lossy(), options)
-            .map_err(|e| Error::new_zip(e, "failed to add directory to zip"))?;
+            .map_err(|e| Error::new("failed to add directory to zip").raw(e))?;
 
         for entry in std::fs::read_dir(path)
-            .map_err(|e| Error::new_sys_io(e, "failed to read dir").context("sub dir"))?
+            .map_err(|e| Error::new("failed to read dir").raw(e).context("sub dir"))?
         {
             let entry = entry.map_err(|e| {
-                Error::new_sys_io(e, "failed to read dir entry").context("sub dir entry")
+                Error::new("failed to read dir entry")
+                    .raw(e)
+                    .context("sub dir entry")
             })?;
 
             add_entry(base_path, &entry.path(), zip, options)?;

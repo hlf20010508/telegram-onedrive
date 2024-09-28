@@ -49,7 +49,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             // /drive $index
             let index = cmd[1]
                 .parse::<usize>()
-                .map_err(|e| Error::new_parse_int(e, "account index should be integer"))?
+                .map_err(|e| Error::new("account index should be integer").raw(e))?
                 - 1;
 
             set_drive(onedrive, message, index).await?;
@@ -59,7 +59,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             // /drive logout $index
             let index = cmd[2]
                 .parse::<usize>()
-                .map_err(|e| Error::new_parse_int(e, "account index should be integer"))?
+                .map_err(|e| Error::new("account index should be integer").raw(e))?
                 - 1;
 
             logout_drive(onedrive, message, index).await?;

@@ -14,5 +14,5 @@ use crate::error::{Error, Result};
 #[add_trace]
 pub fn chat_from_hex(chat_hex: &str) -> Result<PackedChat> {
     PackedChat::from_hex(chat_hex)
-        .map_err(|e| Error::new_telegram_packed_chat("failed to parse chat hex to packed chat", e))
+        .map_err(|e| Error::new("failed to parse chat hex to packed chat").raw(e))
 }

@@ -17,13 +17,14 @@ use crate::message::TelegramMessage;
 pub async fn clear_logs(message: TelegramMessage) -> Result<()> {
     while let Some(entry) = fs::read_dir(LOGS_PATH)
         .await
-        .map_err(|e| Error::new_sys_io(e, "failed to read logs dir"))?
+        .map_err(|e| Error::new("failed to read logs dir").raw(e))?
         .next_entry()
         .await
-        .map_err(|e| Error::new_sys_io(e, "failed to read next entry in logs dir"))?
+        .map_err(|e| Error::new("failed to read next entry in logs dir").raw(e))?
     {
         fs::remove_file(entry.path()).await.map_err(|e| {
-            Error::new_sys_io(e, "failed to remove log file")
+            Error::new("failed to remove log file")
+                .raw(e)
                 .details(entry.path().to_string_lossy())
         })?;
     }
