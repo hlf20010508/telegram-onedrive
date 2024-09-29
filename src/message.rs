@@ -123,6 +123,7 @@ impl QueuedMessage {
 
 pub enum QueuedMessageType {
     Respond,
+    // need to specify the target message id
     Reply(i32),
     Edit(i32),
 }

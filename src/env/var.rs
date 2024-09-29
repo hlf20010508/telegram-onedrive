@@ -18,6 +18,7 @@ pub const TASKER_SESSION_PATH: &str = "./session/tasker.session";
 
 pub const WORKER_NUM: u8 = 5;
 
+// messages with this prefix will be ignored
 pub const BYPASS_PREFIX: &str = "\u{200B}";
 
 pub const RECONNECTION_POLICY: FixedReconnect = FixedReconnect {

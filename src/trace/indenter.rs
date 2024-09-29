@@ -20,6 +20,8 @@ use super::formatter::write_message;
 use super::visitor::{MessageVisitor, MetaVisitor};
 use crate::env::LOGS_PATH;
 
+// to seperate logs to different files
+
 pub enum Coroutine {
     Listener,
     Message,
@@ -28,6 +30,9 @@ pub enum Coroutine {
     TaskWorker(u8),
 }
 
+// to better show the function call stack
+// if enter the function, indent number + 1
+// if leave the function, indent number - 1
 pub struct EventIndenter {
     coroutine: Coroutine,
     indent: Mutex<usize>,
@@ -70,7 +75,19 @@ where
         let (writer, log_message) = if module_path.starts_with("telegram_onedrive")
             && !module_path.starts_with("telegram_onedrive::auth_server")
         {
+            // only for events emitted by this project
             EVENT_INDENTER.with(|indenter| {
+                /*
+                example:
+                ->|func1
+                -->|func2
+                ---|some info1
+                --->|func3
+                ----|some info2
+                <---|func3
+                <--|func2
+                <-|func1
+                */
                 let mut indent = indenter.indent.lock().unwrap();
 
                 if visitor.message.contains("<-") {
@@ -79,6 +96,7 @@ where
 
                 let mut indent_spaces = "-".repeat(*indent);
 
+                // other events that are not for showing the functions call stack
                 if !visitor.message.contains("->") && !visitor.message.contains("<-") {
                     indent_spaces.push_str("--|");
                 }
@@ -106,6 +124,8 @@ where
             } else if module_path.starts_with("reqwest") {
                 log_builder("reqwest")
             } else if module_path.starts_with("telegram_onedrive::auth_server") {
+                // server event handler works in seperate coroutine
+                // so local task doesn't work for it
                 log_builder("auth_server")
             } else {
                 log_builder("others")

@@ -17,7 +17,7 @@ use tokio::sync::Mutex;
 
 use super::session::{ChatHex, ChatTasks};
 use super::{tasks, TaskSession};
-use crate::client::ext::chat_from_hex;
+use crate::client::utils::chat_from_hex;
 use crate::error::{Error, Result, ResultExt, ResultUnwrapExt};
 use crate::state::AppState;
 

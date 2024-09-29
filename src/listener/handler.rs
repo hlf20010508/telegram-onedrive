@@ -96,7 +96,7 @@ impl Handler {
     }
 
     #[add_trace]
-    pub fn get_event_names(&self) -> Vec<EventType> {
+    fn get_event_names(&self) -> Vec<EventType> {
         self.events.keys().map(EventType::from).collect()
     }
 }

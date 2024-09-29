@@ -16,7 +16,7 @@ use tokio::sync::Mutex;
 
 use message::ChatMessageVecDeque;
 
-use super::utils::{socketio_client, socketio_disconnect};
+use super::socketio::{socketio_client, socketio_disconnect};
 use crate::auth_server::TG_CODE_EVENT;
 use crate::env::{Env, TelegramBotEnv, TelegramUserEnv};
 use crate::error::{Error, Result};

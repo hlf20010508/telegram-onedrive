@@ -26,6 +26,8 @@ impl Visit for MessageVisitor {
     }
 }
 
+// events that converted from log crate don't convert meta correctly
+// so manually get it
 #[derive(Default)]
 pub struct MetaVisitor {
     pub target: String,

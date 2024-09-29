@@ -21,7 +21,7 @@ use progress::Progress;
 pub use session::TaskSession;
 pub use tasks::CmdType;
 
-use crate::client::ext::chat_from_hex;
+use crate::client::utils::chat_from_hex;
 use crate::env::WORKER_NUM;
 use crate::error::{Error, Result, ResultExt, ResultUnwrapExt};
 use crate::message::TelegramMessage;

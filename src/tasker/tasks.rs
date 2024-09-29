@@ -21,15 +21,26 @@ pub struct Model {
     pub cmd_type: CmdType,
     pub filename: String,
     pub root_path: String,
+    // for /url
     pub url: Option<String>,
+    // onedrive upload url
     pub upload_url: String,
     pub current_length: i64,
     pub total_length: i64,
+    // chat hex used by bot
     pub chat_bot_hex: String,
+    // chat hex used by user
     pub chat_user_hex: String,
+    // chat hex used by user and is from the origin chat of the message
+    // for link
     pub chat_origin_hex: Option<String>,
+    // if message if not forwarded, it's its message id
+    // else, it's the message id of its thumbnail message
     pub message_id: i32,
+    // message id of the forwarded message
     pub message_id_forward: Option<i32>,
+    // message id of the origin message in the origin chat
+    // for link
     pub message_id_origin: Option<i32>,
     pub status: TaskStatus,
 }
@@ -110,8 +121,13 @@ impl Display for CmdType {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TaskStatus {
+    // task inserted to db
     Waiting,
+    // task fetched by tasker
+    // without this status, only waiting task status to be updated by handler,
+    // tasker may dispatch task more than once, and cause duplicate task problem
     Fetched,
+    // task started by handler
     Started,
     Completed,
     Failed,

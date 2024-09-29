@@ -55,6 +55,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         ))?,
     };
 
+    // send its file name and thumb if exists so that information of uploading successful can be showed
     let uploaded = match media {
         Media::Photo(file) => upload_thumb(telegram_user, file.thumbs()).await?,
         Media::Document(file) => upload_thumb(telegram_user, file.thumbs()).await?,
@@ -83,6 +84,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             .id(),
     };
 
+    // link message is useless now, delete it
     message_user.delete().await?;
 
     let root_path = onedrive.get_root_path(true).await?;
@@ -91,6 +93,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         .multipart_upload_session_builder(&root_path, &filename)
         .await?;
 
+    // all task should be new, so this should always be 0
     let current_length = upload_session_meta
         .next_expected_ranges
         .first()

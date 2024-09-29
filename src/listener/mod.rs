@@ -51,6 +51,9 @@ impl Listener {
 
         let telegram_user = self.state.telegram_user.raw().clone();
         tokio::spawn(async move {
+            // this is needed to keep the user alive, cooperate with reconnection policy
+            // if only run_until_disconnected, connection will still be closed after a long time
+            // if only reconnection policy, in current grammers version, it will block the client
             telegram_user
                 .run_until_disconnected()
                 .await
@@ -73,6 +76,7 @@ impl Listener {
         let update = client.next_update().await?;
 
         if let Update::NewMessage(message_raw) = update {
+            // bypass message that the bot sent itself, and message that starts with bypass prefix
             if !message_raw.outgoing() && !message_raw.text().starts_with(BYPASS_PREFIX) {
                 let message = TelegramMessage::new(client.clone(), message_raw);
 

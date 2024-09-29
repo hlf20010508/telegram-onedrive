@@ -29,6 +29,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let cmd = cmd_parser(message.text());
 
     if cmd.len() == 2 {
+        // /url $url
         let telegram_user = &state.telegram_user;
         let onedrive = &state.onedrive;
         let task_session = state.task_session.clone();

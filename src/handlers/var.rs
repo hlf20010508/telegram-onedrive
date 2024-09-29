@@ -5,8 +5,10 @@
 :license: MIT, see LICENSE for more details.
 */
 
+// according to https://support.microsoft.com/en-us/office/restrictions-and-limitations-in-onedrive-and-sharepoint-64883a5d-228e-48f5-b3d2-eb39e07630fa#invalidcharacters
+
 pub const INVALID_COMPONENT: [&str; 11] =
-    ["#", "\"", "*", ":", "<", ">", "?", "/", "\\", "|", "_vti_"];
+    ["\"", "*", ":", "<", ">", "?", "/", "\\", "|", "#", "_vti_"];
 
 pub const INVALID_NAME: [&str; 26] = [
     ".lock",

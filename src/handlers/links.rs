@@ -33,6 +33,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let cmd = cmd_parser(message.text());
 
     if cmd.len() == 3 {
+        // /links $link $num
         let telegram_user = &state.telegram_user;
         let onedrive = &state.onedrive;
         let task_session = state.task_session.clone();
@@ -84,6 +85,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 ))?,
             };
 
+            // send its file name and thumb if exists so that information of uploading successful can be showed
             let uploaded = match media {
                 Media::Photo(file) => upload_thumb(telegram_user, file.thumbs()).await?,
                 Media::Document(file) => upload_thumb(telegram_user, file.thumbs()).await?,
@@ -118,6 +120,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 .multipart_upload_session_builder(&root_path, &filename)
                 .await?;
 
+            // all task should be new, so this should always be 0
             let current_length = upload_session_meta
                 .next_expected_ranges
                 .first()
@@ -152,6 +155,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             );
         }
 
+        // command message is useless now, delete it
         telegram_user
             .get_message(chat_user, message.id())
             .await?

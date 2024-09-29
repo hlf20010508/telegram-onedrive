@@ -23,6 +23,9 @@ use handlers::{auth, auto_delete, clear, dir, drive, file, help, link, links, lo
 use listener::{EventType, HashMapExt, Listener};
 use trace::{indenter, trace_registor};
 
+// tested on ubuntu server, 2C2G,
+// if not using current_thread, invokes in grammers may be blocked for 1 minute
+// but works fine on MacOS
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     trace_registor();

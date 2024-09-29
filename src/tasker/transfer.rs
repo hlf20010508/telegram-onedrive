@@ -16,7 +16,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::{tasks, Progress};
-use crate::client::ext::chat_from_hex;
+use crate::client::utils::chat_from_hex;
 use crate::error::{Error, Result};
 use crate::state::AppState;
 use crate::utils::get_http_client;
@@ -55,7 +55,7 @@ pub async fn multi_parts_uploader_from_url(
         .get(url)
         .send()
         .await
-        .map_err(|e| Error::new("failed to send head request for /url").raw(e))?;
+        .map_err(|e| Error::new("failed to send request for /url").raw(e))?;
 
     let upload_response = loop {
         let mut buffer = Vec::with_capacity(PART_SIZE);
@@ -149,6 +149,7 @@ pub async fn multi_parts_uploader_from_tg_file(
         tasks::CmdType::File => {
             let chat = chat_from_hex(chat_user_hex)?;
 
+            // if message_id_forward is not None, use it as message_id
             let message_id = message_id_forward
                 .as_ref()
                 .map_or(message_id, |message_id| message_id);

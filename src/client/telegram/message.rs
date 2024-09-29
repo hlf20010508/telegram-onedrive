@@ -253,6 +253,7 @@ impl TelegramClient {
 
 pub struct MessageVecDeque {
     deque: VecDeque<QueuedMessage>,
+    // message id -> index in deque, only for edit messages
     key_map: HashMap<i32, usize>,
 }
 
@@ -271,6 +272,7 @@ impl MessageVecDeque {
             }
             QueuedMessageType::Edit(message_id) => match self.key_map.get(&message_id) {
                 Some(index) => {
+                    // override the outdated edit message
                     self.deque[*index] = queued_message;
                 }
                 None => {
@@ -287,8 +289,9 @@ impl MessageVecDeque {
                 self.key_map.remove(&message_id);
             }
 
-            for value in self.key_map.values_mut() {
-                *value -= 1;
+            // decrease the index of all edit messages
+            for index in self.key_map.values_mut() {
+                *index -= 1;
             }
 
             queued_message
