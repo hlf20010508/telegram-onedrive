@@ -6,7 +6,7 @@
 */
 
 use super::{
-    utils::get_arg_value,
+    utils::get_env_value,
     var::{RECONNECTION_POLICY, TG_USER_SESSION_PATH},
 };
 use crate::error::ResultExt;
@@ -23,11 +23,11 @@ pub struct TelegramUserEnv {
 
 impl TelegramUserEnv {
     pub fn new() -> Self {
-        let api_id = get_arg_value("--tg-api-id").unwrap_or_trace();
-        let api_hash = get_arg_value("--tg-api-hash").unwrap_or_trace();
+        let api_id = get_env_value("tg_api_id").unwrap_or_trace();
+        let api_hash = get_env_value("tg_api_hash").unwrap_or_trace();
         let users = Self::parse_users();
-        let phone_number = get_arg_value("--tg-user-phone").unwrap_or_trace();
-        let password = get_arg_value("--tg-user-password").ok();
+        let phone_number = get_env_value("tg_user_phone").unwrap_or_trace();
+        let password = get_env_value("tg_user_password").ok();
         let session_path = TG_USER_SESSION_PATH.to_string();
         let params = grammers_client::InitParams {
             reconnection_policy: &RECONNECTION_POLICY,
@@ -46,7 +46,7 @@ impl TelegramUserEnv {
     }
 
     fn parse_users() -> Vec<String> {
-        let arg: Option<String> = get_arg_value("--tg-user-name").ok();
+        let arg: Option<String> = get_env_value("tg_user_name").ok();
 
         let users = if let Some(user_names) = arg {
             let users = user_names.split(',').map(|s| s.to_string()).collect();

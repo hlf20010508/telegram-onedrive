@@ -16,7 +16,7 @@ pub use onedrive::OneDriveEnv;
 use std::{fs, sync::OnceLock};
 pub use telegram_bot::TelegramBotEnv;
 pub use telegram_user::TelegramUserEnv;
-use utils::{args_contains, get_arg_value, get_arg_value_option};
+use utils::{get_env_value, get_env_value_option};
 use var::SESSION_DIR;
 pub use var::{BYPASS_PREFIX, LOGS_PATH, WORKER_NUM};
 
@@ -41,11 +41,11 @@ impl Env {
         let telegram_bot = TelegramBotEnv::new();
         let telegram_user = TelegramUserEnv::new();
         let onedrive = OneDriveEnv::new();
-        let trace_level = get_arg_value_option("--trace-level", "info".to_string());
-        let port = get_arg_value_option("--port", 8080);
-        let server_uri = get_arg_value("--server-uri").unwrap_or_trace();
-        let use_reverse_proxy = args_contains("--reverse-proxy");
-        let should_auto_delete = args_contains("--auto-delete");
+        let trace_level = get_env_value_option("trace_level", "info".to_string());
+        let port = get_env_value_option("port", 8080);
+        let server_uri = get_env_value("server_uri").unwrap_or_trace();
+        let use_reverse_proxy = get_env_value_option("reverse_proxy", false);
+        let should_auto_delete = get_env_value_option("auto_delete", false);
         let tasker_session_path = var::TASKER_SESSION_PATH.to_string();
 
         Self {

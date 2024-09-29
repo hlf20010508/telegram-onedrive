@@ -6,7 +6,7 @@
 */
 
 use super::{
-    utils::{get_arg_value, get_arg_value_option},
+    utils::{get_env_value, get_env_value_option},
     var::OD_SESSION_PATH,
 };
 use crate::error::ResultExt;
@@ -20,9 +20,9 @@ pub struct OneDriveEnv {
 
 impl OneDriveEnv {
     pub fn new() -> Self {
-        let client_id = get_arg_value("--od-client-id").unwrap_or_trace();
-        let client_secret = get_arg_value("--od-client-secret").unwrap_or_trace();
-        let root_path = get_arg_value_option("--od-root-path", "/".to_string());
+        let client_id = get_env_value("od_client_id").unwrap_or_trace();
+        let client_secret = get_env_value("od_client_secret").unwrap_or_trace();
+        let root_path = get_env_value_option("od_root_path", "/".to_string());
         let session_path = OD_SESSION_PATH.to_string();
 
         Self {

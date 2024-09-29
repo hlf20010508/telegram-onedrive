@@ -19,7 +19,7 @@ pub struct Error {
     inner: Box<InnerError>,
 }
 
-type RawError = Box<dyn std::error::Error + Send + Sync>;
+pub type RawError = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Debug)]
 struct InnerError {
