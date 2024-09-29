@@ -5,21 +5,21 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::Media;
-use grammers_client::InputMessage;
-use proc_macros::{
-    add_context, add_trace, check_in_group, check_od_login, check_senders, check_tg_login,
-};
-
 use super::utils::{
     cmd_parser, get_message_info, get_message_link, get_tg_file_size, preprocess_tg_file_name,
     upload_thumb,
 };
-use crate::env::BYPASS_PREFIX;
-use crate::error::{Error, Result};
-use crate::message::{ChatEntity, MessageInfo, TelegramMessage};
-use crate::state::AppState;
-use crate::tasker::CmdType;
+use crate::{
+    env::BYPASS_PREFIX,
+    error::{Error, Result},
+    message::{ChatEntity, MessageInfo, TelegramMessage},
+    state::AppState,
+    tasker::CmdType,
+};
+use grammers_client::{types::Media, InputMessage};
+use proc_macros::{
+    add_context, add_trace, check_in_group, check_od_login, check_senders, check_tg_login,
+};
 
 pub const PATTERN: &str = "/links";
 

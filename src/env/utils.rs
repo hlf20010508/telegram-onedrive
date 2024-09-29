@@ -5,11 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use pico_args::Arguments;
-use std::fmt::Display;
-use std::str::FromStr;
-
 use crate::error::{Error, Result};
+use pico_args::Arguments;
+use std::{fmt::Display, str::FromStr};
 
 pub fn get_arg_value<T>(arg_name: &'static str) -> Result<T>
 where

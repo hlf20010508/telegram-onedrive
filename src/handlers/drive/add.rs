@@ -5,13 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::{
+    auth_server, error::Result, handlers::auth::authorize_onedrive, message::TelegramMessage,
+    state::AppState,
+};
 use proc_macros::{add_context, add_trace};
-
-use crate::auth_server;
-use crate::error::Result;
-use crate::handlers::auth::authorize_onedrive;
-use crate::message::TelegramMessage;
-use crate::state::AppState;
 
 #[add_context]
 #[add_trace]

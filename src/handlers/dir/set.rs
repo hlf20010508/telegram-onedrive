@@ -5,12 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use proc_macros::{add_context, add_trace};
-
 use super::utils::is_root_path_valid;
-use crate::client::OneDriveClient;
-use crate::error::Result;
-use crate::message::TelegramMessage;
+use crate::{client::OneDriveClient, error::Result, message::TelegramMessage};
+use proc_macros::{add_context, add_trace};
 
 #[add_context]
 #[add_trace]

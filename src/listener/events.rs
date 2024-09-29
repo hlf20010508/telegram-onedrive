@@ -5,14 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use futures::future::BoxFuture;
-use futures::{Future, FutureExt};
-use std::collections::HashMap;
-use std::fmt::Display;
-
-use crate::error::Result;
-use crate::message::TelegramMessage;
-use crate::state::AppState;
+use crate::{error::Result, message::TelegramMessage, state::AppState};
+use futures::{future::BoxFuture, Future, FutureExt};
+use std::{collections::HashMap, fmt::Display};
 
 type EventFn = dyn Fn(TelegramMessage, AppState) -> BoxFuture<'static, Result<()>>;
 pub type Events = HashMap<String, Box<EventFn>>;

@@ -5,14 +5,17 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use super::visitor::{MessageVisitor, MetaVisitor};
 use ansi_term::Color;
 use tracing::{Level, Subscriber};
-use tracing_subscriber::fmt::time::{ChronoLocal, FormatTime};
-use tracing_subscriber::fmt::{self, FormatFields};
-use tracing_subscriber::fmt::{format, FormatEvent};
-use tracing_subscriber::registry::LookupSpan;
-
-use super::visitor::{MessageVisitor, MetaVisitor};
+use tracing_subscriber::{
+    fmt::{
+        self, format,
+        time::{ChronoLocal, FormatTime},
+        FormatEvent, FormatFields,
+    },
+    registry::LookupSpan,
+};
 
 pub struct EventFormatter;
 

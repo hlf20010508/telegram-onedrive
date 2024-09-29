@@ -5,17 +5,20 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::{
+    client::TelegramClient,
+    env::LOGS_PATH,
+    error::{Error, Result},
+    message::TelegramMessage,
+};
 use grammers_client::InputMessage;
 use path_slash::PathExt;
 use proc_macros::{add_context, add_trace};
-use std::io::{Read, Write};
-use std::path::Path;
+use std::{
+    io::{Read, Write},
+    path::Path,
+};
 use zip::write::{FileOptions, SimpleFileOptions};
-
-use crate::client::TelegramClient;
-use crate::env::LOGS_PATH;
-use crate::error::{Error, Result};
-use crate::message::TelegramMessage;
 
 #[add_context]
 #[add_trace]

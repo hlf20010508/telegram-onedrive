@@ -5,14 +5,14 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use crate::{client::TelegramClient, message::TelegramMessage};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use grammers_client::types::PackedChat;
 use proc_macros::{add_context, add_trace};
 use std::fmt::Display;
-
-use crate::client::TelegramClient;
-use crate::message::TelegramMessage;
 
 #[derive(Debug)]
 pub struct Error {

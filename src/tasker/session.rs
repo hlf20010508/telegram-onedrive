@@ -5,16 +5,14 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use std::collections::HashMap;
-
+use super::tasks::{self, CmdType, TaskStatus};
+use crate::error::{Error, Result};
 use proc_macros::{add_context, add_trace};
 use sea_orm::{
     sea_query::Expr, ActiveValue, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection,
     EntityName, EntityTrait, PaginatorTrait, QueryFilter, Schema, Set,
 };
-
-use super::tasks::{self, CmdType, TaskStatus};
-use crate::error::{Error, Result};
+use std::collections::HashMap;
 
 pub struct TaskSession {
     connection: DatabaseConnection,

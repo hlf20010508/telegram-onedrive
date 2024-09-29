@@ -5,10 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use proc_macros::{add_context, add_trace};
-
 use super::invalid_name::INVALID_FOLDER_DIR;
 use crate::error::{Error, Result};
+use proc_macros::{add_context, add_trace};
 
 #[add_context]
 #[add_trace]

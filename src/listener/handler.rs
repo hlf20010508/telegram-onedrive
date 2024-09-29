@@ -5,14 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use super::{EventType, Events};
+use crate::{error::Result, message::TelegramMessage, state::AppState};
 use grammers_client::types::Media;
 use proc_macros::{add_context, add_trace};
 use std::rc::Rc;
-
-use super::{EventType, Events};
-use crate::error::Result;
-use crate::message::TelegramMessage;
-use crate::state::AppState;
 
 pub struct Handler {
     pub events: Rc<Events>,

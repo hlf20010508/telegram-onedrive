@@ -5,21 +5,17 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::client::files::MAX_CHUNK_SIZE;
-use grammers_client::types::Downloadable;
-use onedrive_api::resource::DriveItem;
-use onedrive_api::UploadSession;
-use proc_macros::{add_context, add_trace};
-use std::collections::VecDeque;
-use std::ops::Range;
-use std::sync::Arc;
-use std::time::Duration;
-
 use super::{tasks, Progress};
-use crate::client::utils::chat_from_hex;
-use crate::error::{Error, Result};
-use crate::state::AppState;
-use crate::utils::get_http_client;
+use crate::{
+    client::utils::chat_from_hex,
+    error::{Error, Result},
+    state::AppState,
+    utils::get_http_client,
+};
+use grammers_client::{client::files::MAX_CHUNK_SIZE, types::Downloadable};
+use onedrive_api::{resource::DriveItem, UploadSession};
+use proc_macros::{add_context, add_trace};
+use std::{collections::VecDeque, ops::Range, sync::Arc, time::Duration};
 
 const MAX_RETRIES: i32 = 5;
 

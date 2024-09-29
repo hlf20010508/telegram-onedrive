@@ -5,11 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use proc_macros::{add_context, add_trace};
-
-use super::utils::validate_root_path;
-use super::OneDriveClient;
+use super::{utils::validate_root_path, OneDriveClient};
 use crate::error::Result;
+use proc_macros::{add_context, add_trace};
 
 impl OneDriveClient {
     #[add_context]

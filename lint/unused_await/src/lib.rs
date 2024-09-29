@@ -8,16 +8,19 @@ extern crate rustc_middle;
 extern crate rustc_session;
 extern crate rustc_span;
 
-use clippy_utils::diagnostics::span_lint_hir_and_then;
-use clippy_utils::is_def_id_trait_method;
-use rustc_hir::def::DefKind;
-use rustc_hir::intravisit::{walk_expr, walk_fn, FnKind, Visitor};
-use rustc_hir::{Body, Expr, ExprKind, FnDecl, Node, YieldSource};
+use clippy_utils::{diagnostics::span_lint_hir_and_then, is_def_id_trait_method};
+use rustc_hir::{
+    def::DefKind,
+    intravisit::{walk_expr, walk_fn, FnKind, Visitor},
+    Body, Expr, ExprKind, FnDecl, Node, YieldSource,
+};
 use rustc_lint::{LateContext, LateLintPass};
 use rustc_middle::hir::nested_filter;
 use rustc_session::impl_lint_pass;
-use rustc_span::def_id::{LocalDefId, LocalDefIdSet};
-use rustc_span::Span;
+use rustc_span::{
+    def_id::{LocalDefId, LocalDefIdSet},
+    Span,
+};
 
 dylint_linting::dylint_library!();
 

@@ -7,21 +7,20 @@
 
 mod models;
 
+use crate::{
+    error::{Error, Result},
+    utils::get_current_timestamp,
+};
 use axum::http::header;
+use models::{current_user, session};
 use onedrive_api::OneDrive;
 use proc_macros::{add_context, add_trace};
-use sea_orm::sea_query::Expr;
 use sea_orm::{
-    ColumnTrait, ConnectionTrait, DatabaseConnection, EntityName, EntityTrait, ModelTrait,
-    QueryFilter, QuerySelect, Schema, Set,
+    sea_query::Expr, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityName, EntityTrait,
+    ModelTrait, QueryFilter, QuerySelect, Schema, Set,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-use models::{current_user, session};
-
-use crate::error::{Error, Result};
-use crate::utils::get_current_timestamp;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OneDriveSession {

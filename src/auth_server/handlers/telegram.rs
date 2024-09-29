@@ -5,17 +5,18 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use axum::http::StatusCode;
-use axum::response::{Html, IntoResponse, Response};
-use axum::{debug_handler, Extension, Json};
+use super::{models::CodeParams, TG_CODE_EVENT};
+use crate::error::{Error, Result};
+use axum::{
+    debug_handler,
+    http::StatusCode,
+    response::{Html, IntoResponse, Response},
+    Extension, Json,
+};
 use proc_macros::{add_context, add_trace};
 use socketioxide::SocketIo;
 use std::sync::Arc;
 use tokio::fs;
-
-use super::models::CodeParams;
-use super::TG_CODE_EVENT;
-use crate::error::{Error, Result};
 
 pub const INDEX_PATH: &str = "/";
 

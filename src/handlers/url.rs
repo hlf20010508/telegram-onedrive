@@ -5,17 +5,18 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use super::utils::{cmd_parser, get_filename, TextExt};
+use crate::{
+    error::{Error, Result},
+    message::{ChatEntity, TelegramMessage},
+    state::AppState,
+    tasker::CmdType,
+    utils::get_http_client,
+};
 use proc_macros::{
     add_context, add_trace, check_in_group, check_od_login, check_senders, check_tg_login,
 };
 use reqwest::header;
-
-use super::utils::{cmd_parser, get_filename, TextExt};
-use crate::error::{Error, Result};
-use crate::message::{ChatEntity, TelegramMessage};
-use crate::state::AppState;
-use crate::tasker::CmdType;
-use crate::utils::get_http_client;
 
 pub const PATTERN: &str = "/url";
 

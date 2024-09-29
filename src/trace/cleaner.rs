@@ -5,15 +5,18 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::{
+    env::LOGS_PATH,
+    error::{Error, ResultExt},
+};
 use chrono::{Local, NaiveDate};
 use regex::Regex;
-use std::fs;
-use std::path::Path;
-use std::thread::{sleep, spawn};
-use std::time::Duration;
-
-use crate::env::LOGS_PATH;
-use crate::error::{Error, ResultExt};
+use std::{
+    fs,
+    path::Path,
+    thread::{sleep, spawn},
+    time::Duration,
+};
 
 pub fn run() {
     // remove logs older than 7 days

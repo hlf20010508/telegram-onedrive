@@ -5,10 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use super::{
+    utils::get_arg_value,
+    var::{RECONNECTION_POLICY, TG_USER_SESSION_PATH},
+};
 use crate::error::ResultExt;
-
-use super::utils::get_arg_value;
-use super::var::{RECONNECTION_POLICY, TG_USER_SESSION_PATH};
 
 pub struct TelegramUserEnv {
     pub api_id: i32,

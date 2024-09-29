@@ -8,6 +8,4 @@
 pub mod file;
 pub mod url;
 
-use super::tasks;
-use super::transfer;
-use super::Progress;
+use super::{tasks, transfer, Progress};

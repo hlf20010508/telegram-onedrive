@@ -5,24 +5,27 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::types::media::{Document, Media, Uploaded};
-use grammers_client::types::photo_sizes::{PhotoSize, VecExt};
-use grammers_client::types::Downloadable;
+use crate::{
+    client::{
+        onedrive::invalid_name::{INVALID_COMPONENT, INVALID_NAME, INVALID_NAME_PREFIX},
+        TelegramClient,
+    },
+    error::{Error, Result, ResultExt},
+    message::{ChatEntity, MessageInfo, TelegramMessage},
+    utils::{get_current_timestamp, get_ext},
+};
+use grammers_client::types::{
+    media::{Document, Media, Uploaded},
+    photo_sizes::{PhotoSize, VecExt},
+    Downloadable,
+};
 use mime_guess::get_mime_extensions_str;
 use percent_encoding::percent_decode_str;
 use proc_macros::{add_context, add_trace};
 use regex::Regex;
 use reqwest::{header, Response, StatusCode};
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::io::Cursor;
+use std::{collections::HashMap, fmt::Display, io::Cursor};
 use url::Url;
-
-use crate::client::onedrive::invalid_name::{INVALID_COMPONENT, INVALID_NAME, INVALID_NAME_PREFIX};
-use crate::client::TelegramClient;
-use crate::error::{Error, Result, ResultExt};
-use crate::message::{ChatEntity, MessageInfo, TelegramMessage};
-use crate::utils::{get_current_timestamp, get_ext};
 
 pub fn cmd_parser<T>(cmd: T) -> Vec<String>
 where

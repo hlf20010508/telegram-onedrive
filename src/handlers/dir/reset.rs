@@ -5,11 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::{client::OneDriveClient, error::Result, message::TelegramMessage};
 use proc_macros::{add_context, add_trace};
-
-use crate::client::OneDriveClient;
-use crate::error::Result;
-use crate::message::TelegramMessage;
 
 #[add_context]
 #[add_trace]

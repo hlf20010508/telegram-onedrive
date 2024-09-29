@@ -9,18 +9,18 @@ mod clear;
 mod docs;
 mod send;
 
+use super::utils::cmd_parser;
+use crate::{
+    env::LOGS_PATH,
+    error::{Error, Result},
+    message::TelegramMessage,
+    state::AppState,
+};
+use clear::clear_logs;
 use grammers_client::InputMessage;
 use proc_macros::{add_context, add_trace, check_in_group, check_senders};
-use tokio::fs;
-
-use clear::clear_logs;
 use send::send_log_zip;
-
-use super::utils::cmd_parser;
-use crate::env::LOGS_PATH;
-use crate::error::{Error, Result};
-use crate::message::TelegramMessage;
-use crate::state::AppState;
+use tokio::fs;
 
 pub const PATTERN: &str = "/logs";
 

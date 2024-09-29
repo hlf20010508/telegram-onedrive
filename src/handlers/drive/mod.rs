@@ -11,18 +11,18 @@ mod logout;
 mod set;
 mod show;
 
-use grammers_client::InputMessage;
-
+use super::utils::cmd_parser;
+use crate::{
+    error::{Error, Result},
+    message::TelegramMessage,
+    state::AppState,
+};
 use add::add_drive;
+use grammers_client::InputMessage;
 use logout::{logout_current_drive, logout_drive};
 use proc_macros::{add_context, add_trace, check_in_group, check_senders};
 use set::set_drive;
 use show::show_drive;
-
-use super::utils::cmd_parser;
-use crate::error::{Error, Result};
-use crate::message::TelegramMessage;
-use crate::state::AppState;
 
 pub const PATTERN: &str = "/drive";
 

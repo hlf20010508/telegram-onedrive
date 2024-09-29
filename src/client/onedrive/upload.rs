@@ -5,14 +5,14 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use onedrive_api::option::DriveItemPutOption;
-use onedrive_api::{ConflictBehavior, ItemLocation, UploadSession, UploadSessionMeta};
+use super::OneDriveClient;
+use crate::error::{Error, Result};
+use onedrive_api::{
+    option::DriveItemPutOption, ConflictBehavior, ItemLocation, UploadSession, UploadSessionMeta,
+};
 use path_slash::PathBufExt;
 use proc_macros::{add_context, add_trace};
 use std::path::Path;
-
-use super::OneDriveClient;
-use crate::error::{Error, Result};
 
 impl OneDriveClient {
     #[add_context]

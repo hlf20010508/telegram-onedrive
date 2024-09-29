@@ -9,5 +9,4 @@ mod models;
 pub mod onedrive;
 pub mod telegram;
 
-use super::var::OD_CODE_EVENT;
-use super::var::TG_CODE_EVENT;
+use super::var::{OD_CODE_EVENT, TG_CODE_EVENT};

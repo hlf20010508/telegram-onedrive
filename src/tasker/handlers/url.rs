@@ -5,13 +5,10 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use super::{tasks, transfer::multi_parts_uploader_from_url, Progress};
+use crate::{error::Result, state::AppState};
 use proc_macros::{add_context, add_trace};
 use std::sync::Arc;
-
-use super::transfer::multi_parts_uploader_from_url;
-use super::{tasks, Progress};
-use crate::error::Result;
-use crate::state::AppState;
 
 #[add_context]
 #[add_trace]

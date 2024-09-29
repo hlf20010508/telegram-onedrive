@@ -5,20 +5,24 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::client::messages::MessageIter;
-use grammers_client::types::{Chat, InputMessage, PackedChat};
-use grammers_client::Update;
-use proc_macros::{add_context, add_trace};
-use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
-use std::collections::{HashMap, VecDeque};
-use std::time::Duration;
-use tokio::sync::mpsc;
-
 use super::TelegramClient;
-use crate::error::{Error, Result, ResultExt};
-use crate::message::{ChatEntity, QueuedMessage, QueuedMessageType, TelegramMessage};
-use crate::trace::indenter;
+use crate::{
+    error::{Error, Result, ResultExt},
+    message::{ChatEntity, QueuedMessage, QueuedMessageType, TelegramMessage},
+    trace::indenter,
+};
+use grammers_client::{
+    client::messages::MessageIter,
+    types::{Chat, InputMessage, PackedChat},
+    Update,
+};
+use proc_macros::{add_context, add_trace};
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use std::{
+    collections::{HashMap, VecDeque},
+    time::Duration,
+};
+use tokio::sync::mpsc;
 
 impl TelegramClient {
     #[add_context]

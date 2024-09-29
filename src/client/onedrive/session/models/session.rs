@@ -5,10 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use sea_orm::entity::prelude::DeriveEntityModel;
 use sea_orm::{
-    ActiveModelBehavior, DerivePrimaryKey, DeriveRelation, EntityTrait, EnumIter, PrimaryKeyTrait,
-    Related, RelationDef, RelationTrait,
+    entity::prelude::DeriveEntityModel, ActiveModelBehavior, DerivePrimaryKey, DeriveRelation,
+    EntityTrait, EnumIter, PrimaryKeyTrait, Related, RelationDef, RelationTrait,
 };
 
 #[derive(Clone, Debug, DeriveEntityModel)]

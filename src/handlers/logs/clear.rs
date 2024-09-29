@@ -5,12 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::{
+    env::LOGS_PATH,
+    error::{Error, Result},
+    message::TelegramMessage,
+};
 use proc_macros::{add_context, add_trace};
 use tokio::fs;
-
-use crate::env::LOGS_PATH;
-use crate::error::{Error, Result};
-use crate::message::TelegramMessage;
 
 #[add_context]
 #[add_trace]

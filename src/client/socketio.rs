@@ -5,16 +5,15 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::error::{Error, Result};
 use futures::FutureExt;
 use native_tls::TlsConnector;
 use proc_macros::{add_context, add_trace};
-use rust_socketio::asynchronous::{
-    Client as SocketIoClient, ClientBuilder as SocketIoClientBuilder,
+use rust_socketio::{
+    asynchronous::{Client as SocketIoClient, ClientBuilder as SocketIoClientBuilder},
+    Payload,
 };
-use rust_socketio::Payload;
 use tokio::sync::mpsc;
-
-use crate::error::{Error, Result};
 
 #[add_context]
 #[add_trace]

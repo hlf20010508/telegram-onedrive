@@ -5,9 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use sea_orm::entity::prelude::DeriveEntityModel;
-use sea_orm::sea_query::{ArrayType, ValueType, ValueTypeErr};
 use sea_orm::{
+    entity::prelude::DeriveEntityModel,
+    sea_query::{ArrayType, ValueType, ValueTypeErr},
     ActiveModelBehavior, ColIdx, ColumnType, DbErr, DerivePrimaryKey, DeriveRelation, EntityTrait,
     EnumIter, PrimaryKeyTrait, QueryResult, TryGetError, TryGetable, Value,
 };

@@ -5,12 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::{error::Result, message::TelegramMessage, state::AppState};
 use proc_macros::{add_context, add_trace, check_in_group, check_senders};
 use std::sync::atomic::Ordering;
-
-use crate::error::Result;
-use crate::message::TelegramMessage;
-use crate::state::AppState;
 
 pub const PATTERN: &str = "/autoDelete";
 

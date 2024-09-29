@@ -5,20 +5,16 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use std::future::Future;
-use std::sync::Mutex;
-use tokio::task::futures::TaskLocalFuture;
-use tokio::task_local;
+use super::{
+    formatter::write_message,
+    visitor::{MessageVisitor, MetaVisitor},
+};
+use crate::env::LOGS_PATH;
+use std::{future::Future, sync::Mutex};
+use tokio::{task::futures::TaskLocalFuture, task_local};
 use tracing::{Event, Subscriber};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::fmt::format;
-use tracing_subscriber::layer::Context;
-use tracing_subscriber::registry::LookupSpan;
-use tracing_subscriber::Layer;
-
-use super::formatter::write_message;
-use super::visitor::{MessageVisitor, MetaVisitor};
-use crate::env::LOGS_PATH;
+use tracing_subscriber::{fmt::format, layer::Context, registry::LookupSpan, Layer};
 
 // to seperate logs to different files
 

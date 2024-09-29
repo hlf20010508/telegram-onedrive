@@ -5,13 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
-
-use crate::client::{OneDriveClient, TelegramClient};
-use crate::env::ENV;
-use crate::error::ResultExt;
-use crate::tasker::TaskSession;
+use crate::{
+    client::{OneDriveClient, TelegramClient},
+    env::ENV,
+    error::ResultExt,
+    tasker::TaskSession,
+};
+use std::sync::{atomic::AtomicBool, Arc};
 
 pub struct State {
     pub telegram_bot: TelegramClient,

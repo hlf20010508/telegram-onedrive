@@ -12,21 +12,21 @@ mod session;
 mod upload;
 mod utils;
 
+use super::socketio::{socketio_client, socketio_disconnect};
+use crate::{
+    auth_server::OD_CODE_EVENT,
+    env::{Env, OneDriveEnv, ENV},
+    error::{Error, Result},
+    message::TelegramMessage,
+};
 use onedrive_api::{
     Auth, ClientCredential, DriveLocation, OneDrive as Client, Permission, Tenant, TokenResponse,
 };
 use path_slash::PathBufExt;
 use proc_macros::{add_context, add_trace};
+use session::OneDriveSession;
 use std::path::Path;
 use tokio::sync::RwLock;
-
-use session::OneDriveSession;
-
-use super::socketio::{socketio_client, socketio_disconnect};
-use crate::auth_server::OD_CODE_EVENT;
-use crate::env::{Env, OneDriveEnv, ENV};
-use crate::error::{Error, Result};
-use crate::message::TelegramMessage;
 
 pub struct OneDriveClient {
     client: RwLock<Client>,

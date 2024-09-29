@@ -5,10 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use super::{
+    utils::{get_arg_value, get_arg_value_option},
+    var::OD_SESSION_PATH,
+};
 use crate::error::ResultExt;
-
-use super::utils::{get_arg_value, get_arg_value_option};
-use super::var::OD_SESSION_PATH;
 
 pub struct OneDriveEnv {
     pub client_id: String,

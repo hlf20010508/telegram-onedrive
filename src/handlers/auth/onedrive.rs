@@ -5,11 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::{error::Result, message::TelegramMessage, state::AppState};
 use proc_macros::{add_context, add_trace};
-
-use crate::error::Result;
-use crate::message::TelegramMessage;
-use crate::state::AppState;
 
 #[add_context]
 #[add_trace]

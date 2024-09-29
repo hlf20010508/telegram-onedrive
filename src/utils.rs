@@ -5,11 +5,10 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::error::{Error, Result};
 use chrono::Utc;
 use proc_macros::{add_context, add_trace};
 use reqwest::header;
-
-use crate::error::{Error, Result};
 
 #[add_trace]
 pub fn get_current_timestamp() -> i64 {

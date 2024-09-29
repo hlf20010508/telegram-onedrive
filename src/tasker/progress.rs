@@ -5,21 +5,25 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use super::{
+    session::{ChatHex, ChatTasks},
+    tasks, TaskSession,
+};
+use crate::{
+    client::utils::chat_from_hex,
+    error::{Error, Result, ResultExt, ResultUnwrapExt},
+    state::AppState,
+};
 use grammers_client::InputMessage;
 use path_slash::PathBufExt;
 use proc_macros::{add_context, add_trace};
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{
+    collections::HashMap,
+    path::Path,
+    sync::{atomic::Ordering, Arc},
+    time::Duration,
+};
 use tokio::sync::Mutex;
-
-use super::session::{ChatHex, ChatTasks};
-use super::{tasks, TaskSession};
-use crate::client::utils::chat_from_hex;
-use crate::error::{Error, Result, ResultExt, ResultUnwrapExt};
-use crate::state::AppState;
 
 pub struct Progress {
     session: Arc<TaskSession>,

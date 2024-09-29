@@ -11,22 +11,20 @@ mod session;
 mod tasks;
 mod transfer;
 
+use crate::{
+    client::utils::chat_from_hex,
+    env::WORKER_NUM,
+    error::{Error, Result, ResultExt, ResultUnwrapExt},
+    message::TelegramMessage,
+    state::AppState,
+    trace::indenter,
+};
 use proc_macros::add_context;
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::sync::Semaphore;
-
 use progress::Progress;
-
 pub use session::TaskSession;
+use std::{sync::Arc, time::Duration};
 pub use tasks::CmdType;
-
-use crate::client::utils::chat_from_hex;
-use crate::env::WORKER_NUM;
-use crate::error::{Error, Result, ResultExt, ResultUnwrapExt};
-use crate::message::TelegramMessage;
-use crate::state::AppState;
-use crate::trace::indenter;
+use tokio::sync::Semaphore;
 
 pub struct Tasker {
     state: AppState,

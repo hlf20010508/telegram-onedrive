@@ -8,19 +8,18 @@
 mod file;
 mod message;
 
-use grammers_client::session::Session;
-use grammers_client::{Client, Config, SignInError};
+use super::socketio::{socketio_client, socketio_disconnect};
+use crate::{
+    auth_server::TG_CODE_EVENT,
+    env::{Env, TelegramBotEnv, TelegramUserEnv, ENV},
+    error::{Error, Result},
+    message::TelegramMessage,
+};
+use grammers_client::{session::Session, Client, Config, SignInError};
+use message::ChatMessageVecDeque;
 use proc_macros::{add_context, add_trace};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-
-use message::ChatMessageVecDeque;
-
-use super::socketio::{socketio_client, socketio_disconnect};
-use crate::auth_server::TG_CODE_EVENT;
-use crate::env::{Env, TelegramBotEnv, TelegramUserEnv, ENV};
-use crate::error::{Error, Result};
-use crate::message::TelegramMessage;
 
 // messages to be sent or edited in each chat
 type ChatMessageQueue = Arc<Mutex<ChatMessageVecDeque>>;

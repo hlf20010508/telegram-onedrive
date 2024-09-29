@@ -5,10 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::error::{Error, Result};
 use grammers_client::types::PackedChat;
 use proc_macros::{add_context, add_trace};
-
-use crate::error::{Error, Result};
 
 #[add_context]
 #[add_trace]

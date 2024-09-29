@@ -8,14 +8,10 @@
 mod onedrive;
 mod telegram;
 
+use crate::{auth_server, error::Result, message::TelegramMessage, state::AppState};
 pub use onedrive::authorize_onedrive;
 use proc_macros::{add_context, add_trace, check_in_group, check_senders};
 pub use telegram::login_to_telegram;
-
-use crate::auth_server;
-use crate::error::Result;
-use crate::message::TelegramMessage;
-use crate::state::AppState;
 
 pub const PATTERN: &str = "/auth";
 

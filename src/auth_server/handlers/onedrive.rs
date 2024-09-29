@@ -5,15 +5,12 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use axum::extract::Query;
-use axum::{debug_handler, Extension};
+use super::{models::CodeParams, OD_CODE_EVENT};
+use crate::error::{Error, Result};
+use axum::{debug_handler, extract::Query, Extension};
 use proc_macros::{add_context, add_trace};
 use socketioxide::SocketIo;
 use std::sync::Arc;
-
-use super::models::CodeParams;
-use super::OD_CODE_EVENT;
-use crate::error::{Error, Result};
 
 pub const CODE_PATH: &str = "/auth";
 

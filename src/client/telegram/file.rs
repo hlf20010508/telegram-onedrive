@@ -5,16 +5,15 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::client::files::DownloadIter;
-use grammers_client::types::media::Uploaded;
-use grammers_client::types::Downloadable;
+use super::TelegramClient;
+use crate::error::{Error, Result};
+use grammers_client::{
+    client::files::DownloadIter,
+    types::{media::Uploaded, Downloadable},
+};
 use proc_macros::{add_context, add_trace};
 use std::path::Path;
 use tokio::io::AsyncRead;
-
-use super::TelegramClient;
-
-use crate::error::{Error, Result};
 
 impl TelegramClient {
     #[add_context]

@@ -10,16 +10,11 @@ mod formatter;
 pub mod indenter;
 mod visitor;
 
-use tracing_log::LogTracer;
-use tracing_subscriber::fmt;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
-
+use crate::env::ENV;
 use formatter::EventFormatter;
 use indenter::FileIndenterLayer;
-
-use crate::env::ENV;
+use tracing_log::LogTracer;
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 pub fn trace_registor() {
     LogTracer::init().unwrap();

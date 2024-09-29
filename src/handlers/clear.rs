@@ -5,11 +5,12 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::{
+    error::{Error, Result},
+    message::{ChatEntity, TelegramMessage},
+    state::AppState,
+};
 use proc_macros::{add_context, add_trace, check_in_group, check_senders, check_tg_login};
-
-use crate::error::{Error, Result};
-use crate::message::{ChatEntity, TelegramMessage};
-use crate::state::AppState;
 
 pub const PATTERN: &str = "/clear";
 

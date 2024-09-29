@@ -17,11 +17,10 @@ mod tasker;
 mod trace;
 mod utils;
 
-use std::collections::HashMap;
-
 use env::{Env, ENV};
 use handlers::{auth, auto_delete, clear, dir, drive, file, help, link, links, logs, start, url};
 use listener::{EventType, HashMapExt, Listener};
+use std::collections::HashMap;
 use trace::{indenter, trace_registor};
 
 // tested on ubuntu server, 2C2G,

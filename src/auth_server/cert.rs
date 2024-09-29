@@ -5,12 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::error::{Error, Result};
 use axum_server::tls_rustls::RustlsConfig;
 use proc_macros::{add_context, add_trace};
 use rcgen::{generate_simple_self_signed, CertifiedKey};
 use std::path::Path;
-
-use crate::error::{Error, Result};
 
 #[add_context]
 #[add_trace]

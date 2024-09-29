@@ -8,22 +8,20 @@
 mod events;
 mod handler;
 
-use grammers_client::Update;
-use proc_macros::{add_context, add_trace};
-use std::rc::Rc;
-use std::sync::Arc;
-
-pub use events::{EventType, HashMapExt};
-
+use crate::{
+    env::BYPASS_PREFIX,
+    error::{Error, Result, ResultExt, ResultUnwrapExt},
+    message::TelegramMessage,
+    state::{AppState, State},
+    tasker::Tasker,
+    trace::indenter,
+};
 use events::Events;
+pub use events::{EventType, HashMapExt};
+use grammers_client::Update;
 use handler::Handler;
-
-use crate::env::BYPASS_PREFIX;
-use crate::error::{Error, Result, ResultExt, ResultUnwrapExt};
-use crate::message::TelegramMessage;
-use crate::state::{AppState, State};
-use crate::tasker::Tasker;
-use crate::trace::indenter;
+use proc_macros::{add_context, add_trace};
+use std::{rc::Rc, sync::Arc};
 
 pub struct Listener {
     pub events: Rc<Events>,

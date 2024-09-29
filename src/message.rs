@@ -5,14 +5,17 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use grammers_client::grammers_tl_types as tl;
-use grammers_client::types::{Chat, InputMessage, Media, Message, PackedChat};
+use crate::{
+    client::TelegramClient,
+    error::{Error, Result},
+};
+use grammers_client::{
+    grammers_tl_types as tl,
+    types::{Chat, InputMessage, Media, Message, PackedChat},
+};
 use proc_macros::{add_context, add_trace};
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Sender};
-
-use crate::client::TelegramClient;
-use crate::error::{Error, Result};
 
 #[derive(Clone)]
 pub struct TelegramMessage {
