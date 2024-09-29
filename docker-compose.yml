@@ -1,0 +1,32 @@
+version: '3'
+services:
+  telegram-onedrive-rust:
+    build: https://github.com/hlf20010508/telegram-onedrive.git#rust
+    container_name: telegram-onedrive-rust
+    image: telegram-onedrive-rust
+    restart: always
+    volumes:
+      - telegram-onedrive-rust-session:/session
+      - telegram-onedrive-rust-logs:/logs
+      # if you have your own ssl files, uncomment and edit these two lines:
+      # - /path/to/*.crt:/ssl/server.crt
+      # - /path/to/*.key:/ssl/server.key
+    ports:
+      - xxxx:8080
+    environment:
+      - server_uri=https://xxxxxxxx.com
+      # - reverse_proxy=true
+      - tg_bot_token=xxxxxxxxxx:xxxxxxxxxxxxxx_xxxxxxxxxxxxxxxxxxxx
+      - tg_api_id=xxxxxxxx
+      - tg_api_hash=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - tg_user_phone=+xxyyyyyyyyyyy
+      # - tg_user_password=xxxxxxxx
+      # - tg_user_name=xxxxxxxx
+      - od_client_id=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      - od_client_secret=xxxxx~x.xxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - od_root_path=/xxxxxxxx
+      # - auto_delete=true
+
+volumes:
+  telegram-onedrive-session:
+  telegram-onedrive-logs:
