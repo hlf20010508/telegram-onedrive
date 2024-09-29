@@ -19,12 +19,12 @@ use tracing_subscriber::EnvFilter;
 use formatter::EventFormatter;
 use indenter::FileIndenterLayer;
 
-use crate::env::Env;
+use crate::env::ENV;
 
 pub fn trace_registor() {
     LogTracer::init().unwrap();
 
-    let trace_level = &Env::new().trace_level;
+    let trace_level = &ENV.get().unwrap().trace_level;
 
     let stdout_layer = fmt::layer()
         .with_writer(std::io::stdout)

@@ -16,9 +16,7 @@ use crate::state::AppState;
 #[add_context]
 #[add_trace]
 pub async fn add_drive(message: TelegramMessage, state: AppState) -> Result<()> {
-    let env = &state.env;
-
-    let _server_abort_handle = auth_server::spawn(env).await?;
+    let _server_abort_handle = auth_server::spawn().await?;
     authorize_onedrive(message, state, true).await?;
 
     Ok(())

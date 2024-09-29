@@ -15,9 +15,8 @@ use crate::state::AppState;
 #[add_trace]
 pub async fn login_to_telegram(message: TelegramMessage, state: AppState) -> Result<()> {
     let telegram_user = &state.telegram_user;
-    let env = &state.env;
 
-    telegram_user.login(message.clone(), env).await?;
+    telegram_user.login(message.clone()).await?;
 
     let response = "Login to Telegram successful!";
     message.respond(response).await.details(response)?;

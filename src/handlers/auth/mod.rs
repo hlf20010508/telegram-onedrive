@@ -24,9 +24,7 @@ pub const PATTERN: &str = "/auth";
 #[add_context]
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
-    let env = &state.env;
-
-    let _server_abort_handle = auth_server::spawn(env).await?;
+    let _server_abort_handle = auth_server::spawn().await?;
 
     login_to_telegram(message.clone(), state.clone()).await?;
 

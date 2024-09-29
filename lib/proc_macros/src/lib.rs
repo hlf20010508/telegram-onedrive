@@ -154,7 +154,7 @@ Add this bot to a Group as Admin, and give it ability to Delete Messages.
 });
 
 gen_checker!(check_senders, {
-    let users = &state.env.telegram_user.users;
+    let users = &crate::env::ENV.get().unwrap().telegram_user.users;
 
     if let Some(sender) = message.sender() {
         if let Some(username) = sender.username() {
@@ -172,8 +172,7 @@ gen_checker!(check_tg_login, {
         let response = "You haven't logged in to Telegram.";
         message.respond(response).await.details(response)?;
 
-        let env = &state.env;
-        let _server_abort_handle = crate::auth_server::spawn(env).await?;
+        let _server_abort_handle = crate::auth_server::spawn().await?;
         crate::handlers::auth::login_to_telegram(message.clone(), state.clone()).await?;
     }
 });
@@ -185,8 +184,7 @@ gen_checker!(check_od_login, {
         let response = "You haven't authorize OneDrive.";
         message.respond(response).await.details(response)?;
 
-        let env = &state.env;
-        let _server_abort_handle = crate::auth_server::spawn(env).await?;
+        let _server_abort_handle = crate::auth_server::spawn().await?;
         crate::handlers::auth::authorize_onedrive(message.clone(), state.clone(), false).await?;
     }
 });

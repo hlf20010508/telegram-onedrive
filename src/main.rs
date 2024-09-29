@@ -19,6 +19,7 @@ mod utils;
 
 use std::collections::HashMap;
 
+use env::{Env, ENV};
 use handlers::{auth, auto_delete, clear, dir, drive, file, help, link, links, logs, start, url};
 use listener::{EventType, HashMapExt, Listener};
 use trace::{indenter, trace_registor};
@@ -28,6 +29,8 @@ use trace::{indenter, trace_registor};
 // but works fine on MacOS
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
+    ENV.get_or_init(Env::new);
+
     trace_registor();
 
     let events = HashMap::new()

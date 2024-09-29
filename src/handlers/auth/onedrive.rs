@@ -19,9 +19,8 @@ pub async fn authorize_onedrive(
     should_add: bool,
 ) -> Result<()> {
     let onedrive = &state.onedrive;
-    let env = &state.env;
 
-    onedrive.login(message.clone(), env, should_add).await?;
+    onedrive.login(message.clone(), should_add).await?;
 
     let response = "OneDrive authorization successful!";
     message.respond(response).await.details(response)?;

@@ -11,7 +11,7 @@ mod telegram_user;
 mod utils;
 mod var;
 
-use std::fs;
+use std::{fs, sync::OnceLock};
 
 pub use onedrive::OneDriveEnv;
 pub use telegram_bot::TelegramBotEnv;
@@ -22,6 +22,8 @@ use utils::{args_contains, get_arg_value, get_arg_value_option};
 use var::SESSION_DIR;
 
 use crate::error::{Error, ResultExt};
+
+pub static ENV: OnceLock<Env> = OnceLock::new();
 
 pub struct Env {
     pub telegram_bot: TelegramBotEnv,

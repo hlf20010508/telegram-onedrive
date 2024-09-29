@@ -25,19 +25,19 @@ use auto_abort::AutoAbortHandle;
 use cert::get_rustls_config;
 use handlers::{onedrive, telegram};
 
-use crate::env::Env;
+use crate::env::{Env, ENV};
 use crate::error::{Error, Result};
 
 #[add_context]
 #[add_trace]
-pub async fn spawn(
-    Env {
+pub async fn spawn() -> Result<AutoAbortHandle> {
+    tracing::debug!("spawning auth server");
+
+    let Env {
         port,
         use_reverse_proxy,
         ..
-    }: &Env,
-) -> Result<AutoAbortHandle> {
-    tracing::debug!("spawning auth server");
+    } = ENV.get().unwrap();
 
     let (socketio_layer, socketio) = SocketIo::new_layer();
 

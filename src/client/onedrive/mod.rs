@@ -22,7 +22,7 @@ use session::OneDriveSession;
 
 use super::socketio::{socketio_client, socketio_disconnect};
 use crate::auth_server::OD_CODE_EVENT;
-use crate::env::{Env, OneDriveEnv};
+use crate::env::{Env, OneDriveEnv, ENV};
 use crate::error::{Error, Result};
 use crate::message::TelegramMessage;
 
@@ -39,8 +39,8 @@ pub struct OneDriveClient {
 impl OneDriveClient {
     #[add_context]
     #[add_trace]
-    pub async fn new(
-        Env {
+    pub async fn new() -> Result<Self> {
+        let Env {
             onedrive:
                 OneDriveEnv {
                     client_id,
@@ -51,8 +51,8 @@ impl OneDriveClient {
                 },
             server_uri,
             ..
-        }: &Env,
-    ) -> Result<Self> {
+        } = ENV.get().unwrap();
+
         let client = RwLock::new(Client::new("", DriveLocation::me()));
         let session = RwLock::new(
             OneDriveSession::default()
@@ -86,17 +86,14 @@ impl OneDriveClient {
 
     #[add_context]
     #[add_trace]
-    pub async fn login(
-        &self,
-        message: TelegramMessage,
-        Env {
+    pub async fn login(&self, message: TelegramMessage, should_add: bool) -> Result<()> {
+        tracing::info!("logging in to onedrive");
+
+        let Env {
             port,
             use_reverse_proxy,
             ..
-        }: &Env,
-        should_add: bool,
-    ) -> Result<()> {
-        tracing::info!("logging in to onedrive");
+        } = ENV.get().unwrap();
 
         if !should_add {
             tracing::debug!("onedrive account should not be added");

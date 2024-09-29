@@ -18,7 +18,7 @@ use message::ChatMessageVecDeque;
 
 use super::socketio::{socketio_client, socketio_disconnect};
 use crate::auth_server::TG_CODE_EVENT;
-use crate::env::{Env, TelegramBotEnv, TelegramUserEnv};
+use crate::env::{Env, TelegramBotEnv, TelegramUserEnv, ENV};
 use crate::error::{Error, Result};
 use crate::message::TelegramMessage;
 
@@ -40,8 +40,8 @@ pub enum TelegramClient {
 impl TelegramClient {
     #[add_context]
     #[add_trace]
-    pub async fn new_bot(
-        Env {
+    pub async fn new_bot() -> Result<Self> {
+        let Env {
             telegram_bot:
                 TelegramBotEnv {
                     api_id,
@@ -51,8 +51,8 @@ impl TelegramClient {
                     params,
                 },
             ..
-        }: &Env,
-    ) -> Result<Self> {
+        } = ENV.get().unwrap();
+
         let session = Session::load_file_or_create(session_path).map_err(|e| {
             Error::new("failed to load or create session for telegram bot client").raw(e)
         })?;
@@ -96,8 +96,8 @@ impl TelegramClient {
 
     #[add_context]
     #[add_trace]
-    pub async fn new_user(
-        Env {
+    pub async fn new_user() -> Result<Self> {
+        let Env {
             telegram_user:
                 TelegramUserEnv {
                     api_id,
@@ -107,8 +107,8 @@ impl TelegramClient {
                     ..
                 },
             ..
-        }: &Env,
-    ) -> Result<Self> {
+        } = ENV.get().unwrap();
+
         let session = Session::load_file_or_create(session_path).map_err(|e| {
             Error::new("failed to load or create session for telegram user client").raw(e)
         })?;
@@ -153,10 +153,8 @@ impl TelegramClient {
 
     #[add_context]
     #[add_trace]
-    pub async fn login(
-        &self,
-        message: TelegramMessage,
-        Env {
+    pub async fn login(&self, message: TelegramMessage) -> Result<()> {
+        let Env {
             telegram_user:
                 TelegramUserEnv {
                     phone_number,
@@ -168,8 +166,8 @@ impl TelegramClient {
             server_uri,
             use_reverse_proxy,
             ..
-        }: &Env,
-    ) -> Result<()> {
+        } = ENV.get().unwrap();
+
         let client = self.raw();
 
         let response = "Logining into Telegram...";
