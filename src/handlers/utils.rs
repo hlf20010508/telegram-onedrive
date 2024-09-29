@@ -18,7 +18,7 @@ use std::fmt::Display;
 use std::io::Cursor;
 use url::Url;
 
-use super::var::{INVALID_COMPONENT, INVALID_NAME};
+use crate::client::onedrive::invalid_name::{INVALID_COMPONENT, INVALID_NAME, INVALID_NAME_PREFIX};
 use crate::client::TelegramClient;
 use crate::error::{Error, Result, ResultExt};
 use crate::message::{ChatEntity, MessageInfo, TelegramMessage};
@@ -277,7 +277,10 @@ fn validate_filename(filename: &str) -> bool {
 #[add_trace]
 fn preprocess_url_file_name(filename: &str) -> String {
     if validate_filename(filename) {
-        filename.trim().trim_start_matches("~$").to_string()
+        filename
+            .trim()
+            .trim_start_matches(INVALID_NAME_PREFIX)
+            .to_string()
     } else {
         let sp = filename
             .split('.')
@@ -304,7 +307,10 @@ pub fn preprocess_tg_file_name(media: &Media) -> String {
     };
 
     if validate_filename(&filename) {
-        filename.trim().trim_start_matches("~$").to_string()
+        filename
+            .trim()
+            .trim_start_matches(INVALID_NAME_PREFIX)
+            .to_string()
     } else {
         let ext = get_ext(&filename);
 

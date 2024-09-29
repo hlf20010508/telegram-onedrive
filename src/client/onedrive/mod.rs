@@ -7,8 +7,10 @@
 
 mod dir;
 mod drive;
+pub mod invalid_name;
 mod session;
 mod upload;
+mod utils;
 
 use onedrive_api::{
     Auth, ClientCredential, DriveLocation, OneDrive as Client, Permission, Tenant, TokenResponse,

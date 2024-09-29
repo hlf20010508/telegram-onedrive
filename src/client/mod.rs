@@ -5,7 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
-mod onedrive;
+pub mod onedrive;
 mod socketio;
 mod telegram;
 pub mod utils;

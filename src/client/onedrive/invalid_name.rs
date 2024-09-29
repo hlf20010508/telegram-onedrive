@@ -38,3 +38,7 @@ pub const INVALID_NAME: [&str; 26] = [
     "LPT9",
     "desktop.ini",
 ];
+
+pub const INVALID_NAME_PREFIX: &str = "~$";
+
+pub const INVALID_FOLDER_DIR: &str = "/forms";

@@ -7,6 +7,7 @@
 
 use proc_macros::{add_context, add_trace};
 
+use super::utils::validate_root_path;
 use super::OneDriveClient;
 use crate::error::Result;
 
@@ -36,6 +37,8 @@ impl OneDriveClient {
 
         tracing::debug!("got root path: {}", root_path);
 
+        validate_root_path(&root_path)?;
+
         Ok(root_path)
     }
 
@@ -51,13 +54,15 @@ impl OneDriveClient {
     #[add_context]
     #[add_trace]
     pub async fn set_root_path(&self, path: &str) -> Result<()> {
+        validate_root_path(path)?;
+
         self.clear_temp_root_path().await?;
 
         let mut session = self.session.write().await;
         session.root_path = path.to_string();
         session.save().await?;
 
-        tracing::debug!("set onedrive root path: {}", path);
+        tracing::info!("set onedrive root path: {}", path);
 
         Ok(())
     }
@@ -85,11 +90,11 @@ impl OneDriveClient {
     #[add_context]
     #[add_trace]
     pub async fn set_temp_root_path(&self, path: &str) -> Result<()> {
-        tracing::info!("set onedrive temp root path");
+        validate_root_path(path)?;
 
         *self.temp_root_path.write().await = path.to_string();
 
-        tracing::debug!("onedrive temp root path: {}", path);
+        tracing::info!("onedrive temp root path: {}", path);
 
         Ok(())
     }
