@@ -183,7 +183,7 @@ impl OneDriveSession {
     #[add_context]
     #[add_trace]
     pub async fn load(path: &str) -> Result<Self> {
-        tracing::info!("load onedrive session");
+        tracing::debug!("load onedrive session");
 
         let connection = Self::connect_db(path).await?;
 
@@ -197,7 +197,7 @@ impl OneDriveSession {
     #[add_context]
     #[add_trace]
     pub async fn save(&self) -> Result<()> {
-        tracing::info!("save onedrive session");
+        tracing::debug!("save onedrive session");
 
         if self.user_exists().await? {
             tracing::debug!("onedrive session user already exists, update it");
@@ -279,7 +279,6 @@ impl OneDriveSession {
             .await
             .map_err(|e| Error::new("failed to update onedrive session").raw(e))?;
 
-        tracing::info!("updated onedrive session");
         tracing::debug!("updated onedrive session for user {}", self.username);
 
         Ok(())
@@ -312,7 +311,6 @@ impl OneDriveSession {
     #[add_context]
     #[add_trace]
     pub async fn set_current_user(&self) -> Result<()> {
-        tracing::info!("set onedrive current session user");
         tracing::debug!("onedrive session user to be set: {}", self.username);
 
         let current_user_col = current_user::Entity::find()
@@ -395,7 +393,6 @@ impl OneDriveSession {
     #[add_context]
     #[add_trace]
     pub async fn remove_user(&mut self, username: Option<String>) -> Result<()> {
-        tracing::info!("remove onedrive user");
         tracing::debug!("onedrive user to be removed: {:?}", username);
         tracing::debug!("onedrive current user: {}", self.username);
 
@@ -453,7 +450,6 @@ impl OneDriveSession {
     #[add_context]
     #[add_trace]
     pub async fn change_session(&mut self, username: &str) -> Result<()> {
-        tracing::info!("change onedrive session");
         tracing::debug!("onedrive session to change is {}", username);
 
         if username == self.username {
