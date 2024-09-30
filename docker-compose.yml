@@ -14,6 +14,9 @@ services:
     ports:
       - xxxx:8080
     environment:
+      # - port=8080
+      # - trace_level=info
+      # - worker_num=5
       - server_uri=https://xxxxxxxx.com
       # - reverse_proxy=true
       - tg_bot_token=xxxxxxxxxx:xxxxxxxxxxxxxx_xxxxxxxxxxxxxxxxxxxx
