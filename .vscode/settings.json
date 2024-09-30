@@ -1,9 +1,0 @@
-{
-    "rust-analyzer.check.overrideCommand": [
-        "cargo",
-        "run",
-        "--manifest-path",
-        "lint/check/Cargo.toml"
-    ],
-    "rust-analyzer.rustc.source": "discover",
-}

@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
-members = ["lib/*", "lint/*"]
+members = ["lib/*"]
 
 [lints.clippy]
 too_many_arguments = "allow"
@@ -32,9 +32,6 @@ derive_partial_eq_without_eq = "allow"
 missing_const_for_fn = "allow"
 option_if_let_else = "allow"
 or_fun_call = "allow"
-
-[workspace.metadata.dylint]
-libraries = [{ path = "./lint", pattern = "unused_await" }]
 
 [profile.dev]
 incremental = true
