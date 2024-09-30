@@ -6,12 +6,14 @@
 */
 
 mod add;
-mod docs;
 mod logout;
 mod set;
 mod show;
 
-use super::utils::cmd_parser;
+use super::{
+    docs::{format_help, format_unknown_command_help},
+    utils::cmd_parser,
+};
 use crate::{
     error::{Error, Result},
     message::TelegramMessage,
@@ -45,6 +47,12 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         } else if cmd[1] == "logout" {
             // /drive logout
             logout_current_drive(onedrive, message).await?;
+        } else if cmd[1] == "help" {
+            // /drive help
+            message
+                .respond(InputMessage::html(format_help(PATTERN)))
+                .await
+                .context("help")?;
         } else {
             // /drive $index
             let index = cmd[1]
@@ -65,19 +73,13 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             logout_drive(onedrive, message, index).await?;
         } else {
             message
-                .reply(InputMessage::html(format!(
-                    "Unknown sub command for /drive\n{}",
-                    docs::USAGE
-                )))
+                .reply(InputMessage::html(format_unknown_command_help(PATTERN)))
                 .await
                 .context("sub command error")?;
         }
     } else {
         message
-            .reply(InputMessage::html(format!(
-                "Unknown command for /drive\n{}",
-                docs::USAGE
-            )))
+            .reply(InputMessage::html(format_unknown_command_help(PATTERN)))
             .await
             .context("command error")?;
     }

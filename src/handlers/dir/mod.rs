@@ -5,13 +5,15 @@
 :license: MIT, see LICENSE for more details.
 */
 
-mod docs;
 mod reset;
 mod set;
 mod show;
 mod utils;
 
-use super::utils::cmd_parser;
+use super::{
+    docs::{format_help, format_unknown_command_help},
+    utils::cmd_parser,
+};
 use crate::{error::Result, message::TelegramMessage, state::AppState};
 use grammers_client::InputMessage;
 use proc_macros::{add_context, add_trace, check_in_group, check_od_login, check_senders};
@@ -38,6 +40,12 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         if cmd[1] == "reset" {
             // /dir reset
             reset_dir(onedrive, message).await?;
+        } else if cmd[1] == "help" {
+            // /dir help
+            message
+                .respond(InputMessage::html(format_help(PATTERN)))
+                .await
+                .context("help")?;
         } else {
             // dir $root_path
             let root_path = &cmd[1];
@@ -49,25 +57,19 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 // /dir temp cancel
                 cancel_temp_dir(onedrive, message).await?;
             } else {
-                // /dir temp $temp_root_path
+                // /dir temp $path
                 let temp_root_path = &cmd[2];
                 set_temp_dir(onedrive, message, temp_root_path).await?;
             }
         } else {
             message
-                .reply(InputMessage::html(format!(
-                    "Unknown sub command for /dir\n{}",
-                    docs::USAGE
-                )))
+                .reply(InputMessage::html(format_unknown_command_help(PATTERN)))
                 .await
                 .context("sub command error")?;
         }
     } else {
         message
-            .reply(InputMessage::html(format!(
-                "Unknown command for /dir\n{}",
-                docs::USAGE
-            )))
+            .reply(InputMessage::html(format_unknown_command_help(PATTERN)))
             .await
             .context("command error")?;
     }

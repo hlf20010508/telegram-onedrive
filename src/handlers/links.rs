@@ -5,9 +5,12 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use super::utils::{
-    cmd_parser, get_message_info, get_message_link, get_tg_file_size, preprocess_tg_file_name,
-    upload_thumb,
+use super::{
+    docs::{format_help, format_unknown_command_help},
+    utils::{
+        cmd_parser, get_message_info, get_message_link, get_tg_file_size, preprocess_tg_file_name,
+        upload_thumb,
+    },
 };
 use crate::{
     env::BYPASS_PREFIX,
@@ -32,8 +35,14 @@ pub const PATTERN: &str = "/links";
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let cmd = cmd_parser(message.text());
 
-    if cmd.len() == 3 {
-        // /links $link $num
+    if cmd.len() == 2 && cmd[1] == "help" {
+        // /links help
+        message
+            .respond(InputMessage::html(format_help(PATTERN)))
+            .await
+            .context("help")?;
+    } else if cmd.len() == 3 {
+        // /links $message_link $num
         let telegram_user = &state.telegram_user;
         let onedrive = &state.onedrive;
         let task_session = state.task_session.clone();
@@ -161,9 +170,11 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             .await?
             .delete()
             .await?;
-
-        Ok(())
     } else {
-        Err(Error::new("Unknown command for /links"))
+        message
+            .reply(InputMessage::html(format_unknown_command_help(PATTERN)))
+            .await?;
     }
+
+    Ok(())
 }

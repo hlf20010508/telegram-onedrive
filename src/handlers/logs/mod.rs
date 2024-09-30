@@ -6,10 +6,9 @@
 */
 
 mod clear;
-mod docs;
 mod send;
 
-use super::utils::cmd_parser;
+use super::{docs::format_help, utils::cmd_parser};
 use crate::{
     env::LOGS_PATH,
     error::{Error, Result},
@@ -54,12 +53,15 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     } else if cmd.len() == 2 && cmd[1] == "clear" {
         // /logs clear
         clear_logs(message).await?;
+    } else if cmd.len() == 2 && cmd[1] == "help" {
+        // /logs help
+        message
+            .respond(InputMessage::html(format_help(PATTERN)))
+            .await
+            .context("help")?;
     } else {
         message
-            .reply(InputMessage::html(format!(
-                "Unknown command for /logs\n{}",
-                docs::USAGE
-            )))
+            .reply(InputMessage::html(format_help(PATTERN)))
             .await?;
     }
 

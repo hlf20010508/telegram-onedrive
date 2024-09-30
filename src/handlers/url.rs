@@ -5,7 +5,10 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use super::utils::{cmd_parser, get_filename, TextExt};
+use super::{
+    docs::{format_help, format_unknown_command_help},
+    utils::{cmd_parser, get_filename, TextExt},
+};
 use crate::{
     error::{Error, Result},
     message::{ChatEntity, TelegramMessage},
@@ -13,6 +16,7 @@ use crate::{
     tasker::CmdType,
     utils::get_http_client,
 };
+use grammers_client::InputMessage;
 use proc_macros::{
     add_context, add_trace, check_in_group, check_od_login, check_senders, check_tg_login,
 };
@@ -30,25 +34,34 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let cmd = cmd_parser(message.text());
 
     if cmd.len() == 2 {
-        // /url $url
-        let telegram_user = &state.telegram_user;
-        let onedrive = &state.onedrive;
-        let task_session = state.task_session.clone();
-
-        let url = cmd[1].url_encode();
-
-        if url.starts_with("http://") || url.starts_with("https://") {
-            let http_client = get_http_client()?;
-
-            let response = http_client
-                .head(&url)
-                .send()
+        if cmd[1] == "help" {
+            // /url help
+            message
+                .respond(InputMessage::html(format_help(PATTERN)))
                 .await
-                .map_err(|e| Error::new("failed to send head request for /url").raw(e))?;
+                .context("help")?;
 
-            let filename = get_filename(&url, &response)?;
+            Ok(())
+        } else {
+            // /url $url
+            let telegram_user = &state.telegram_user;
+            let onedrive = &state.onedrive;
+            let task_session = state.task_session.clone();
 
-            let total_length = match response.headers().get(header::CONTENT_LENGTH) {
+            let url = cmd[1].url_encode();
+
+            if url.starts_with("http://") || url.starts_with("https://") {
+                let http_client = get_http_client()?;
+
+                let response = http_client
+                    .head(&url)
+                    .send()
+                    .await
+                    .map_err(|e| Error::new("failed to send head request for /url").raw(e))?;
+
+                let filename = get_filename(&url, &response)?;
+
+                let total_length = match response.headers().get(header::CONTENT_LENGTH) {
                 Some(content_length) => content_length
                     .to_str()
                     .map_err(|e| Error::new( "header Content-Length has invisible ASCII chars").raw(e))?
@@ -61,49 +74,54 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 ))),
             };
 
-            let root_path = onedrive.get_root_path(true).await?;
+                let root_path = onedrive.get_root_path(true).await?;
 
-            let (upload_session, upload_session_meta) = onedrive
-                .multipart_upload_session_builder(&root_path, &filename)
-                .await?;
+                let (upload_session, upload_session_meta) = onedrive
+                    .multipart_upload_session_builder(&root_path, &filename)
+                    .await?;
 
-            let current_length = upload_session_meta
-                .next_expected_ranges
-                .first()
-                .map_or(0, |range| range.start);
+                let current_length = upload_session_meta
+                    .next_expected_ranges
+                    .first()
+                    .map_or(0, |range| range.start);
 
-            let chat_bot_hex = message.chat().pack().to_hex();
-            let chat_user_hex = telegram_user
-                .get_chat(&ChatEntity::from(message.chat()))
-                .await?
-                .pack()
-                .to_hex();
+                let chat_bot_hex = message.chat().pack().to_hex();
+                let chat_user_hex = telegram_user
+                    .get_chat(&ChatEntity::from(message.chat()))
+                    .await?
+                    .pack()
+                    .to_hex();
 
-            task_session
-                .insert_task(
-                    CmdType::Url,
-                    &filename,
-                    &root_path,
-                    Some(url),
-                    upload_session.upload_url(),
-                    current_length,
-                    total_length,
-                    &chat_bot_hex,
-                    &chat_user_hex,
-                    None,
-                    message.id(),
-                    None,
-                    None,
-                )
-                .await?;
+                task_session
+                    .insert_task(
+                        CmdType::Url,
+                        &filename,
+                        &root_path,
+                        Some(url),
+                        upload_session.upload_url(),
+                        current_length,
+                        total_length,
+                        &chat_bot_hex,
+                        &chat_user_hex,
+                        None,
+                        message.id(),
+                        None,
+                        None,
+                    )
+                    .await?;
 
-            tracing::info!("inserted url task: {} size: {}", filename, total_length);
+                tracing::info!("inserted url task: {} size: {}", filename, total_length);
 
-            Ok(())
-        } else {
-            Err(Error::new("not an http url"))
+                Ok(())
+            } else {
+                Err(Error::new("not an http url"))
+            }
         }
     } else {
-        Err(Error::new("Unknown command for /url"))
+        message
+            .reply(InputMessage::html(format_unknown_command_help(PATTERN)))
+            .await?;
+
+        Ok(())
     }
 }
