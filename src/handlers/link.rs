@@ -5,7 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use super::utils::{get_message_from_link, upload_thumb};
+use super::utils::{message::get_message_from_link, upload::upload_thumb};
 use crate::{
     env::BYPASS_PREFIX,
     error::{Error, Result},

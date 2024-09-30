@@ -5,20 +5,19 @@
 :license: MIT, see LICENSE for more details.
 */
 
-mod clear;
-mod send;
-
-use super::{docs::format_help, utils::cmd_parser};
+use super::{
+    docs::format_help,
+    utils::{text::cmd_parser, zip::zip_dir},
+};
 use crate::{
+    client::TelegramClient,
     env::LOGS_PATH,
     error::{Error, Result},
     message::TelegramMessage,
     state::AppState,
 };
-use clear::clear_logs;
 use grammers_client::InputMessage;
 use proc_macros::{add_context, add_trace, check_in_group, check_senders};
-use send::send_log_zip;
 use tokio::fs;
 
 pub const PATTERN: &str = "/logs";
@@ -64,6 +63,47 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             .reply(InputMessage::html(format_help(PATTERN)))
             .await?;
     }
+
+    Ok(())
+}
+
+#[add_context]
+#[add_trace]
+async fn send_log_zip(telegram_bot: &TelegramClient, message: TelegramMessage) -> Result<()> {
+    const ZIP_PATH: &str = "./logs.zip";
+
+    message.respond("Sending logs...").await?;
+
+    zip_dir(LOGS_PATH, ZIP_PATH)?;
+
+    let file = telegram_bot.upload_file(ZIP_PATH).await.context("logs")?;
+
+    message.respond(InputMessage::default().file(file)).await?;
+
+    std::fs::remove_file(ZIP_PATH).map_err(|e| Error::new("failed to remove file").raw(e))?;
+
+    Ok(())
+}
+
+#[add_context]
+#[add_trace]
+async fn clear_logs(message: TelegramMessage) -> Result<()> {
+    while let Some(entry) = fs::read_dir(LOGS_PATH)
+        .await
+        .map_err(|e| Error::new("failed to read logs dir").raw(e))?
+        .next_entry()
+        .await
+        .map_err(|e| Error::new("failed to read next entry in logs dir").raw(e))?
+    {
+        fs::remove_file(entry.path()).await.map_err(|e| {
+            Error::new("failed to remove log file")
+                .raw(e)
+                .details(entry.path().to_string_lossy())
+        })?;
+    }
+
+    let response = "Logs cleared.";
+    message.respond(response).await.details(response)?;
 
     Ok(())
 }

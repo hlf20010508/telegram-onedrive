@@ -7,7 +7,10 @@
 
 use super::{
     docs::{format_help, format_unknown_command_help},
-    utils::{cmd_parser, get_filename, TextExt},
+    utils::{
+        get_filename,
+        text::{cmd_parser, TextExt},
+    },
 };
 use crate::{
     error::{Error, Result},

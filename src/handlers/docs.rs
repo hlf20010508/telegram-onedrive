@@ -5,6 +5,14 @@
 :license: MIT, see LICENSE for more details.
 */
 
+const GREETING: &str = "\
+Transfer files to Onedrive.
+
+Forward or upload files to me, or pass message link to transfer restricted content from group or channel.
+
+- /help: Ask for help.
+";
+
 const HELP_BASE: &str = "\
 <pre><code>/auth</code></pre>
 To authorize for Telegram and OneDrive.
@@ -93,6 +101,7 @@ pub fn format_help(name: &str) -> String {
                 HELP_BASE, HELP_LINKS, HELP_URL, HELP_LOGS, HELP_DRIVE, HELP_DIR, INSTRUCTION
             )
         }
+        "/start" => GREETING.to_string(),
         "/links" => HELP_LINKS.to_string(),
         "/url" => HELP_URL.to_string(),
         "/logs" => HELP_LOGS.to_string(),

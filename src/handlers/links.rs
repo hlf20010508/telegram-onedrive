@@ -8,8 +8,11 @@
 use super::{
     docs::{format_help, format_unknown_command_help},
     utils::{
-        cmd_parser, get_message_info, get_message_link, get_tg_file_size, preprocess_tg_file_name,
-        upload_thumb,
+        get_tg_file_size,
+        message::{get_message_info, get_message_link},
+        preprocess_tg_file_name,
+        text::cmd_parser,
+        upload::upload_thumb,
     },
 };
 use crate::{

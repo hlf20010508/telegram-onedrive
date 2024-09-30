@@ -5,13 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::{
-    client::TelegramClient,
-    env::LOGS_PATH,
-    error::{Error, Result},
-    message::TelegramMessage,
-};
-use grammers_client::InputMessage;
+use crate::error::{Error, Result};
 use path_slash::PathExt;
 use proc_macros::{add_context, add_trace};
 use std::{
@@ -22,25 +16,7 @@ use zip::write::{FileOptions, SimpleFileOptions};
 
 #[add_context]
 #[add_trace]
-pub async fn send_log_zip(telegram_bot: &TelegramClient, message: TelegramMessage) -> Result<()> {
-    const ZIP_PATH: &str = "./logs.zip";
-
-    message.respond("Sending logs...").await?;
-
-    zip_dir(LOGS_PATH, ZIP_PATH)?;
-
-    let file = telegram_bot.upload_file(ZIP_PATH).await.context("logs")?;
-
-    message.respond(InputMessage::default().file(file)).await?;
-
-    std::fs::remove_file(ZIP_PATH).map_err(|e| Error::new("failed to remove file").raw(e))?;
-
-    Ok(())
-}
-
-#[add_context]
-#[add_trace]
-fn zip_dir<P: AsRef<Path>>(input_path: P, output_path: P) -> Result<()> {
+pub fn zip_dir<P: AsRef<Path>>(input_path: P, output_path: P) -> Result<()> {
     let zip_file = std::fs::File::create(&output_path)
         .map_err(|e| Error::new("failed to create file").raw(e))?;
     let mut zip = zip::ZipWriter::new(zip_file);
@@ -111,6 +87,7 @@ fn add_entry(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::env::LOGS_PATH;
 
     #[test]
     fn test_zip_dir() {

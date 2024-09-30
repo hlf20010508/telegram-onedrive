@@ -1,5 +1,5 @@
 .DS_Store
-logs*
+/logs
 *.log
 /session
 dev.*

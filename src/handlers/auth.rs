@@ -5,13 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
-mod onedrive;
-mod telegram;
-
 use crate::{auth_server, error::Result, message::TelegramMessage, state::AppState};
-pub use onedrive::authorize_onedrive;
 use proc_macros::{add_context, add_trace, check_in_group, check_senders};
-pub use telegram::login_to_telegram;
 
 pub const PATTERN: &str = "/auth";
 
@@ -28,6 +23,36 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     let onedrive = &state.onedrive;
     onedrive.set_current_user().await?;
+
+    Ok(())
+}
+
+#[add_context]
+#[add_trace]
+pub async fn authorize_onedrive(
+    message: TelegramMessage,
+    state: AppState,
+    should_add: bool,
+) -> Result<()> {
+    let onedrive = &state.onedrive;
+
+    onedrive.login(message.clone(), should_add).await?;
+
+    let response = "OneDrive authorization successful!";
+    message.respond(response).await.details(response)?;
+
+    Ok(())
+}
+
+#[add_context]
+#[add_trace]
+pub async fn login_to_telegram(message: TelegramMessage, state: AppState) -> Result<()> {
+    let telegram_user = &state.telegram_user;
+
+    telegram_user.login(message.clone()).await?;
+
+    let response = "Login to Telegram successful!";
+    message.respond(response).await.details(response)?;
 
     Ok(())
 }

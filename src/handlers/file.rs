@@ -5,7 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use super::utils::upload_thumb;
+use super::utils::upload::upload_thumb;
 use crate::{
     env::BYPASS_PREFIX,
     error::{Error, Result},

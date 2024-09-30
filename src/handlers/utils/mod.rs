@@ -5,86 +5,25 @@
 :license: MIT, see LICENSE for more details.
 */
 
+pub mod message;
+pub mod text;
+pub mod upload;
+pub mod zip;
+
 use crate::{
-    client::{
-        onedrive::invalid_name::{INVALID_COMPONENT, INVALID_NAME, INVALID_NAME_PREFIX},
-        TelegramClient,
-    },
+    client::onedrive::invalid_name::{INVALID_COMPONENT, INVALID_NAME, INVALID_NAME_PREFIX},
     error::{Error, Result, ResultExt},
-    message::{ChatEntity, MessageInfo, TelegramMessage},
+    message::TelegramMessage,
     utils::{get_current_timestamp, get_ext},
 };
-use grammers_client::types::{
-    media::{Document, Media, Uploaded},
-    photo_sizes::{PhotoSize, VecExt},
-    Downloadable,
-};
+use grammers_client::types::media::{Document, Media};
 use mime_guess::get_mime_extensions_str;
 use percent_encoding::percent_decode_str;
 use proc_macros::{add_context, add_trace};
 use regex::Regex;
 use reqwest::{header, Response, StatusCode};
-use std::{collections::HashMap, fmt::Display, io::Cursor};
+use std::collections::HashMap;
 use url::Url;
-
-pub fn cmd_parser<T>(cmd: T) -> Vec<String>
-where
-    T: Display,
-{
-    cmd.to_string()
-        .purify()
-        .split_whitespace()
-        .map(|s| s.to_string())
-        .collect()
-}
-
-pub trait TextExt {
-    fn purify(&self) -> String;
-    fn url_encode(&self) -> String;
-}
-
-impl<T> TextExt for T
-where
-    T: Display,
-{
-    fn purify(&self) -> String {
-        let text = self
-            .to_string()
-            .trim()
-            .replace(['*', '`', '~'], "")
-            .replace("<b>", "")
-            .replace("</b>", "")
-            .replace("<strong>", "")
-            .replace("</strong>", "")
-            .replace("<i>", "")
-            .replace("</i>", "")
-            .replace("<em>", "")
-            .replace("</em>", "")
-            .replace("<code>", "")
-            .replace("</code>", "")
-            .replace("<s>", "")
-            .replace("</s>", "")
-            .replace("<strike>", "")
-            .replace("</strike>", "")
-            .replace("<del>", "")
-            .replace("</del>", "")
-            .replace("<u>", "")
-            .replace("</u>", "")
-            .replace("</pre>", "");
-
-        let pattern = "<pre[^>]*>";
-        let re = Regex::new(pattern)
-            .map_err(|e| Error::new("invalid regex pattern").raw(e).details(pattern))
-            .unwrap_or_trace();
-        re.replace_all(&text, "").to_string()
-    }
-
-    fn url_encode(&self) -> String {
-        Url::parse(&self.to_string())
-            .expect("Failed to parse URL")
-            .to_string()
-    }
-}
 
 #[add_context]
 #[add_trace]
@@ -277,6 +216,19 @@ fn validate_filename(filename: &str) -> bool {
     true
 }
 
+#[add_context]
+#[add_trace]
+pub async fn is_root_path_valid(root_path: &str, message: TelegramMessage) -> Result<bool> {
+    if root_path.starts_with('/') {
+        Ok(true)
+    } else {
+        let response = "directory path should start with /";
+        message.reply(response).await.details(response)?;
+
+        Ok(false)
+    }
+}
+
 #[add_trace]
 fn preprocess_url_file_name(filename: &str) -> String {
     if validate_filename(filename) {
@@ -350,115 +302,4 @@ pub fn get_tg_file_size(media: &Media) -> u64 {
     };
 
     size as u64
-}
-
-#[add_context]
-#[add_trace]
-pub async fn upload_thumb(
-    client: &TelegramClient,
-    thumbs: Vec<PhotoSize>,
-) -> Result<Option<Uploaded>> {
-    let uploaded = match thumbs.largest() {
-        Some(thumb) => {
-            let downloadable = Downloadable::PhotoSize(thumb.clone());
-            let mut download = client.iter_download(&downloadable);
-
-            let mut buffer = Vec::new();
-            while let Some(chunk) = download
-                .next()
-                .await
-                .map_err(|e| Error::new("failed to download chunk for thumb").raw(e))?
-            {
-                buffer.extend(chunk);
-            }
-
-            let size = buffer.len();
-            let mut stream = Cursor::new(buffer);
-            let uploaded = client
-                .upload_stream(&mut stream, size, "thumb.jpg".to_string())
-                .await
-                .context("thumb")?;
-
-            Some(uploaded)
-        }
-        None => None,
-    };
-
-    Ok(uploaded)
-}
-
-#[add_context]
-#[add_trace]
-pub fn get_message_info(link: &str) -> Result<MessageInfo> {
-    let (message_info, is_private) =
-        if let Some(message_info) = link.strip_prefix("https://t.me/c/") {
-            // link from private group
-            (message_info, true)
-        } else if let Some(message_info) = link.strip_prefix("https://t.me/") {
-            // link from public group
-            (message_info, false)
-        } else {
-            return Err(Error::new("not a message link"));
-        };
-
-    let message_info_vec = message_info
-        .split('/')
-        .map(|s| s.to_string())
-        .collect::<Vec<String>>();
-
-    if message_info_vec.len() != 2 {
-        return Err(Error::new("message info doesn't contain 2 elements"));
-    }
-
-    let chat_entity = if is_private {
-        let chat_id = message_info_vec[0]
-            .parse::<i64>()
-            .map_err(|e| Error::new("failed to parse chat id").raw(e))?;
-
-        ChatEntity::from(chat_id)
-    } else {
-        let chat_name = message_info_vec[0].clone();
-
-        ChatEntity::from(chat_name)
-    };
-
-    let message_id = message_info_vec[1]
-        .parse()
-        .map_err(|e| Error::new("failed to parse message id").raw(e))?;
-
-    Ok(MessageInfo::new(chat_entity, message_id))
-}
-
-#[add_context]
-#[add_trace]
-pub async fn get_message_from_link(
-    telegram_user: &TelegramClient,
-    link: &str,
-) -> Result<TelegramMessage> {
-    let MessageInfo {
-        chat_entity,
-        id: message_id,
-    } = get_message_info(link)?;
-
-    let chat = telegram_user.get_chat(&chat_entity).await?;
-
-    telegram_user.get_message(chat, message_id).await
-}
-
-pub fn get_message_link(chat_entity: &ChatEntity, id: i32) -> String {
-    match chat_entity {
-        ChatEntity::Chat(chat) => {
-            if let Some(username) = chat.username() {
-                // public group
-                format!("https://t.me/{}/{}", username, id)
-            } else {
-                // private group
-                format!("https://t.me/c/{}/{}", chat.id(), id)
-            }
-        }
-        // private group
-        ChatEntity::Id(chat_id) => format!("https://t.me/c/{}/{}", chat_id, id),
-        // public group
-        ChatEntity::Username(username) => format!("https://t.me/{}/{}", username, id),
-    }
 }
