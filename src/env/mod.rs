@@ -18,7 +18,7 @@ pub use telegram_bot::TelegramBotEnv;
 pub use telegram_user::TelegramUserEnv;
 use utils::{get_env_value, get_env_value_option};
 use var::SESSION_DIR;
-pub use var::{BYPASS_PREFIX, LOGS_PATH, WORKER_NUM};
+pub use var::{BYPASS_PREFIX, LOGS_PATH};
 
 pub static ENV: OnceLock<Env> = OnceLock::new();
 
@@ -32,6 +32,7 @@ pub struct Env {
     pub use_reverse_proxy: bool,
     pub should_auto_delete: bool,
     pub tasker_session_path: String,
+    pub task_handler_num: u8,
 }
 
 impl Env {
@@ -47,6 +48,7 @@ impl Env {
         let use_reverse_proxy = get_env_value_option("reverse_proxy", false);
         let should_auto_delete = get_env_value_option("auto_delete", false);
         let tasker_session_path = var::TASKER_SESSION_PATH.to_string();
+        let task_handler_num = get_env_value_option("worker_num", 5);
 
         Self {
             telegram_bot,
@@ -58,6 +60,7 @@ impl Env {
             use_reverse_proxy,
             should_auto_delete,
             tasker_session_path,
+            task_handler_num,
         }
     }
 

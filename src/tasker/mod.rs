@@ -13,7 +13,7 @@ mod transfer;
 
 use crate::{
     client::utils::chat_from_hex,
-    env::WORKER_NUM,
+    env::ENV,
     error::{Error, Result, ResultExt, ResultUnwrapExt},
     message::TelegramMessage,
     state::AppState,
@@ -57,7 +57,9 @@ impl Tasker {
             .await;
         });
 
-        let semaphore = Arc::new(Semaphore::new(WORKER_NUM as usize));
+        let handler_num = ENV.get().unwrap().task_handler_num;
+
+        let semaphore = Arc::new(Semaphore::new(handler_num as usize));
 
         let mut handler_id = 0;
 
@@ -68,7 +70,7 @@ impl Tasker {
                 .await
                 .trace();
 
-            if handler_id == WORKER_NUM {
+            if handler_id == handler_num {
                 handler_id = 0;
             }
 
