@@ -21,16 +21,15 @@ pub use events::{EventType, HashMapExt};
 use grammers_client::Update;
 use handler::Handler;
 use proc_macros::{add_context, add_trace};
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
 pub struct Listener {
-    pub events: Rc<Events>,
+    pub events: Events,
     pub state: AppState,
 }
 
 impl Listener {
     pub async fn new(events: Events) -> Self {
-        let events = Rc::new(events);
         let state = Arc::new(State::new().await);
 
         Self { events, state }
@@ -67,17 +66,15 @@ impl Listener {
     #[add_context]
     #[add_trace]
     async fn handle_message(&self) -> Result<()> {
-        let handler = Handler::new(self.events.clone(), self.state.clone());
-
-        let client = &handler.state.telegram_bot;
+        let client = &self.state.telegram_bot;
 
         let update = client.next_update().await?;
-
         if let Update::NewMessage(message_raw) = update {
             // bypass message that the bot sent itself, and message that starts with bypass prefix
             if !message_raw.outgoing() && !message_raw.text().starts_with(BYPASS_PREFIX) {
                 let message = TelegramMessage::new(client.clone(), message_raw);
 
+                let handler = Handler::new(&self.events, &self.state);
                 if let Err(e) = handler.handle_message(message.clone()).await {
                     e.send(message).await.unwrap_both().trace();
                 }

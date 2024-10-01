@@ -9,15 +9,14 @@ use super::{EventType, Events};
 use crate::{error::Result, message::TelegramMessage, state::AppState};
 use grammers_client::types::Media;
 use proc_macros::{add_context, add_trace};
-use std::rc::Rc;
 
-pub struct Handler {
-    pub events: Rc<Events>,
-    pub state: AppState,
+pub struct Handler<'h> {
+    pub events: &'h Events,
+    pub state: &'h AppState,
 }
 
-impl Handler {
-    pub fn new(events: Rc<Events>, state: AppState) -> Self {
+impl<'h> Handler<'h> {
+    pub fn new(events: &'h Events, state: &'h AppState) -> Self {
         Self { events, state }
     }
 
