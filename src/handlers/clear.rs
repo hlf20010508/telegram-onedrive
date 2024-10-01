@@ -21,7 +21,7 @@ pub const PATTERN: &str = "/clear";
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let telegram_user = &state.telegram_user;
-    let task_session = state.task_session.clone();
+    let task_session = &state.task_session;
 
     task_session.clear().await?;
 

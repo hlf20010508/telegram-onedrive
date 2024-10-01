@@ -26,27 +26,28 @@ use std::{
 use tokio::sync::Mutex;
 
 pub struct Progress {
-    session: Arc<TaskSession>,
     state: AppState,
     last_progress_response: Arc<Mutex<String>>,
 }
 
 impl Progress {
     pub fn new(state: AppState) -> Self {
-        let session = state.task_session.clone();
         let last_progress_response = Arc::new(Mutex::new(String::new()));
 
         Self {
-            session,
             state,
             last_progress_response,
         }
     }
 
+    fn session(&self) -> &TaskSession {
+        &self.state.task_session
+    }
+
     #[add_context]
     #[add_trace]
     pub async fn set_current_length(&self, id: i64, current_length: u64) -> Result<()> {
-        self.session.set_current_length(id, current_length).await
+        self.session().set_current_length(id, current_length).await
     }
 
     pub async fn run(&self) {
@@ -68,7 +69,7 @@ impl Progress {
         &self,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
     ) -> Result<()> {
-        let chat_tasks = self.session.get_chats_tasks().await?;
+        let chat_tasks = self.session().get_chats_tasks().await?;
 
         for (
             ChatHex {
@@ -178,7 +179,7 @@ impl Progress {
                 }
             }
 
-            self.session.delete_task(task.id).await?;
+            self.session().delete_task(task.id).await?;
         }
 
         Ok(())
@@ -211,7 +212,7 @@ impl Progress {
                 e.send_chat(telegram_bot, chat).await.unwrap_both().trace();
             }
 
-            self.session.delete_task(task.id).await?;
+            self.session().delete_task(task.id).await?;
         }
 
         Ok(())
@@ -228,7 +229,7 @@ impl Progress {
 
         for (chat_bot_hex, progress_message_id) in chat_progress_message_id.iter() {
             let has_started_tasks = self
-                .session
+                .session()
                 .does_chat_has_started_tasks(chat_bot_hex)
                 .await?;
 
@@ -285,7 +286,7 @@ impl Progress {
         }
 
         let pending_tasks_number = self
-            .session
+            .session()
             .get_chat_pending_tasks_number(chat_bot_hex)
             .await?;
 
@@ -354,6 +355,6 @@ impl Progress {
     #[add_context]
     #[add_trace]
     pub async fn update_filename(&self, id: i64, filename: &str) -> Result<()> {
-        self.session.update_filename(id, filename).await
+        self.session().update_filename(id, filename).await
     }
 }

@@ -49,7 +49,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             // /url $url
             let telegram_user = &state.telegram_user;
             let onedrive = &state.onedrive;
-            let task_session = state.task_session.clone();
+            let task_session = &state.task_session;
 
             let url = cmd[1].url_encode();
 

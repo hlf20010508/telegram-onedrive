@@ -28,7 +28,7 @@ use proc_macros::{
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let telegram_user = &state.telegram_user;
     let onedrive = &state.onedrive;
-    let task_session = state.task_session.clone();
+    let task_session = &state.task_session;
 
     let link = message.text();
 

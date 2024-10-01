@@ -28,26 +28,24 @@ use tokio::sync::Semaphore;
 
 pub struct Tasker {
     state: AppState,
-    session: Arc<TaskSession>,
     progress: Arc<Progress>,
 }
 
 impl Tasker {
     pub fn new(state: AppState) -> Self {
-        let session = state.task_session.clone();
         let progress = Arc::new(Progress::new(state.clone()));
 
-        Self {
-            state,
-            session,
-            progress,
-        }
+        Self { state, progress }
+    }
+
+    fn session(&self) -> &TaskSession {
+        &self.state.task_session
     }
 
     pub async fn run(&self) {
         tracing::info!("tasker started");
 
-        self.session.clear().await.unwrap_or_trace();
+        self.session().clear().await.unwrap_or_trace();
 
         let progress_clone = self.progress.clone();
         tokio::spawn(async move {
@@ -80,7 +78,7 @@ impl Tasker {
 
     #[add_context]
     async fn handle_tasks(&self, semaphore: Arc<Semaphore>, handler_id: u8) -> Result<()> {
-        let task = self.session.fetch_task().await?;
+        let task = self.session().fetch_task().await?;
 
         if let Some(task) = task {
             let chat = chat_from_hex(&task.chat_bot_hex)?;
@@ -93,7 +91,6 @@ impl Tasker {
 
             let semaphore_clone = semaphore.clone();
             let state_clone = self.state.clone();
-            let session_clone = self.session.clone();
             let progress_clone = self.progress.clone();
 
             macro_rules! handle_task {
@@ -105,18 +102,22 @@ impl Tasker {
                                 async fn handler(
                                     task: tasks::Model,
                                     message: TelegramMessage,
-                                    session: Arc<TaskSession>,
                                     progress: Arc<Progress>,
                                     state: AppState,
                                 ) -> Result<()> {
                                     let task_id = task.id;
+                                    let session = &state.task_session;
 
                                     session
                                         .set_task_status(task_id, tasks::TaskStatus::Started)
                                         .await?;
 
-                                    match handlers::$handler_type::handler(task, progress, state)
-                                        .await
+                                    match handlers::$handler_type::handler(
+                                        task,
+                                        progress,
+                                        state.clone(),
+                                    )
+                                    .await
                                     {
                                         Ok(_) => {
                                             session
@@ -147,14 +148,9 @@ impl Tasker {
                                     })
                                     .unwrap_or_trace();
 
-                                if let Err(e) = handler(
-                                    task,
-                                    message.clone(),
-                                    session_clone,
-                                    progress_clone,
-                                    state_clone,
-                                )
-                                .await
+                                if let Err(e) =
+                                    handler(task, message.clone(), progress_clone, state_clone)
+                                        .await
                                 {
                                     e.send(message).await.unwrap_both().trace();
                                 }

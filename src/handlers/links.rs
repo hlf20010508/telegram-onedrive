@@ -48,7 +48,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         // /links $message_link $num
         let telegram_user = &state.telegram_user;
         let onedrive = &state.onedrive;
-        let task_session = state.task_session.clone();
+        let task_session = &state.task_session;
 
         let chat_user = telegram_user
             .get_chat(&ChatEntity::from(message.chat()))

@@ -18,7 +18,7 @@ pub struct State {
     pub telegram_user: TelegramClient,
     pub onedrive: OneDriveClient,
     pub should_auto_delete: AtomicBool,
-    pub task_session: Arc<TaskSession>,
+    pub task_session: TaskSession,
 }
 
 impl State {
@@ -29,11 +29,9 @@ impl State {
         let telegram_user = TelegramClient::new_user().await.unwrap_or_trace();
         let onedrive = OneDriveClient::new().await.unwrap_or_trace();
         let should_auto_delete = AtomicBool::new(env.should_auto_delete);
-        let task_session = Arc::new(
-            TaskSession::new(&env.tasker_session_path)
-                .await
-                .unwrap_or_trace(),
-        );
+        let task_session = TaskSession::new(&env.tasker_session_path)
+            .await
+            .unwrap_or_trace();
 
         Self {
             telegram_bot,
