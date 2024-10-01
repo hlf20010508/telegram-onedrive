@@ -119,13 +119,13 @@ impl Display for Error {
             write!(f, "{}", base)
         }
 
-        let message = self.inner.message.clone();
+        let message = &self.inner.message;
         let contexts = &self.inner.contexts;
         let details = &self.inner.details;
 
         let base = match &self.inner.raw {
             Some(e) => format!("{}: {}", message, e),
-            None => message,
+            None => message.clone(),
         };
 
         write_fmt(f, base, contexts, details)
