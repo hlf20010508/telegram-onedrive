@@ -17,27 +17,15 @@ use crate::{
 use grammers_client::InputMessage;
 use path_slash::PathBufExt;
 use proc_macros::{add_context, add_trace};
-use std::{
-    collections::HashMap,
-    path::Path,
-    sync::{atomic::Ordering, Arc},
-    time::Duration,
-};
-use tokio::sync::Mutex;
+use std::{collections::HashMap, path::Path, sync::atomic::Ordering, time::Duration};
 
 pub struct Progress {
     state: AppState,
-    last_progress_response: Arc<Mutex<String>>,
 }
 
 impl Progress {
     pub fn new(state: AppState) -> Self {
-        let last_progress_response = Arc::new(Mutex::new(String::new()));
-
-        Self {
-            state,
-            last_progress_response,
-        }
+        Self { state }
     }
 
     fn session(&self) -> &TaskSession {
@@ -54,11 +42,15 @@ impl Progress {
         tracing::info!("progress started");
 
         let mut chat_progress_message_id = HashMap::new();
+        let mut last_progress_response = String::new();
 
         loop {
-            self.handle_chat_tasks_progress(&mut chat_progress_message_id)
-                .await
-                .trace();
+            self.handle_chat_tasks_progress(
+                &mut chat_progress_message_id,
+                &mut last_progress_response,
+            )
+            .await
+            .trace();
 
             tokio::time::sleep(Duration::from_secs(5)).await;
         }
@@ -68,6 +60,7 @@ impl Progress {
     async fn handle_chat_tasks_progress(
         &self,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
+        last_progress_response: &mut String,
     ) -> Result<()> {
         let chat_tasks = self.session().get_chats_tasks().await?;
 
@@ -92,6 +85,7 @@ impl Progress {
                 &chat_bot_hex,
                 &chat_user_hex,
                 chat_progress_message_id,
+                last_progress_response,
             )
             .await?;
 
@@ -116,6 +110,7 @@ impl Progress {
         chat_bot_hex: &str,
         chat_user_hex: &str,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
+        last_progress_response: &mut String,
     ) -> Result<()> {
         let telegram_bot = &self.state.telegram_bot;
 
@@ -126,6 +121,7 @@ impl Progress {
                     chat_user_hex,
                     current_tasks,
                     chat_progress_message_id,
+                    last_progress_response,
                 )
                 .await;
 
@@ -266,6 +262,7 @@ impl Progress {
         chat_user_hex: &str,
         current_tasks: Vec<tasks::Model>,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
+        last_progress_response: &mut String,
     ) -> Result<()> {
         let telegram_bot = &self.state.telegram_bot;
         let telegram_user = &self.state.telegram_user;
@@ -297,8 +294,6 @@ impl Progress {
         let progress_message_id = chat_progress_message_id
             .get_mut(chat_bot_hex)
             .ok_or_else(|| Error::new("chat_bot_hex not in chat_progress_message_id"))?;
-
-        let mut last_progress_response = self.last_progress_response.lock().await;
 
         match progress_message_id {
             Some(progress_message_id) => {
