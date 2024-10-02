@@ -104,6 +104,8 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let chat_user_hex = chat_user.pack().to_hex();
     let chat_origin_hex = message_origin.chat().pack().to_hex();
 
+    let mut aborters = state.task_session.aborters.write().await;
+
     let id = task_session
         .insert_task(
             cmd_type,
@@ -123,12 +125,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         .await?;
 
     let aborter = Arc::new(TaskAborter::new(id, &filename));
-    state
-        .task_session
-        .aborters
-        .write()
-        .await
-        .insert((chat_user.id(), message_id), (aborter, None));
+    aborters.insert((chat_user.id(), message_id), (aborter, None));
 
     tracing::info!("inserted link task: {} size: {}", filename, total_length);
 

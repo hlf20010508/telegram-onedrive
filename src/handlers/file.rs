@@ -108,6 +108,8 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let chat_bot_hex = message.chat().pack().to_hex();
     let chat_user_hex = chat_user.pack().to_hex();
 
+    let mut aborters = state.task_session.aborters.write().await;
+
     let id = task_session
         .insert_task(
             cmd_type,
@@ -126,10 +128,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         )
         .await?;
 
-    let mut aborters = state.task_session.aborters.write().await;
-
     let aborter = Arc::new(TaskAborter::new(id, &filename));
-
     let chat_id = chat_user.id();
 
     // insert both message_id and message_id_forward so that both of them can be used to abort the task
