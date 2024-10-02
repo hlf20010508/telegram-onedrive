@@ -125,7 +125,7 @@ impl Tasker {
                             CmdType::Url => {
                                 tracing::info!("handle url task");
 
-                                handlers::url::handler(task, progress, state.clone()).await
+                                handlers::url::handler(task, progress).await
                             }
                             CmdType::File | CmdType::Link => {
                                 tracing::info!("handle file or link task");
@@ -153,6 +153,14 @@ impl Tasker {
                                     .set_task_status(task_id, tasks::TaskStatus::Failed)
                                     .await?;
                             }
+                        }
+
+                        let mut aborters = state.task_session.aborters.write().await;
+                        let chat_id = message.chat().id();
+                        if let Some((_, Some(message_id_related))) =
+                            aborters.remove(&(chat_id, message.id()))
+                        {
+                            aborters.remove(&(chat_id, message_id_related));
                         }
 
                         Ok(())
