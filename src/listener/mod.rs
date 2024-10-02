@@ -10,7 +10,7 @@ mod handler;
 
 use crate::{
     env::BYPASS_PREFIX,
-    error::{Error, Result, ResultExt, ResultUnwrapExt},
+    error::{Result, ResultExt, ResultUnwrapExt},
     message::{ChatEntity, TelegramMessage},
     state::{AppState, State},
     tasker::Tasker,
@@ -62,35 +62,33 @@ impl Listener {
                         // that's why we use user client to catch it instead of bot client
                         let mut task_aborters = state.task_session.aborters.write().await;
 
-                        let chat_id = messages_info
-                            .channel_id()
-                            .ok_or_else(|| Error::new("channel id of deleted messages if None"))
-                            .unwrap_or_trace();
-
-                        for message_id in messages_info.messages() {
-                            if let Some((aborter, message_id_related)) =
-                                task_aborters.remove(&(chat_id, *message_id))
-                            {
-                                aborter.abort();
-                                state
-                                    .task_session
-                                    .delete_task(aborter.id)
-                                    .await
-                                    .unwrap_or_trace();
-
-                                // if deleted message is the forwarded message, also delete the indicator message, vice versa
-                                if let Some(message_id_related) = message_id_related {
-                                    let chat = telegram_user
-                                        .get_chat(&ChatEntity::Id(chat_id))
+                        // ignore the deletion in none-channel chat
+                        if let Some(chat_id) = messages_info.channel_id() {
+                            for message_id in messages_info.messages() {
+                                if let Some((aborter, message_id_related)) =
+                                    task_aborters.remove(&(chat_id, *message_id))
+                                {
+                                    aborter.abort();
+                                    state
+                                        .task_session
+                                        .delete_task(aborter.id)
                                         .await
                                         .unwrap_or_trace();
 
-                                    telegram_user
-                                        .delete_messages(chat, &[message_id_related])
-                                        .await
-                                        .unwrap_or_trace();
+                                    // if deleted message is the forwarded message, also delete the indicator message, vice versa
+                                    if let Some(message_id_related) = message_id_related {
+                                        let chat = telegram_user
+                                            .get_chat(&ChatEntity::Id(chat_id))
+                                            .await
+                                            .unwrap_or_trace();
 
-                                    task_aborters.remove(&(chat_id, message_id_related));
+                                        telegram_user
+                                            .delete_messages(chat, &[message_id_related])
+                                            .await
+                                            .unwrap_or_trace();
+
+                                        task_aborters.remove(&(chat_id, message_id_related));
+                                    }
                                 }
                             }
                         }
