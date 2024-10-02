@@ -114,8 +114,8 @@ async fn show_drive(onedrive: &OneDriveClient, message: TelegramMessage) -> Resu
 #[add_context]
 #[add_trace]
 async fn add_drive(message: TelegramMessage, state: AppState) -> Result<()> {
-    let _server_abort_handle = auth_server::spawn().await?;
-    authorize_onedrive(message, state, true).await?;
+    let (_, rx, _server_abort_handle) = auth_server::spawn().await?;
+    authorize_onedrive(message, state, true, rx).await?;
 
     Ok(())
 }

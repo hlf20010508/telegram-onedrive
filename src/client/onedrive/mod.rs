@@ -12,9 +12,7 @@ mod session;
 mod upload;
 mod utils;
 
-use super::socketio::{socketio_client, socketio_disconnect};
 use crate::{
-    auth_server::OD_CODE_EVENT,
     env::{Env, OneDriveEnv, ENV},
     error::{Error, Result},
     message::TelegramMessage,
@@ -26,7 +24,7 @@ use path_slash::PathBufExt;
 use proc_macros::{add_context, add_trace};
 use session::OneDriveSession;
 use std::path::Path;
-use tokio::sync::RwLock;
+use tokio::sync::{mpsc::Receiver, RwLock};
 
 pub struct OneDriveClient {
     client: RwLock<Client>,
@@ -88,14 +86,13 @@ impl OneDriveClient {
 
     #[add_context]
     #[add_trace]
-    pub async fn login(&self, message: TelegramMessage, should_add: bool) -> Result<()> {
+    pub async fn login(
+        &self,
+        message: TelegramMessage,
+        should_add: bool,
+        mut rx: Receiver<String>,
+    ) -> Result<()> {
         tracing::info!("logging in to onedrive");
-
-        let Env {
-            port,
-            use_reverse_proxy,
-            ..
-        } = ENV.get().unwrap();
 
         if !should_add {
             tracing::debug!("onedrive account should not be added");
@@ -125,9 +122,6 @@ impl OneDriveClient {
 
         tracing::info!("onedrive authorization url sent");
 
-        let (socketio_client, mut rx) =
-            socketio_client(OD_CODE_EVENT, port.to_owned(), use_reverse_proxy.to_owned()).await?;
-
         let code = rx
             .recv()
             .await
@@ -135,8 +129,6 @@ impl OneDriveClient {
 
         tracing::info!("onedrive code received");
         tracing::debug!("onedrive code: {}", code);
-
-        socketio_disconnect(socketio_client).await?;
 
         let response = "Code received, authorizing...";
         message.respond(response).await.details(response)?;

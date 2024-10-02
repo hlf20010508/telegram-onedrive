@@ -6,7 +6,6 @@
 */
 
 pub mod onedrive;
-mod socketio;
 mod telegram;
 pub mod utils;
 

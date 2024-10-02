@@ -8,7 +8,6 @@
 mod auto_abort;
 mod cert;
 mod handlers;
-mod var;
 
 use crate::{
     env::{Env, ENV},
@@ -23,13 +22,18 @@ use axum_server::Handle;
 use cert::get_rustls_config;
 use handlers::{onedrive, telegram};
 use proc_macros::{add_context, add_trace};
-use socketioxide::{extract::SocketRef, SocketIo};
-use std::{net::TcpListener, sync::Arc};
-pub use var::{OD_CODE_EVENT, TG_CODE_EVENT};
+use std::net::TcpListener;
+use tokio::sync::mpsc::{self, Receiver, Sender};
+
+#[derive(Clone)]
+struct SenderTG(Sender<String>);
+
+#[derive(Clone)]
+struct SenderOD(Sender<String>);
 
 #[add_context]
 #[add_trace]
-pub async fn spawn() -> Result<AutoAbortHandle> {
+pub async fn spawn() -> Result<(Receiver<String>, Receiver<String>, AutoAbortHandle)> {
     tracing::debug!("spawning auth server");
 
     let Env {
@@ -38,16 +42,15 @@ pub async fn spawn() -> Result<AutoAbortHandle> {
         ..
     } = ENV.get().unwrap();
 
-    let (socketio_layer, socketio) = SocketIo::new_layer();
-
-    socketio.ns("/", |_s: SocketRef| {});
+    let (tx_tg, rx_tg) = mpsc::channel(1);
+    let (tx_od, rx_od) = mpsc::channel(1);
 
     let router = Router::new()
         .route(telegram::INDEX_PATH, get(telegram::index_handler))
         .route(telegram::CODE_PATH, post(telegram::code_handler))
         .route(onedrive::CODE_PATH, get(onedrive::code_handler))
-        .layer(socketio_layer)
-        .layer(Extension(Arc::new(socketio)));
+        .layer(Extension(SenderTG(tx_tg)))
+        .layer(Extension(SenderOD(tx_od)));
 
     let server = TcpListener::bind(format!("0.0.0.0:{}", port))
         .map_err(|e| Error::new("failed to create tcp listener").raw(e))?;
@@ -85,5 +88,5 @@ pub async fn spawn() -> Result<AutoAbortHandle> {
 
     let auto_abort_handle = AutoAbortHandle::new(abort_handle, shutdown_handle);
 
-    Ok(auto_abort_handle)
+    Ok((rx_tg, rx_od, auto_abort_handle))
 }

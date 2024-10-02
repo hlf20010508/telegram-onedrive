@@ -7,6 +7,7 @@
 
 use crate::{auth_server, error::Result, message::TelegramMessage, state::AppState};
 use proc_macros::{add_context, add_trace, check_in_group, check_senders};
+use tokio::sync::mpsc::Receiver;
 
 pub const PATTERN: &str = "/auth";
 
@@ -15,11 +16,11 @@ pub const PATTERN: &str = "/auth";
 #[add_context]
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
-    let _server_abort_handle = auth_server::spawn().await?;
+    let (rx_tg, rx_od, _server_abort_handle) = auth_server::spawn().await?;
 
-    login_to_telegram(message.clone(), state.clone()).await?;
+    login_to_telegram(message.clone(), state.clone(), rx_tg).await?;
 
-    authorize_onedrive(message, state.clone(), false).await?;
+    authorize_onedrive(message, state.clone(), false, rx_od).await?;
 
     let onedrive = &state.onedrive;
     onedrive.set_current_user().await?;
@@ -33,10 +34,11 @@ pub async fn authorize_onedrive(
     message: TelegramMessage,
     state: AppState,
     should_add: bool,
+    rx: Receiver<String>,
 ) -> Result<()> {
     let onedrive = &state.onedrive;
 
-    onedrive.login(message.clone(), should_add).await?;
+    onedrive.login(message.clone(), should_add, rx).await?;
 
     let response = "OneDrive authorization successful!";
     message.respond(response).await.details(response)?;
@@ -46,10 +48,14 @@ pub async fn authorize_onedrive(
 
 #[add_context]
 #[add_trace]
-pub async fn login_to_telegram(message: TelegramMessage, state: AppState) -> Result<()> {
+pub async fn login_to_telegram(
+    message: TelegramMessage,
+    state: AppState,
+    rx: Receiver<String>,
+) -> Result<()> {
     let telegram_user = &state.telegram_user;
 
-    telegram_user.login(message.clone()).await?;
+    telegram_user.login(message.clone(), rx).await?;
 
     let response = "Login to Telegram successful!";
     message.respond(response).await.details(response)?;

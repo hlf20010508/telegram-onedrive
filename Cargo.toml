@@ -60,10 +60,6 @@ grammers-client = { git = "https://github.com/Lonami/grammers.git", rev = "b20b7
     "html",
 ] }
 onedrive-api = { version = "0.10.0", default-features = false }
-rust_socketio = { version = "0.6.0", default-features = false, features = [
-    "async",
-] }
-socketioxide = { version = "0.14.0", default-features = false }
 serde = { version = "1.0.203", default-features = false }
 serde_json = { version = "1.0.118", default-features = false }
 tokio = { version = "1.38.0", default-features = false, features = [
@@ -92,11 +88,10 @@ rcgen = { version = "0.13.1", default-features = false, features = [
     "ring",
     "pem",
 ] }
-native-tls = { version = "0.2.12", default-features = false }
 regex = { version = "1.10.5", default-features = false }
 url = { version = "2.5.2", default-features = false }
 reqwest = { version = "0.12.5", default-features = false, features = [
-    "rustls-tls",
+    "native-tls",
     "stream",
 ] }
 mime_guess = { version = "2.0.5", default-features = false }
@@ -105,4 +100,7 @@ path-slash = { version = "0.2.1", default-features = false }
 ansi_term = { version = "0.12.1", default-features = false }
 du = { version = "0.1.1", default-features = false }
 zip = { version = "2.1.5", default-features = false, features = ["time"] }
-rand = { version = "0.8.5", default-features = false }
+rand = { version = "0.8.5", default-features = false, features = [
+    "std",
+    "std_rng",
+] }

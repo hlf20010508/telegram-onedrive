@@ -8,9 +8,7 @@
 mod file;
 mod message;
 
-use super::socketio::{socketio_client, socketio_disconnect};
 use crate::{
-    auth_server::TG_CODE_EVENT,
     env::{Env, TelegramBotEnv, TelegramUserEnv, ENV},
     error::{Error, Result},
     message::TelegramMessage,
@@ -19,7 +17,7 @@ use grammers_client::{session::Session, Client, Config, SignInError};
 use message::ChatMessageVecDeque;
 use proc_macros::{add_context, add_trace};
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc::Receiver, Mutex};
 
 // messages to be sent or edited in each chat
 type ChatMessageQueue = Arc<Mutex<ChatMessageVecDeque>>;
@@ -152,7 +150,7 @@ impl TelegramClient {
 
     #[add_context]
     #[add_trace]
-    pub async fn login(&self, message: TelegramMessage) -> Result<()> {
+    pub async fn login(&self, message: TelegramMessage, mut rx: Receiver<String>) -> Result<()> {
         let Env {
             telegram_user:
                 TelegramUserEnv {
@@ -161,9 +159,7 @@ impl TelegramClient {
                     session_path,
                     ..
                 },
-            port,
             server_uri,
-            use_reverse_proxy,
             ..
         } = ENV.get().unwrap();
 
@@ -183,10 +179,6 @@ impl TelegramClient {
                 server_uri
             );
             message.respond(response.as_str()).await.details(response)?;
-
-            let (socketio_client, mut rx) =
-                socketio_client(TG_CODE_EVENT, port.to_owned(), use_reverse_proxy.to_owned())
-                    .await?;
 
             loop {
                 let code = rx
@@ -218,8 +210,6 @@ impl TelegramClient {
                     Err(e) => Err(Error::new("failed to sign in telegram user").raw(e))?,
                 };
             }
-
-            socketio_disconnect(socketio_client).await?;
 
             client.session().save_to_file(session_path).map_err(|e| {
                 Error::new("failed to save session for telegram user client").raw(e)

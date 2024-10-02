@@ -5,8 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use super::{models::CodeParams, TG_CODE_EVENT};
-use crate::error::{Error, Result};
+use super::models::CodeParams;
+use crate::{
+    auth_server::SenderTG,
+    error::{Error, Result},
+};
 use axum::{
     debug_handler,
     http::StatusCode,
@@ -14,8 +17,6 @@ use axum::{
     Extension, Json,
 };
 use proc_macros::{add_context, add_trace};
-use socketioxide::SocketIo;
-use std::sync::Arc;
 use tokio::fs;
 
 pub const INDEX_PATH: &str = "/";
@@ -37,14 +38,14 @@ pub const CODE_PATH: &str = "/tg";
 #[add_context]
 #[add_trace]
 pub async fn code_handler(
-    Extension(socketio): Extension<Arc<SocketIo>>,
+    Extension(SenderTG(tx)): Extension<SenderTG>,
     Json(CodeParams { code }): Json<CodeParams>,
 ) -> Result<Response> {
     tracing::debug!("received tg auth code: {}", code);
 
-    socketio
-        .emit(TG_CODE_EVENT, code)
-        .map_err(|e| Error::new("failed to emit tg_code").raw(e))?;
+    tx.send(code)
+        .await
+        .map_err(|e| Error::new("failed to send tg auth code").raw(e))?;
 
     Ok(StatusCode::OK.into_response())
 }
