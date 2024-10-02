@@ -5,6 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use std::sync::Arc;
+
 use super::{
     docs::{format_help, format_unknown_command_help},
     utils::{
@@ -16,7 +18,7 @@ use crate::{
     error::{Error, Result},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
-    tasker::CmdType,
+    tasker::{CmdType, TaskAborter},
     utils::get_http_client,
 };
 use grammers_client::InputMessage;
@@ -95,7 +97,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                     .pack()
                     .to_hex();
 
-                task_session
+                let id = task_session
                     .insert_task(
                         CmdType::Url,
                         &filename,
@@ -112,6 +114,18 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                         None,
                     )
                     .await?;
+
+                let chat_user = telegram_user
+                    .get_chat(&ChatEntity::from(message.chat()))
+                    .await?;
+
+                let aborter = Arc::new(TaskAborter::new(id, &filename));
+                state
+                    .task_session
+                    .aborters
+                    .write()
+                    .await
+                    .insert((chat_user.id(), message.id()), (aborter, None));
 
                 tracing::info!("inserted url task: {} size: {}", filename, total_length);
 
