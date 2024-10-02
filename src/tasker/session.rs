@@ -13,11 +13,11 @@ use sea_orm::{
     EntityName, EntityTrait, PaginatorTrait, QueryFilter, Schema, Set,
 };
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
 // (chat id, message id) -> task aborter
-pub type TaskAborters = Arc<Mutex<HashMap<(i64, i32), TaskAborter>>>;
+pub type TaskAborters = Arc<RwLock<HashMap<(i64, i32), TaskAborter>>>;
 
 pub struct TaskSession {
     connection: DatabaseConnection,
@@ -28,7 +28,7 @@ impl TaskSession {
     #[add_context]
     pub async fn new(session_path: &str) -> Result<Self> {
         let connection = Self::connect_db(session_path).await?;
-        let aborters = Arc::new(Mutex::new(HashMap::new()));
+        let aborters = Arc::new(RwLock::new(HashMap::new()));
 
         Ok(Self {
             connection,
@@ -112,7 +112,7 @@ impl TaskSession {
         message_id: i32,
         message_id_forward: Option<i32>,
         message_id_origin: Option<i32>,
-    ) -> Result<()> {
+    ) -> Result<i64> {
         let insert_item = tasks::ActiveModel {
             id: ActiveValue::default(),
             cmd_type: Set(cmd_type),
@@ -131,12 +131,13 @@ impl TaskSession {
             status: Set(TaskStatus::Waiting),
         };
 
-        tasks::Entity::insert(insert_item)
+        let id = tasks::Entity::insert(insert_item)
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to insert url task").raw(e))?;
+            .map_err(|e| Error::new("failed to insert url task").raw(e))?
+            .last_insert_id;
 
-        Ok(())
+        Ok(id)
     }
 
     #[add_context]
@@ -266,12 +267,14 @@ impl TaskSession {
     #[add_context]
     #[add_trace]
     pub async fn clear(&self) -> Result<()> {
-        let aborters_guard = self.aborters.lock().await;
+        let mut aborters_guard = self.aborters.write().await;
         let aborters = aborters_guard.values();
 
         for aborter in aborters {
             aborter.abort();
         }
+
+        aborters_guard.clear();
 
         tasks::Entity::delete_many()
             .exec(&self.connection)
@@ -297,15 +300,15 @@ pub struct ChatTasks {
 pub struct TaskAborter {
     pub id: i64,
     filename: String,
-    token: CancellationToken,
+    pub token: CancellationToken,
 }
 
 impl TaskAborter {
-    pub fn new(id: i64, filename: String, token: CancellationToken) -> Self {
+    pub fn new(id: i64, filename: &str) -> Self {
         Self {
             id,
-            filename,
-            token,
+            filename: filename.to_string(),
+            token: CancellationToken::new(),
         }
     }
 

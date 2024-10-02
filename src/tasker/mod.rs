@@ -21,8 +21,7 @@ use crate::{
 };
 use proc_macros::add_context;
 use progress::Progress;
-use session::TaskAborter;
-pub use session::TaskSession;
+pub use session::{TaskAborter, TaskSession};
 use std::{sync::Arc, time::Duration};
 pub use tasks::CmdType;
 use tokio::sync::Semaphore;
@@ -80,6 +79,7 @@ impl Tasker {
 
     #[add_context]
     async fn handle_tasks(&self, semaphore: Arc<Semaphore>, handler_id: u8) -> Result<()> {
+        let aborters = self.state.task_session.aborters.read().await;
         let task = self.session().fetch_task().await?;
 
         if let Some(task) = task {
@@ -95,14 +95,14 @@ impl Tasker {
             let state_clone = self.state.clone();
             let progress_clone = self.progress.clone();
 
-            let cancellation_token = CancellationToken::new();
-            let cancellation_token_clone = cancellation_token.clone();
-            let aborter = TaskAborter::new(task.id, task.filename.clone(), cancellation_token);
-            self.session()
-                .aborters
-                .lock()
-                .await
-                .insert((chat.id, task.message_id), aborter);
+            let cancellation_token = aborters
+                .get(&(chat.id, task.message_id))
+                .ok_or_else(|| {
+                    Error::new("task aborter not found")
+                        .context(format!("task worker {}", handler_id))
+                })?
+                .token
+                .clone();
 
             tokio::spawn(async move {
                 indenter::set_file_indenter(indenter::Coroutine::TaskWorker(handler_id), async {
@@ -124,7 +124,7 @@ impl Tasker {
                             CmdType::Url => {
                                 tracing::info!("handle url task");
 
-                                handlers::url::handler(task, progress).await
+                                handlers::url::handler(task, progress, state.clone()).await
                             }
                             CmdType::File | CmdType::Link => {
                                 tracing::info!("handle file or link task");
@@ -157,7 +157,7 @@ impl Tasker {
                         Ok(())
                     }
 
-                    let cancellation_token_clone2 = cancellation_token_clone.clone();
+                    let cancellation_token_clone = cancellation_token.clone();
 
                     let fut = async {
                         let _permit = semaphore_clone
@@ -172,7 +172,7 @@ impl Tasker {
                             task,
                             message.clone(),
                             progress_clone,
-                            cancellation_token_clone,
+                            cancellation_token,
                             state_clone,
                         )
                         .await
@@ -183,7 +183,7 @@ impl Tasker {
 
                     tokio::select! {
                         () = fut => {}
-                        () = cancellation_token_clone2.cancelled() => {}
+                        () = cancellation_token_clone.cancelled() => {}
                     }
                 })
                 .await;
