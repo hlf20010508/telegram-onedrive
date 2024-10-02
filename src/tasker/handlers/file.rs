@@ -6,14 +6,36 @@
 */
 
 use super::{tasks, transfer::multi_parts_uploader_from_tg_file, Progress};
-use crate::{error::Result, state::AppState};
+use crate::{
+    error::{Result, TaskAbortError},
+    state::AppState,
+};
 use proc_macros::{add_context, add_trace};
 use std::sync::Arc;
+use tokio_util::sync::CancellationToken;
 
 #[add_context]
 #[add_trace]
-pub async fn handler(task: tasks::Model, progress: Arc<Progress>, state: AppState) -> Result<()> {
-    let filename = multi_parts_uploader_from_tg_file(&task, progress.clone(), state).await?;
+pub async fn handler(
+    task: tasks::Model,
+    progress: Arc<Progress>,
+    cancellation_token: CancellationToken,
+    state: AppState,
+) -> Result<()> {
+    let filename =
+        match multi_parts_uploader_from_tg_file(&task, progress.clone(), cancellation_token, state)
+            .await
+        {
+            Ok(filename) => filename,
+            Err(e) => {
+                if let Some(boxed_e) = e.get_raw() {
+                    if boxed_e.downcast_ref::<TaskAbortError>().is_some() {
+                        return Ok(());
+                    }
+                }
+                return Err(e);
+            }
+        };
 
     progress.update_filename(task.id, &filename).await?;
 

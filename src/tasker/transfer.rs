@@ -8,7 +8,7 @@
 use super::{tasks, Progress};
 use crate::{
     client::utils::chat_from_hex,
-    error::{Error, Result},
+    error::{Error, Result, TaskAbortError},
     state::AppState,
     utils::get_http_client,
 };
@@ -16,6 +16,7 @@ use grammers_client::{client::files::MAX_CHUNK_SIZE, types::Downloadable};
 use onedrive_api::{resource::DriveItem, UploadSession};
 use proc_macros::{add_context, add_trace};
 use std::{collections::VecDeque, ops::Range, sync::Arc, time::Duration};
+use tokio_util::sync::CancellationToken;
 
 const MAX_RETRIES: i32 = 5;
 
@@ -122,6 +123,7 @@ pub async fn multi_parts_uploader_from_tg_file(
         ..
     }: &tasks::Model,
     progress: Arc<Progress>,
+    cancellation_token: CancellationToken,
     state: AppState,
 ) -> Result<String> {
     const WORKER_COUNT: i32 = 4;
@@ -187,18 +189,25 @@ pub async fn multi_parts_uploader_from_tg_file(
         let telegram_user_clone = telegram_user.clone();
         let downloadable_clone = downloadable.clone();
 
-        work_handles.push_back(tokio::spawn(async move {
-            let download = telegram_user_clone.iter_download(downloadable_clone.as_ref());
+        let cancellation_token_clone = cancellation_token.clone();
 
-            download
-                .skip_chunks(current_chunk_num)
-                .next()
-                .await
-                .map_err(|e| Error::new("failed to get next chunk from tg file downloader").raw(e))
+        // create a worker
+        work_handles.push_back(tokio::spawn(async move {
+            let mut download = telegram_user_clone
+                .iter_download(downloadable_clone.as_ref())
+                .skip_chunks(current_chunk_num);
+
+            tokio::select! {
+                result = download.next() => result
+                    .map_err(|e| Error::new("failed to get next chunk from tg file downloader").raw(e)),
+                () = cancellation_token_clone.cancelled() => Err(Error::new("").raw(TaskAbortError))
+            }
         }));
 
         current_chunk_num += 1;
 
+        // once reached the max worker number, or the last chunk, wait for the workers to finish
+        // onedrive needs the chunk to be uploaded sequentially in order
         if current_chunk_num % WORKER_COUNT == 0 || current_chunk_num == total_chunks_num {
             let mut chunk = Vec::new();
 

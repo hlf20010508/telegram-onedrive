@@ -9,7 +9,7 @@ use super::{
     formatter::write_message,
     visitor::{MessageVisitor, MetaVisitor},
 };
-use crate::env::LOGS_PATH;
+use crate::{env::LOGS_PATH, error::catch_unwind_silent};
 use std::{future::Future, sync::Mutex};
 use tokio::{task::futures::TaskLocalFuture, task_local};
 use tracing::{Event, Subscriber};
@@ -71,47 +71,50 @@ where
         let (writer, log_message) = if module_path.starts_with("telegram_onedrive")
             && !module_path.starts_with("telegram_onedrive::auth_server")
         {
-            // only for events emitted by this project
-            EVENT_INDENTER.with(|indenter| {
-                /*
-                example:
-                ->|func1
-                -->|func2
-                ---|some info1
-                --->|func3
-                ----|some info2
-                <---|func3
-                <--|func2
-                <-|func1
-                */
-                let mut indent = indenter.indent.lock().unwrap();
+            catch_unwind_silent(|| {
+                // only for events emitted by this project
+                EVENT_INDENTER.with(|indenter| {
+                    /*
+                    example:
+                    ->|func1
+                    -->|func2
+                    ---|some info1
+                    --->|func3
+                    ----|some info2
+                    <---|func3
+                    <--|func2
+                    <-|func1
+                    */
+                    let mut indent = indenter.indent.lock().unwrap();
 
-                if visitor.message.contains("<-") {
-                    *indent -= 1;
-                }
+                    if visitor.message.contains("<-") {
+                        *indent -= 1;
+                    }
 
-                let mut indent_spaces = "-".repeat(*indent);
+                    let mut indent_spaces = "-".repeat(*indent);
 
-                // other events that are not for showing the functions call stack
-                if !visitor.message.contains("->") && !visitor.message.contains("<-") {
-                    indent_spaces.push_str("--|");
-                }
+                    // other events that are not for showing the functions call stack
+                    if !visitor.message.contains("->") && !visitor.message.contains("<-") {
+                        indent_spaces.push_str("--|");
+                    }
 
-                let log_message = if visitor.message.contains("<-") {
-                    let message = visitor.message.replace("<-", "");
-                    format!("<-{}{}", indent_spaces, message)
-                } else {
-                    format!("{}{}", indent_spaces, visitor.message)
-                };
+                    let log_message = if visitor.message.contains("<-") {
+                        let message = visitor.message.replace("<-", "");
+                        format!("<-{}{}", indent_spaces, message)
+                    } else {
+                        format!("{}{}", indent_spaces, visitor.message)
+                    };
 
-                if visitor.message.contains("->") {
-                    *indent += 1;
-                }
+                    if visitor.message.contains("->") {
+                        *indent += 1;
+                    }
 
-                let writer = get_writer_for_coroutine(&indenter.coroutine);
+                    let writer = get_writer_for_coroutine(&indenter.coroutine);
 
-                (writer, log_message)
+                    (writer, log_message)
+                })
             })
+            .unwrap_or((log_builder("others"), visitor.message))
         } else {
             let writer = if module_path.starts_with("grammers") {
                 log_builder("grammers")

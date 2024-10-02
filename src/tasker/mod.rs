@@ -21,10 +21,12 @@ use crate::{
 };
 use proc_macros::add_context;
 use progress::Progress;
+use session::TaskAborter;
 pub use session::TaskSession;
 use std::{sync::Arc, time::Duration};
 pub use tasks::CmdType;
 use tokio::sync::Semaphore;
+use tokio_util::sync::CancellationToken;
 
 pub struct Tasker {
     state: AppState,
@@ -93,86 +95,99 @@ impl Tasker {
             let state_clone = self.state.clone();
             let progress_clone = self.progress.clone();
 
-            macro_rules! handle_task {
-                ($handler_type: ident) => {
-                    tokio::spawn(async move {
-                        indenter::set_file_indenter(
-                            indenter::Coroutine::TaskWorker(handler_id),
-                            async {
-                                async fn handler(
-                                    task: tasks::Model,
-                                    message: TelegramMessage,
-                                    progress: Arc<Progress>,
-                                    state: AppState,
-                                ) -> Result<()> {
-                                    let task_id = task.id;
-                                    let session = &state.task_session;
+            let cancellation_token = CancellationToken::new();
+            let cancellation_token_clone = cancellation_token.clone();
+            let aborter = TaskAborter::new(task.id, task.filename.clone(), cancellation_token);
+            self.session()
+                .aborters
+                .lock()
+                .await
+                .insert((chat.id, task.message_id), aborter);
 
-                                    session
-                                        .set_task_status(task_id, tasks::TaskStatus::Started)
-                                        .await?;
+            tokio::spawn(async move {
+                indenter::set_file_indenter(indenter::Coroutine::TaskWorker(handler_id), async {
+                    async fn handler(
+                        task: tasks::Model,
+                        message: TelegramMessage,
+                        progress: Arc<Progress>,
+                        cancellation_token: CancellationToken,
+                        state: AppState,
+                    ) -> Result<()> {
+                        let task_id = task.id;
+                        let session = &state.task_session;
 
-                                    match handlers::$handler_type::handler(
-                                        task,
-                                        progress,
-                                        state.clone(),
-                                    )
-                                    .await
-                                    {
-                                        Ok(_) => {
-                                            session
-                                                .set_task_status(
-                                                    task_id,
-                                                    tasks::TaskStatus::Completed,
-                                                )
-                                                .await?;
-                                        }
-                                        Err(e) => {
-                                            e.send(message.clone()).await.unwrap_both().trace();
+                        session
+                            .set_task_status(task_id, tasks::TaskStatus::Started)
+                            .await?;
 
-                                            session
-                                                .set_task_status(task_id, tasks::TaskStatus::Failed)
-                                                .await?;
-                                        }
-                                    }
+                        let result = match task.cmd_type {
+                            CmdType::Url => {
+                                tracing::info!("handle url task");
 
-                                    Ok(())
-                                }
+                                handlers::url::handler(task, progress).await
+                            }
+                            CmdType::File | CmdType::Link => {
+                                tracing::info!("handle file or link task");
 
-                                let _permit = semaphore_clone
-                                    .acquire()
-                                    .await
-                                    .map_err(|e| {
-                                        Error::new("failed to acquire semaphore for task handler")
-                                            .raw(e)
-                                    })
-                                    .unwrap_or_trace();
+                                handlers::file::handler(
+                                    task,
+                                    progress,
+                                    cancellation_token,
+                                    state.clone(),
+                                )
+                                .await
+                            }
+                        };
 
-                                if let Err(e) =
-                                    handler(task, message.clone(), progress_clone, state_clone)
-                                        .await
-                                {
-                                    e.send(message).await.unwrap_both().trace();
-                                }
-                            },
+                        match result {
+                            Ok(()) => {
+                                session
+                                    .set_task_status(task_id, tasks::TaskStatus::Completed)
+                                    .await?;
+                            }
+                            Err(e) => {
+                                e.send(message.clone()).await.unwrap_both().trace();
+
+                                session
+                                    .set_task_status(task_id, tasks::TaskStatus::Failed)
+                                    .await?;
+                            }
+                        }
+
+                        Ok(())
+                    }
+
+                    let cancellation_token_clone2 = cancellation_token_clone.clone();
+
+                    let fut = async {
+                        let _permit = semaphore_clone
+                            .acquire()
+                            .await
+                            .map_err(|e| {
+                                Error::new("failed to acquire semaphore for task handler").raw(e)
+                            })
+                            .unwrap_or_trace();
+
+                        if let Err(e) = handler(
+                            task,
+                            message.clone(),
+                            progress_clone,
+                            cancellation_token_clone,
+                            state_clone,
                         )
-                        .await;
-                    });
-                };
-            }
+                        .await
+                        {
+                            e.send(message).await.unwrap_both().trace();
+                        }
+                    };
 
-            match task.cmd_type {
-                CmdType::Url => {
-                    tracing::info!("handle url task");
-
-                    handle_task!(url);
-                }
-                CmdType::File | CmdType::Link => {
-                    tracing::info!("handle file or link task");
-
-                    handle_task!(file);
-                }
-            }
+                    tokio::select! {
+                        () = fut => {}
+                        () = cancellation_token_clone2.cancelled() => {}
+                    }
+                })
+                .await;
+            });
         }
 
         Ok(())

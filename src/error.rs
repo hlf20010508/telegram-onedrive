@@ -12,7 +12,7 @@ use axum::{
 };
 use grammers_client::types::PackedChat;
 use proc_macros::{add_context, add_trace};
-use std::fmt::Display;
+use std::{fmt::Display, panic};
 
 #[derive(Debug)]
 pub struct Error {
@@ -69,6 +69,10 @@ impl Error {
         self.inner.contexts.insert(0, context.to_string());
 
         self
+    }
+
+    pub fn get_raw(&self) -> &Option<RawError> {
+        &self.inner.raw
     }
 
     pub fn trace(&self) {
@@ -191,4 +195,23 @@ impl ResultUnwrapExt for Result<Error> {
     fn unwrap_both(self) -> Error {
         self.unwrap_or_else(|e| e)
     }
+}
+
+#[derive(Debug)]
+pub struct TaskAbortError;
+
+impl std::error::Error for TaskAbortError {}
+
+impl Display for TaskAbortError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Task was aborted")
+    }
+}
+
+pub fn catch_unwind_silent<F: FnOnce() -> R, R>(f: F) -> std::thread::Result<R> {
+    let prev_hook = panic::take_hook();
+    panic::set_hook(Box::new(|_| {}));
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(f));
+    panic::set_hook(prev_hook);
+    result
 }

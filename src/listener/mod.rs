@@ -46,16 +46,43 @@ impl Listener {
             .await;
         });
 
-        let telegram_user = self.state.telegram_user.raw().clone();
+        let telegram_user = self.state.telegram_user.clone();
+        let state = self.state.clone();
         tokio::spawn(async move {
-            // this is needed to keep the user alive, cooperate with reconnection policy
-            // if only run_until_disconnected, connection will still be closed after a long time
-            // if only reconnection policy, in current grammers version, it will block the client
-            telegram_user
-                .run_until_disconnected()
-                .await
-                .map_err(|e| Error::new("telegram user disconnected").raw(e))
-                .trace();
+            indenter::set_file_indenter(indenter::Coroutine::Listener, async {
+                // this is not only used to catch Update::MessageDeleted, but also keep the user alive
+                // cooperate with reconnection policy
+                // if only loop update, connection will still be closed after a long time
+                // if only reconnection policy, in current grammers version, it will block the client
+                loop {
+                    let update = telegram_user.next_update().await.unwrap_or_trace();
+                    if let Update::MessageDeleted(messages_info) = update {
+                        // abort the task if the related message is deleted
+                        // bot can only catch deleted message immediately if it is sent by itself
+                        // that's why we use user client to catch it instead of bot client
+                        let mut task_aborters_guard = state.task_session.aborters.lock().await;
+
+                        let chat_id = messages_info
+                            .channel_id()
+                            .ok_or_else(|| Error::new("channel id of deleted messages if None"))
+                            .unwrap_or_trace();
+
+                        for message_id in messages_info.messages() {
+                            if let Some(aborter) =
+                                task_aborters_guard.remove(&(chat_id, *message_id))
+                            {
+                                aborter.abort();
+                                state
+                                    .task_session
+                                    .delete_task(aborter.id)
+                                    .await
+                                    .unwrap_or_trace();
+                            }
+                        }
+                    }
+                }
+            })
+            .await;
         });
 
         loop {

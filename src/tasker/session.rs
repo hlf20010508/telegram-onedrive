@@ -12,18 +12,28 @@ use sea_orm::{
     sea_query::Expr, ActiveValue, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection,
     EntityName, EntityTrait, PaginatorTrait, QueryFilter, Schema, Set,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::Mutex;
+use tokio_util::sync::CancellationToken;
+
+// (chat id, message id) -> task aborter
+pub type TaskAborters = Arc<Mutex<HashMap<(i64, i32), TaskAborter>>>;
 
 pub struct TaskSession {
     connection: DatabaseConnection,
+    pub aborters: TaskAborters,
 }
 
 impl TaskSession {
     #[add_context]
     pub async fn new(session_path: &str) -> Result<Self> {
         let connection = Self::connect_db(session_path).await?;
+        let aborters = Arc::new(Mutex::new(HashMap::new()));
 
-        Ok(Self { connection })
+        Ok(Self {
+            connection,
+            aborters,
+        })
     }
 
     #[add_context]
@@ -256,6 +266,13 @@ impl TaskSession {
     #[add_context]
     #[add_trace]
     pub async fn clear(&self) -> Result<()> {
+        let aborters_guard = self.aborters.lock().await;
+        let aborters = aborters_guard.values();
+
+        for aborter in aborters {
+            aborter.abort();
+        }
+
         tasks::Entity::delete_many()
             .exec(&self.connection)
             .await
@@ -275,4 +292,26 @@ pub struct ChatTasks {
     pub current_tasks: Vec<tasks::Model>,
     pub completed_tasks: Vec<tasks::Model>,
     pub failed_tasks: Vec<tasks::Model>,
+}
+
+pub struct TaskAborter {
+    pub id: i64,
+    filename: String,
+    token: CancellationToken,
+}
+
+impl TaskAborter {
+    pub fn new(id: i64, filename: String, token: CancellationToken) -> Self {
+        Self {
+            id,
+            filename,
+            token,
+        }
+    }
+
+    pub fn abort(&self) {
+        tracing::info!("task {} aborted", self.filename);
+
+        self.token.cancel();
+    }
 }
