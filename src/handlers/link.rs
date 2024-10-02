@@ -18,6 +18,7 @@ use grammers_client::{types::Media, InputMessage};
 use proc_macros::{
     add_context, add_trace, check_in_group, check_od_login, check_senders, check_tg_login,
 };
+use std::sync::Arc;
 
 #[check_od_login]
 #[check_tg_login]
@@ -121,13 +122,13 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         )
         .await?;
 
-    let aborter = TaskAborter::new(id, &filename);
+    let aborter = Arc::new(TaskAborter::new(id, &filename));
     state
         .task_session
         .aborters
         .write()
         .await
-        .insert((chat_user.id(), message_id), aborter);
+        .insert((chat_user.id(), message_id), (aborter, None));
 
     tracing::info!("inserted link task: {} size: {}", filename, total_length);
 

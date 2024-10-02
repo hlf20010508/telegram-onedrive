@@ -16,8 +16,8 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
-// (chat id, message id) -> task aborter
-pub type TaskAborters = Arc<RwLock<HashMap<(i64, i32), TaskAborter>>>;
+// (chat id, message id) -> (task aborter, related message id if exists)
+pub type TaskAborters = Arc<RwLock<HashMap<(i64, i32), (Arc<TaskAborter>, Option<i32>)>>>;
 
 pub struct TaskSession {
     connection: DatabaseConnection,
@@ -270,7 +270,7 @@ impl TaskSession {
         let mut aborters_guard = self.aborters.write().await;
         let aborters = aborters_guard.values();
 
-        for aborter in aborters {
+        for (aborter, _) in aborters {
             aborter.abort();
         }
 

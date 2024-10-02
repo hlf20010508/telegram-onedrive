@@ -101,6 +101,7 @@ impl Tasker {
                     Error::new("task aborter not found")
                         .context(format!("task worker {}", handler_id))
                 })?
+                .0
                 .token
                 .clone();
 
