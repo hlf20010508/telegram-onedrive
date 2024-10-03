@@ -12,12 +12,12 @@ use sea_orm::{
     sea_query::Expr, ActiveValue, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection,
     EntityName, EntityTrait, PaginatorTrait, QueryFilter, Schema, Set,
 };
-use std::{collections::HashMap, sync::Arc};
-use tokio::sync::RwLock;
+use std::{collections::HashMap, path::Path, sync::Arc};
+use tokio::{fs, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
 // (chat id, message id) -> (task aborter, related message id if exists)
-pub type TaskAborters = Arc<RwLock<HashMap<(i64, i32), (Arc<TaskAborter>, Option<i32>)>>>;
+pub type TaskAborters = Arc<Mutex<HashMap<(i64, i32), (Arc<TaskAborter>, Option<i32>)>>>;
 
 pub struct TaskSession {
     connection: DatabaseConnection,
@@ -27,8 +27,14 @@ pub struct TaskSession {
 impl TaskSession {
     #[add_context]
     pub async fn new(session_path: &str) -> Result<Self> {
+        if Path::new(session_path).exists() {
+            fs::remove_file(session_path)
+                .await
+                .map_err(|e| Error::new("failed to remove old task session").raw(e))?;
+        }
+
         let connection = Self::connect_db(session_path).await?;
-        let aborters = Arc::new(RwLock::new(HashMap::new()));
+        let aborters = Arc::new(Mutex::new(HashMap::new()));
 
         Ok(Self {
             connection,
@@ -106,6 +112,7 @@ impl TaskSession {
         upload_url: &str,
         current_length: u64,
         total_length: u64,
+        chat_id: i64,
         chat_bot_hex: &str,
         chat_user_hex: &str,
         chat_origin_hex: Option<String>,
@@ -122,6 +129,7 @@ impl TaskSession {
             upload_url: Set(upload_url.to_string()),
             current_length: Set(current_length as i64),
             total_length: Set(total_length as i64),
+            chat_id: Set(chat_id),
             chat_bot_hex: Set(chat_bot_hex.to_string()),
             chat_user_hex: Set(chat_user_hex.to_string()),
             chat_origin_hex: Set(chat_origin_hex),
@@ -267,7 +275,7 @@ impl TaskSession {
     #[add_context]
     #[add_trace]
     pub async fn clear(&self) -> Result<()> {
-        let mut aborters_guard = self.aborters.write().await;
+        let mut aborters_guard = self.aborters.lock().await;
         let aborters = aborters_guard.values();
 
         for (aborter, _) in aborters {
@@ -280,6 +288,27 @@ impl TaskSession {
             .exec(&self.connection)
             .await
             .map_err(|e| Error::new("failed to clear tasks").raw(e))?;
+
+        Ok(())
+    }
+
+    #[add_context]
+    #[add_trace]
+    pub async fn delete_task_from_message_id_if_exists(
+        &self,
+        chat_id: i64,
+        message_id: i32,
+    ) -> Result<()> {
+        tasks::Entity::delete_many()
+            .filter(tasks::Column::ChatId.eq(chat_id))
+            .filter(
+                Condition::any()
+                    .add(tasks::Column::MessageId.eq(message_id))
+                    .add(tasks::Column::MessageIdForward.eq(Some(message_id))),
+            )
+            .exec(&self.connection)
+            .await
+            .map_err(|e| Error::new("failed to delete task from message id").raw(e))?;
 
         Ok(())
     }

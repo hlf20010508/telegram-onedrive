@@ -60,7 +60,7 @@ impl Listener {
                         // abort the task if the related message is deleted
                         // bot can only catch deleted message immediately if it is sent by itself
                         // that's why we use user client to catch it instead of bot client
-                        let mut task_aborters = state.task_session.aborters.write().await;
+                        let mut task_aborters = state.task_session.aborters.lock().await;
 
                         // ignore the deletion in none-channel chat
                         if let Some(chat_id) = messages_info.channel_id() {
@@ -89,6 +89,12 @@ impl Listener {
 
                                         task_aborters.remove(&(chat_id, message_id_related));
                                     }
+                                } else {
+                                    state
+                                        .task_session
+                                        .delete_task_from_message_id_if_exists(chat_id, *message_id)
+                                        .await
+                                        .unwrap_or_trace();
                                 }
                             }
                         }

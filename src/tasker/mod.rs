@@ -46,8 +46,6 @@ impl Tasker {
     pub async fn run(&self) {
         tracing::info!("tasker started");
 
-        self.session().clear().await.unwrap_or_trace();
-
         let progress_clone = self.progress.clone();
         tokio::spawn(async move {
             indenter::set_file_indenter(indenter::Coroutine::Progress, async {
@@ -79,31 +77,48 @@ impl Tasker {
 
     #[add_context]
     async fn handle_tasks(&self, semaphore: Arc<Semaphore>, handler_id: u8) -> Result<()> {
-        let aborters = self.state.task_session.aborters.read().await;
+        let mut aborters = self.state.task_session.aborters.lock().await;
         let task = self.session().fetch_task().await?;
 
         if let Some(task) = task {
             let chat = chat_from_hex(&task.chat_bot_hex)?;
 
-            let message = self
+            // in case that message is sent and deleted immediately
+            let Ok(message) = self
                 .state
                 .telegram_bot
                 .get_message(chat, task.message_id)
-                .await?;
+                .await
+            else {
+                self.state
+                    .task_session
+                    .delete_task_from_message_id_if_exists(chat.id, task.message_id)
+                    .await?;
+
+                tracing::info!("task {} aborted", task.filename);
+
+                return Ok(());
+            };
 
             let semaphore_clone = semaphore.clone();
             let state_clone = self.state.clone();
             let progress_clone = self.progress.clone();
 
-            let cancellation_token = aborters
-                .get(&(chat.id, task.message_id))
-                .ok_or_else(|| {
-                    Error::new("task aborter not found")
-                        .context(format!("task worker {}", handler_id))
-                })?
-                .0
-                .token
-                .clone();
+            let aborter = Arc::new(TaskAborter::new(task.id, &task.filename));
+            let cancellation_token = aborter.token.clone();
+
+            // insert both message_id and message_id_forward so that both of them can be used to abort the task
+            aborters.insert(
+                (chat.id, task.message_id),
+                (aborter.clone(), task.message_id_forward),
+            );
+
+            if let Some(message_id_forward) = task.message_id_forward {
+                aborters.insert(
+                    (chat.id, message_id_forward),
+                    (aborter, Some(task.message_id)),
+                );
+            }
 
             tokio::spawn(async move {
                 indenter::set_file_indenter(indenter::Coroutine::TaskWorker(handler_id), async {
@@ -155,7 +170,7 @@ impl Tasker {
                             }
                         }
 
-                        let mut aborters = state.task_session.aborters.write().await;
+                        let mut aborters = state.task_session.aborters.lock().await;
                         let chat_id = message.chat().id();
                         if let Some((_, Some(message_id_related))) =
                             aborters.remove(&(chat_id, message.id()))

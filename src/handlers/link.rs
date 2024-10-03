@@ -12,13 +12,12 @@ use crate::{
     handlers::utils::{get_tg_file_size, preprocess_tg_file_name},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
-    tasker::{CmdType, TaskAborter},
+    tasker::CmdType,
 };
 use grammers_client::{types::Media, InputMessage};
 use proc_macros::{
     add_context, add_trace, check_in_group, check_od_login, check_senders, check_tg_login,
 };
-use std::sync::Arc;
 
 #[check_od_login]
 #[check_tg_login]
@@ -104,9 +103,9 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let chat_user_hex = chat_user.pack().to_hex();
     let chat_origin_hex = message_origin.chat().pack().to_hex();
 
-    let mut aborters = state.task_session.aborters.write().await;
+    let _aborters = state.task_session.aborters.lock().await;
 
-    let id = task_session
+    task_session
         .insert_task(
             cmd_type,
             &filename,
@@ -115,6 +114,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             upload_session.upload_url(),
             current_length,
             total_length,
+            chat_user.id(),
             &chat_bot_hex,
             &chat_user_hex,
             Some(chat_origin_hex),
@@ -123,9 +123,6 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             Some(message_origin.id()),
         )
         .await?;
-
-    let aborter = Arc::new(TaskAborter::new(id, &filename));
-    aborters.insert((chat_user.id(), message_id), (aborter, None));
 
     tracing::info!("inserted link task: {} size: {}", filename, total_length);
 

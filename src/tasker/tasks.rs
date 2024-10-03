@@ -27,6 +27,7 @@ pub struct Model {
     pub upload_url: String,
     pub current_length: i64,
     pub total_length: i64,
+    pub chat_id: i64,
     // chat hex used by bot
     pub chat_bot_hex: String,
     // chat hex used by user
