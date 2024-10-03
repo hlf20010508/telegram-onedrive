@@ -72,9 +72,24 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 async fn send_log_zip(telegram_bot: &TelegramClient, message: TelegramMessage) -> Result<()> {
     const ZIP_PATH: &str = "./logs.zip";
 
-    message.respond("Sending logs...").await?;
-
     zip_dir(LOGS_PATH, ZIP_PATH)?;
+
+    let file = fs::File::open(ZIP_PATH)
+        .await
+        .map_err(|e| Error::new("failed to open logs zip file").raw(e))?;
+
+    let size = file
+        .metadata()
+        .await
+        .map_err(|e| Error::new("failed to get logs zip file metadata").raw(e))?
+        .len();
+
+    message
+        .respond(format!(
+            "Sending logs, {:.2}MB...",
+            size as f32 / 1024.0 / 1024.0
+        ))
+        .await?;
 
     let file = telegram_bot.upload_file(ZIP_PATH).await.context("logs")?;
 
