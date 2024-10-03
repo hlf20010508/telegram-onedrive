@@ -86,7 +86,7 @@ async fn send_log_zip(telegram_bot: &TelegramClient, message: TelegramMessage) -
 
     message
         .respond(format!(
-            "Sending logs, {:.2}MB...",
+            "Sending logs sized {:.2}MB...\nThis may take a while.",
             size as f32 / 1024.0 / 1024.0
         ))
         .await?;

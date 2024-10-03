@@ -30,6 +30,23 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
 #[add_context]
 #[add_trace]
+pub async fn login_to_telegram(
+    message: TelegramMessage,
+    state: AppState,
+    rx: Receiver<String>,
+) -> Result<()> {
+    let telegram_user = &state.telegram_user;
+
+    telegram_user.login(message.clone(), rx).await?;
+
+    let response = "Login to Telegram successful!";
+    message.respond(response).await.details(response)?;
+
+    Ok(())
+}
+
+#[add_context]
+#[add_trace]
 pub async fn authorize_onedrive(
     message: TelegramMessage,
     state: AppState,
@@ -41,23 +58,6 @@ pub async fn authorize_onedrive(
     onedrive.login(message.clone(), should_add, rx).await?;
 
     let response = "OneDrive authorization successful!";
-    message.respond(response).await.details(response)?;
-
-    Ok(())
-}
-
-#[add_context]
-#[add_trace]
-pub async fn login_to_telegram(
-    message: TelegramMessage,
-    state: AppState,
-    rx: Receiver<String>,
-) -> Result<()> {
-    let telegram_user = &state.telegram_user;
-
-    telegram_user.login(message.clone(), rx).await?;
-
-    let response = "Login to Telegram successful!";
     message.respond(response).await.details(response)?;
 
     Ok(())

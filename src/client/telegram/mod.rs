@@ -151,24 +151,24 @@ impl TelegramClient {
     #[add_context]
     #[add_trace]
     pub async fn login(&self, message: TelegramMessage, mut rx: Receiver<String>) -> Result<()> {
-        let Env {
-            telegram_user:
-                TelegramUserEnv {
-                    phone_number,
-                    password,
-                    session_path,
-                    ..
-                },
-            server_uri,
-            ..
-        } = ENV.get().unwrap();
-
-        let client = self.raw();
-
-        let response = "Logining into Telegram...";
-        message.respond(response).await.details(response)?;
-
         if !self.is_authorized().await? {
+            let Env {
+                telegram_user:
+                    TelegramUserEnv {
+                        phone_number,
+                        password,
+                        session_path,
+                        ..
+                    },
+                server_uri,
+                ..
+            } = ENV.get().unwrap();
+
+            let client = self.raw();
+
+            let response = "Sending telegram login code...\nThis may take a while.";
+            message.respond(response).await.details(response)?;
+
             let token = client
                 .request_login_code(phone_number)
                 .await
