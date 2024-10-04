@@ -16,7 +16,7 @@ use crate::{
     error::{Error, Result},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
-    tasker::CmdType,
+    tasker::{CmdType, InsertTask},
     utils::get_http_client,
 };
 use grammers_client::InputMessage;
@@ -98,22 +98,22 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 let _aborters = state.task_session.aborters.lock().await;
 
                 task_session
-                    .insert_task(
-                        CmdType::Url,
-                        &filename,
-                        &root_path,
-                        Some(url),
-                        upload_session.upload_url(),
+                    .insert_task(InsertTask {
+                        cmd_type: CmdType::Url,
+                        filename: filename.clone(),
+                        root_path,
+                        url: Some(url),
+                        upload_url: upload_session.upload_url().to_string(),
                         current_length,
                         total_length,
-                        message.chat().id(),
-                        &chat_bot_hex,
-                        &chat_user_hex,
-                        None,
-                        message.id(),
-                        None,
-                        None,
-                    )
+                        chat_id: message.chat().id(),
+                        chat_bot_hex,
+                        chat_user_hex,
+                        chat_origin_hex: None,
+                        message_id: message.id(),
+                        message_id_forward: None,
+                        message_id_origin: None,
+                    })
                     .await?;
 
                 tracing::info!("inserted url task: {} size: {}", filename, total_length);

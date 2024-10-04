@@ -48,13 +48,11 @@ impl TelegramUserEnv {
     fn parse_users() -> Vec<String> {
         let arg: Option<String> = get_env_value("tg_user_name").ok();
 
-        let users = if let Some(user_names) = arg {
+        let users = arg.map_or_else(Vec::new, |user_names| {
             let users = user_names.split(',').map(|s| s.to_string()).collect();
 
             users
-        } else {
-            Vec::new()
-        };
+        });
 
         users
     }

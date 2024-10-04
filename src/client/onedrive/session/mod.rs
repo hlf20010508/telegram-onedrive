@@ -371,21 +371,18 @@ impl OneDriveSession {
     #[add_context]
     #[add_trace]
     pub async fn get_current_username(&self) -> Result<Option<String>> {
-        match current_user::Entity::find()
+        if let Some(model) = current_user::Entity::find()
             .one(&self.connection)
             .await
             .map_err(|e| Error::new("failed to query onedrive current username").raw(e))?
         {
-            Some(model) => {
-                tracing::debug!("got onedrive current username: {}", model.username);
+            tracing::debug!("got onedrive current username: {}", model.username);
 
-                Ok(Some(model.username))
-            }
-            None => {
-                tracing::debug!("no onedrive current username found");
+            Ok(Some(model.username))
+        } else {
+            tracing::debug!("no onedrive current username found");
 
-                Ok(None)
-            }
+            Ok(None)
         }
     }
 

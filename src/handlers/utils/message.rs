@@ -72,15 +72,10 @@ pub async fn get_message_from_link(
 
 pub fn get_message_link(chat_entity: &ChatEntity, id: i32) -> String {
     match chat_entity {
-        ChatEntity::Chat(chat) => {
-            if let Some(username) = chat.username() {
-                // public group
-                format!("https://t.me/{}/{}", username, id)
-            } else {
-                // private group
-                format!("https://t.me/c/{}/{}", chat.id(), id)
-            }
-        }
+        ChatEntity::Chat(chat) => chat.username().map_or_else(
+            || format!("https://t.me/c/{}/{}", chat.id(), id),
+            |username| format!("https://t.me/{}/{}", username, id),
+        ),
         // private group
         ChatEntity::Id(chat_id) => format!("https://t.me/c/{}/{}", chat_id, id),
         // public group

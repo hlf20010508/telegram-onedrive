@@ -131,7 +131,7 @@ impl TelegramClient {
         Ok(telegram_client)
     }
 
-    pub fn raw(&self) -> &Client {
+    pub const fn raw(&self) -> &Client {
         match self {
             Self::Bot { client, .. } | Self::User { client, .. } => client,
         }

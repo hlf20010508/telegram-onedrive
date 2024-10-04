@@ -23,7 +23,7 @@ use proc_macros::add_context;
 use progress::Progress;
 pub use session::{TaskAborter, TaskSession};
 use std::{sync::Arc, time::Duration};
-pub use tasks::CmdType;
+pub use tasks::{CmdType, InsertTask};
 use tokio::sync::Semaphore;
 use tokio_util::sync::CancellationToken;
 
@@ -119,6 +119,8 @@ impl Tasker {
                     (aborter, Some(task.message_id)),
                 );
             }
+
+            drop(aborters);
 
             tokio::spawn(async move {
                 indenter::set_file_indenter(indenter::Coroutine::TaskWorker(handler_id), async {

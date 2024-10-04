@@ -203,3 +203,20 @@ impl Display for TaskStatus {
         }
     }
 }
+
+pub struct InsertTask {
+    pub cmd_type: CmdType,
+    pub filename: String,
+    pub root_path: String,
+    pub url: Option<String>,
+    pub upload_url: String,
+    pub current_length: u64,
+    pub total_length: u64,
+    pub chat_id: i64,
+    pub chat_bot_hex: String,
+    pub chat_user_hex: String,
+    pub chat_origin_hex: Option<String>,
+    pub message_id: i32,
+    pub message_id_forward: Option<i32>,
+    pub message_id_origin: Option<i32>,
+}

@@ -63,10 +63,10 @@ impl TelegramClient {
             if match chat_entity {
                 ChatEntity::Chat(chat_old) => chat.id() == chat_old.id(),
                 ChatEntity::Id(chat_id) => chat.id() == *chat_id,
-                ChatEntity::Username(chat_username) => match chat.username() {
-                    Some(username) => username == chat_username,
-                    None => chat.usernames().contains(&chat_username.as_str()),
-                },
+                ChatEntity::Username(chat_username) => chat.username().map_or_else(
+                    || chat.usernames().contains(&chat_username.as_str()),
+                    |username| username == chat_username,
+                ),
             } {
                 tracing::debug!("got chat {}", chat.id());
 
@@ -246,6 +246,8 @@ impl TelegramClient {
                         }
                     }
 
+                    drop(chat_message_queue);
+
                     let millis = rng.gen_range(1500..4000);
                     tokio::time::sleep(Duration::from_millis(millis)).await;
                 }
@@ -274,16 +276,15 @@ impl MessageVecDeque {
             QueuedMessageType::Respond | QueuedMessageType::Reply(_) => {
                 self.deque.push_back(queued_message);
             }
-            QueuedMessageType::Edit(message_id) => match self.key_map.get(&message_id) {
-                Some(index) => {
+            QueuedMessageType::Edit(message_id) => {
+                if let Some(index) = self.key_map.get(&message_id) {
                     // override the outdated edit message
                     self.deque[*index] = queued_message;
-                }
-                None => {
+                } else {
                     self.key_map.insert(message_id, self.deque.len());
                     self.deque.push_back(queued_message);
                 }
-            },
+            }
         }
     }
 
@@ -319,7 +320,7 @@ impl ChatMessageHashMapExt for ChatMessageVecDeque {
     #[add_trace]
     fn push_back(&mut self, queued_message: QueuedMessage) {
         self.entry(queued_message.chat.id)
-            .or_insert(MessageVecDeque::new())
+            .or_insert_with(MessageVecDeque::new)
             .push_back(queued_message);
     }
 

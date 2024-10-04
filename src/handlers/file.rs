@@ -12,7 +12,7 @@ use crate::{
     handlers::utils::{get_tg_file_size, preprocess_tg_file_name},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
-    tasker::CmdType,
+    tasker::{CmdType, InsertTask},
 };
 use grammers_client::{types::Media, InputMessage};
 use proc_macros::{
@@ -110,22 +110,22 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let _aborters = state.task_session.aborters.lock().await;
 
     task_session
-        .insert_task(
+        .insert_task(InsertTask {
             cmd_type,
-            &filename,
-            &root_path,
-            None,
-            upload_session.upload_url(),
+            filename: filename.clone(),
+            root_path,
+            url: None,
+            upload_url: upload_session.upload_url().to_string(),
             current_length,
             total_length,
-            chat_user.id(),
-            &chat_bot_hex,
-            &chat_user_hex,
-            None,
+            chat_id: chat_user.id(),
+            chat_bot_hex,
+            chat_user_hex,
+            chat_origin_hex: None,
             message_id,
             message_id_forward,
-            None,
-        )
+            message_id_origin: None,
+        })
         .await?;
 
     tracing::info!("inserted file task: {} size: {}", filename, total_length);

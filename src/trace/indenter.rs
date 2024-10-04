@@ -165,7 +165,7 @@ impl<W> FmtWriter<W>
 where
     W: std::io::Write,
 {
-    fn new(writer: W) -> Self {
+    const fn new(writer: W) -> Self {
         Self { writer }
     }
 }

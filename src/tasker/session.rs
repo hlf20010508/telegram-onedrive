@@ -5,7 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use super::tasks::{self, CmdType, TaskStatus};
+use super::tasks::{self, InsertTask, TaskStatus};
 use crate::error::{Error, Result};
 use proc_macros::{add_context, add_trace};
 use sea_orm::{
@@ -102,23 +102,25 @@ impl TaskSession {
     }
 
     #[add_context]
-    // #[add_trace]
+    #[add_trace]
     pub async fn insert_task(
         &self,
-        cmd_type: CmdType,
-        filename: &str,
-        root_path: &str,
-        url: Option<String>,
-        upload_url: &str,
-        current_length: u64,
-        total_length: u64,
-        chat_id: i64,
-        chat_bot_hex: &str,
-        chat_user_hex: &str,
-        chat_origin_hex: Option<String>,
-        message_id: i32,
-        message_id_forward: Option<i32>,
-        message_id_origin: Option<i32>,
+        InsertTask {
+            cmd_type,
+            filename,
+            root_path,
+            url,
+            upload_url,
+            current_length,
+            total_length,
+            chat_id,
+            chat_bot_hex,
+            chat_user_hex,
+            chat_origin_hex,
+            message_id,
+            message_id_forward,
+            message_id_origin,
+        }: InsertTask,
     ) -> Result<i64> {
         let insert_item = tasks::ActiveModel {
             id: ActiveValue::default(),

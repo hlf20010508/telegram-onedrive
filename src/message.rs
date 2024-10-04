@@ -162,7 +162,7 @@ pub struct MessageInfo {
 }
 
 impl MessageInfo {
-    pub fn new(chat_entity: ChatEntity, id: i32) -> Self {
+    pub const fn new(chat_entity: ChatEntity, id: i32) -> Self {
         Self { chat_entity, id }
     }
 }

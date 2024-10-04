@@ -46,8 +46,19 @@ pub fn get_filename(url: &str, response: &Response) -> Result<String> {
 
     let exts = guess_exts(content_type);
 
-    let filename = match filename {
-        Some(filename) => {
+    let filename = filename.map_or_else(
+        || {
+            let mut filename = get_current_timestamp().to_string();
+
+            if let Some(ext) = exts.first() {
+                if content_type != "application/octet-stream" {
+                    filename = filename + "." + ext;
+                }
+            }
+
+            filename
+        },
+        |filename| {
             let mut filename = filename;
 
             if !exts.is_empty() && content_type != "application/octet-stream" {
@@ -71,19 +82,8 @@ pub fn get_filename(url: &str, response: &Response) -> Result<String> {
             }
 
             filename
-        }
-        None => {
-            let mut filename = get_current_timestamp().to_string();
-
-            if let Some(ext) = exts.first() {
-                if content_type != "application/octet-stream" {
-                    filename = filename + "." + ext;
-                }
-            }
-
-            filename
-        }
-    };
+        },
+    );
 
     Ok(preprocess_url_file_name(&filename))
 }
@@ -148,19 +148,16 @@ fn get_filename_from_url(url: &str) -> Result<Option<String>> {
         filename
     };
 
-    let filename = match filename {
-        Some(filename) => filename,
-        None => {
-            let last_segment = parsed_url
-                .path_segments()
-                .and_then(|segments| segments.last())
-                .unwrap_or("");
+    let filename = filename.unwrap_or_else(|| {
+        let last_segment = parsed_url
+            .path_segments()
+            .and_then(|segments| segments.last())
+            .unwrap_or("");
 
-            percent_decode_str(last_segment)
-                .decode_utf8_lossy()
-                .to_string()
-        }
-    };
+        percent_decode_str(last_segment)
+            .decode_utf8_lossy()
+            .to_string()
+    });
 
     if filename.is_empty() {
         Ok(None)
@@ -192,13 +189,11 @@ fn guess_exts(content_type: &str) -> Vec<String> {
         content_type
     };
 
-    match get_mime_extensions_str(&content_type) {
-        Some(exts) => exts
-            .iter()
+    get_mime_extensions_str(&content_type).map_or_else(Vec::new, |exts| {
+        exts.iter()
             .map(|s| (*s).to_string())
-            .collect::<Vec<String>>(),
-        None => Vec::new(),
-    }
+            .collect::<Vec<String>>()
+    })
 }
 
 #[add_trace]

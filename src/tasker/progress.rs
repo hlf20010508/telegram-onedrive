@@ -24,7 +24,7 @@ pub struct Progress {
 }
 
 impl Progress {
-    pub fn new(state: AppState) -> Self {
+    pub const fn new(state: AppState) -> Self {
         Self { state }
     }
 

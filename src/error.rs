@@ -127,10 +127,11 @@ impl Display for Error {
         let contexts = &self.inner.contexts;
         let details = &self.inner.details;
 
-        let base = match &self.inner.raw {
-            Some(e) => format!("{}: {}", message, e),
-            None => message.clone(),
-        };
+        let base = self
+            .inner
+            .raw
+            .as_ref()
+            .map_or_else(|| message.clone(), |e| format!("{}: {}", message, e));
 
         write_fmt(f, base, contexts, details)
     }

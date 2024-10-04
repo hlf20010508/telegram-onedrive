@@ -44,11 +44,11 @@ impl EventType {
         Self::Command(pattern.to_string())
     }
 
-    pub fn text() -> Self {
+    pub const fn text() -> Self {
         Self::Text
     }
 
-    pub fn media() -> Self {
+    pub const fn media() -> Self {
         Self::Media
     }
 

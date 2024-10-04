@@ -168,18 +168,15 @@ impl OneDriveClient {
 
         session.save().await?;
 
-        match self.get_current_username().await? {
-            Some(username) => {
-                if username == session.username {
-                    self.session.write().await.overwrite(session);
-                    *self.client.write().await = client;
-                }
-            }
-            None => {
-                session.set_current_user().await?;
+        if let Some(username) = self.get_current_username().await? {
+            if username == session.username {
                 self.session.write().await.overwrite(session);
                 *self.client.write().await = client;
             }
+        } else {
+            session.set_current_user().await?;
+            self.session.write().await.overwrite(session);
+            *self.client.write().await = client;
         }
 
         Ok(())
