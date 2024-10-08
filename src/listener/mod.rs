@@ -54,6 +54,7 @@ impl Listener {
                 // cooperate with reconnection policy
                 // if only loop update, connection will still be closed after a long time
                 // if only reconnection policy, in current grammers version, it will block the client
+                // fixed in https://github.com/Lonami/grammers/pull/273
                 loop {
                     let update = telegram_user.next_update().await.unwrap_or_trace();
                     if let Update::MessageDeleted(messages_info) = update {
