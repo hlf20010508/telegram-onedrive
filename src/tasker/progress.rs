@@ -52,7 +52,7 @@ impl Progress {
             .await
             .trace();
 
-            tokio::time::sleep(Duration::from_secs(5)).await;
+            tokio::time::sleep(Duration::from_secs(2)).await;
         }
     }
 

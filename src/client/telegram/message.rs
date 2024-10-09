@@ -248,7 +248,7 @@ impl TelegramClient {
 
                     drop(chat_message_queue);
 
-                    let millis = rng.gen_range(1500..4000);
+                    let millis = rng.gen_range(2700..3500);
                     tokio::time::sleep(Duration::from_millis(millis)).await;
                 }
             })
