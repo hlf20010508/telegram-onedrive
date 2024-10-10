@@ -58,15 +58,17 @@ impl<'h> Handler<'h> {
     #[add_context]
     #[add_trace]
     async fn handle_text(&self, message: TelegramMessage) -> Result<()> {
-        let text = message.text();
+        let text = message.text().trim();
 
         if !text.is_empty() {
-            if text.starts_with('/') {
-                self.handle_command(message).await?;
+            if text.contains('\n') {
+                self.trigger(EventType::Batch, message.clone()).await?;
+            } else if text.starts_with('/') {
+                self.handle_command(message.clone()).await?;
             } else {
                 tracing::info!("handle text");
 
-                self.trigger(EventType::Text, message).await?;
+                self.trigger(EventType::Text, message.clone()).await?;
             }
         }
 

@@ -26,11 +26,22 @@ use proc_macros::{
 #[add_context]
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
+    handle_link(message.clone(), message.text(), state, true).await
+}
+
+#[add_context]
+#[add_trace]
+pub async fn handle_link(
+    message: TelegramMessage,
+    text: &str,
+    state: AppState,
+    should_delete: bool,
+) -> Result<()> {
     let telegram_user = &state.telegram_user;
     let onedrive = &state.onedrive;
     let task_session = &state.task_session;
 
-    let link = message.text();
+    let link = text;
 
     let message_origin = get_message_from_link(telegram_user, link).await?;
 
@@ -84,8 +95,10 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             .id(),
     };
 
-    // link message is useless now, delete it
-    message_user.delete().await?;
+    if should_delete {
+        // link message is useless now, delete it
+        message_user.delete().await?;
+    }
 
     let root_path = onedrive.get_root_path(true).await?;
 

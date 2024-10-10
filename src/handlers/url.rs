@@ -13,7 +13,8 @@ use super::{
     },
 };
 use crate::{
-    error::{Error, Result},
+    env::BYPASS_PREFIX,
+    error::{Error, ParserType, Result},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
     tasker::{CmdType, InsertTask},
@@ -34,7 +35,18 @@ pub const PATTERN: &str = "/url";
 #[add_context]
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
-    let cmd = cmd_parser(message.text());
+    handler_url(message.clone(), message.text(), state, false).await
+}
+
+#[add_context]
+#[add_trace]
+pub async fn handler_url(
+    message: TelegramMessage,
+    text: &str,
+    state: AppState,
+    should_send: bool,
+) -> Result<()> {
+    let cmd = cmd_parser(text);
 
     if cmd.len() == 2 {
         if cmd[1] == "help" {
@@ -65,17 +77,33 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 let filename = get_filename(&url, &response)?;
 
                 let total_length = match response.headers().get(header::CONTENT_LENGTH) {
-                Some(content_length) => content_length
-                    .to_str()
-                    .map_err(|e| Error::new( "header Content-Length has invisible ASCII chars").raw(e))?
-                    .parse::<u64>()
-                    .map_err(|e| Error::new( "failed to parse header Content-Length to u64").raw(e))?,
-                None => return Err(Error::new(format!(
-                    "Content-Length not found in response headers.\nStatus code:\n{}\nResponse headers:\n{:#?}",
-                    response.status(),
-                    response.headers()
-                ))),
-            };
+                    Some(content_length) => content_length
+                        .to_str()
+                        .map_err(|e| Error::new( "header Content-Length has invisible ASCII chars").raw(e))?
+                        .parse::<u64>()
+                        .map_err(|e| Error::new( "failed to parse header Content-Length to u64").raw(e))?,
+                    None => return Err(Error::new(format!(
+                        "Content-Length not found in response headers.\nStatus code:\n{}\nResponse headers:\n{:#?}",
+                        response.status(),
+                        response.headers()
+                    ))),
+                };
+
+                let chat_user = telegram_user
+                    .get_chat(&ChatEntity::from(message.chat()))
+                    .await?;
+
+                let message_id = if should_send {
+                    let response = format!("{}{}\n\n{}", BYPASS_PREFIX, url, filename);
+                    telegram_user
+                        .send_message(&chat_user, response.as_str())
+                        .await
+                        .context("linked message with thumb")
+                        .details(response)?
+                        .id()
+                } else {
+                    message.id()
+                };
 
                 let root_path = onedrive.get_root_path(true).await?;
 
@@ -89,11 +117,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                     .map_or(0, |range| range.start);
 
                 let chat_bot_hex = message.chat().pack().to_hex();
-                let chat_user_hex = telegram_user
-                    .get_chat(&ChatEntity::from(message.chat()))
-                    .await?
-                    .pack()
-                    .to_hex();
+                let chat_user_hex = chat_user.pack().to_hex();
 
                 let _aborters = state.task_session.aborters.lock().await;
 
@@ -110,7 +134,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                         chat_bot_hex,
                         chat_user_hex,
                         chat_origin_hex: None,
-                        message_id: message.id(),
+                        message_id,
                         message_id_forward: None,
                         message_id_origin: None,
                     })
@@ -124,10 +148,6 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             }
         }
     } else {
-        message
-            .reply(InputMessage::html(format_unknown_command_help(PATTERN)))
-            .await?;
-
-        Ok(())
+        Err(Error::new(format_unknown_command_help(PATTERN)).parser_type(ParserType::Html))
     }
 }

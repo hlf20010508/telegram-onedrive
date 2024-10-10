@@ -10,7 +10,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use grammers_client::types::PackedChat;
+use grammers_client::{types::PackedChat, InputMessage};
 use proc_macros::{add_context, add_trace};
 use std::{fmt::Display, panic};
 
@@ -27,6 +27,13 @@ struct InnerError {
     contexts: Vec<String>,
     details: Vec<String>,
     raw: Option<RawError>,
+    parser_type: ParserType,
+}
+
+#[derive(Debug)]
+pub enum ParserType {
+    Text,
+    Html,
 }
 
 impl Error {
@@ -40,6 +47,7 @@ impl Error {
                 contexts: Vec::new(),
                 details: Vec::new(),
                 raw: None,
+                parser_type: ParserType::Text,
             }),
         }
     }
@@ -49,6 +57,12 @@ impl Error {
         E: Into<RawError>,
     {
         self.inner.raw = Some(Into::into(e));
+
+        self
+    }
+
+    pub fn parser_type(mut self, parser_type: ParserType) -> Self {
+        self.inner.parser_type = parser_type;
 
         self
     }
@@ -82,7 +96,13 @@ impl Error {
     #[add_context]
     #[add_trace]
     pub async fn send(self, message: TelegramMessage) -> Result<Self> {
-        message.reply(self.to_string()).await.details(&self)?;
+        match self.inner.parser_type {
+            ParserType::Text => message.reply(self.to_string()).await.details(&self)?,
+            ParserType::Html => message
+                .reply(InputMessage::html(self.to_string()))
+                .await
+                .details(&self)?,
+        };
 
         Ok(self)
     }
@@ -93,10 +113,16 @@ impl Error {
     where
         C: Into<PackedChat>,
     {
-        telegram_client
-            .send_message(chat, self.to_string())
-            .await
-            .details(&self)?;
+        match self.inner.parser_type {
+            ParserType::Text => telegram_client
+                .send_message(chat, self.to_string())
+                .await
+                .details(&self)?,
+            ParserType::Html => telegram_client
+                .send_message(chat, InputMessage::html(self.to_string()))
+                .await
+                .details(&self)?,
+        };
 
         Ok(self)
     }

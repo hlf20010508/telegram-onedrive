@@ -13,7 +13,6 @@ pub mod zip;
 use crate::{
     client::onedrive::invalid_name::{INVALID_COMPONENT, INVALID_NAME, INVALID_NAME_PREFIX},
     error::{Error, Result, ResultExt},
-    message::TelegramMessage,
     utils::{get_current_timestamp, get_ext},
 };
 use grammers_client::types::media::{Document, Media};
@@ -213,15 +212,12 @@ fn validate_filename(filename: &str) -> bool {
 
 #[add_context]
 #[add_trace]
-pub async fn is_root_path_valid(root_path: &str, message: TelegramMessage) -> Result<bool> {
-    if root_path.starts_with('/') {
-        Ok(true)
-    } else {
-        let response = "directory path should start with /";
-        message.reply(response).await.details(response)?;
-
-        Ok(false)
+pub async fn validate_root_path(root_path: &str) -> Result<()> {
+    if !root_path.starts_with('/') {
+        return Err(Error::new("directory path should start with /"));
     }
+
+    Ok(())
 }
 
 #[add_trace]

@@ -37,6 +37,7 @@ pub enum EventType {
     Command(String),
     Text,
     Media,
+    Batch,
 }
 
 impl EventType {
@@ -52,11 +53,16 @@ impl EventType {
         Self::Media
     }
 
+    pub const fn batch() -> Self {
+        Self::Batch
+    }
+
     pub fn to_str(&self) -> &str {
         match self {
             Self::Command(command) => command.as_str(),
             Self::Text => "__TEXT__",
             Self::Media => "__MEDIA__",
+            Self::Batch => "__BATCH__",
         }
     }
 }
@@ -76,6 +82,8 @@ impl From<&String> for EventType {
             Self::Text
         } else if value == Self::Media.to_str() {
             Self::Media
+        } else if value == Self::Batch.to_str() {
+            Self::Batch
         } else {
             Self::Command(value.to_string())
         }

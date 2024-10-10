@@ -12,7 +12,7 @@ use super::{
 use crate::{
     auth_server,
     client::OneDriveClient,
-    error::{Error, Result},
+    error::{Error, ParserType, Result},
     handlers::auth::authorize_onedrive,
     message::TelegramMessage,
     state::AppState,
@@ -66,16 +66,14 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
             logout_drive(onedrive, message, index).await?;
         } else {
-            message
-                .reply(InputMessage::html(format_unknown_command_help(PATTERN)))
-                .await
-                .context("sub command error")?;
+            return Err(Error::new(format_unknown_command_help(PATTERN))
+                .parser_type(ParserType::Html)
+                .context("sub command error"));
         }
     } else {
-        message
-            .reply(InputMessage::html(format_unknown_command_help(PATTERN)))
-            .await
-            .context("command error")?;
+        return Err(Error::new(format_unknown_command_help(PATTERN))
+            .parser_type(ParserType::Html)
+            .context("command error"));
     }
 
     Ok(())

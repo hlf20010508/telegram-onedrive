@@ -18,7 +18,9 @@ mod trace;
 mod utils;
 
 use env::{Env, ENV};
-use handlers::{auth, auto_delete, clear, dir, drive, file, help, link, links, logs, start, url};
+use handlers::{
+    auth, auto_delete, batch, clear, dir, drive, file, help, link, links, logs, start, url,
+};
 use listener::{EventType, HashMapExt, Listener};
 use std::collections::HashMap;
 use trace::{indenter, trace_registor};
@@ -47,7 +49,8 @@ async fn main() {
         .on(EventType::command(url::PATTERN), url::handler)
         .on(EventType::command(links::PATTERN), links::handler)
         .on(EventType::media(), file::handler)
-        .on(EventType::text(), link::handler);
+        .on(EventType::text(), link::handler)
+        .on(EventType::batch(), batch::handler);
 
     indenter::set_file_indenter(indenter::Coroutine::Listener, async {
         Listener::new(events).await.run().await;

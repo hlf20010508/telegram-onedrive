@@ -7,9 +7,14 @@
 
 use super::{
     docs::{format_help, format_unknown_command_help},
-    utils::{is_root_path_valid, text::cmd_parser},
+    utils::{text::cmd_parser, validate_root_path},
 };
-use crate::{client::OneDriveClient, error::Result, message::TelegramMessage, state::AppState};
+use crate::{
+    client::OneDriveClient,
+    error::{Error, ParserType, Result},
+    message::TelegramMessage,
+    state::AppState,
+};
 use grammers_client::InputMessage;
 use proc_macros::{add_context, add_trace, check_in_group, check_od_login, check_senders};
 
@@ -21,9 +26,15 @@ pub const PATTERN: &str = "/dir";
 #[add_context]
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
+    handle_dir(message.clone(), message.text(), state).await
+}
+
+#[add_context]
+#[add_trace]
+pub async fn handle_dir(message: TelegramMessage, text: &str, state: AppState) -> Result<()> {
     let onedrive = &state.onedrive;
 
-    let cmd = cmd_parser(message.text());
+    let cmd = cmd_parser(text);
 
     if cmd.len() == 1 {
         // /dir
@@ -54,16 +65,14 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 set_temp_dir(onedrive, message, temp_root_path).await?;
             }
         } else {
-            message
-                .reply(InputMessage::html(format_unknown_command_help(PATTERN)))
-                .await
-                .context("sub command error")?;
+            return Err(Error::new(format_unknown_command_help(PATTERN))
+                .parser_type(ParserType::Html)
+                .context("sub command error"));
         }
     } else {
-        message
-            .reply(InputMessage::html(format_unknown_command_help(PATTERN)))
-            .await
-            .context("command error")?;
+        return Err(Error::new(format_unknown_command_help(PATTERN))
+            .parser_type(ParserType::Html)
+            .context("command error"));
     }
 
     Ok(())
@@ -103,12 +112,12 @@ async fn set_dir(
     message: TelegramMessage,
     root_path: &str,
 ) -> Result<()> {
-    if is_root_path_valid(root_path, message.clone()).await? {
-        onedrive.set_root_path(root_path).await?;
+    validate_root_path(root_path).await?;
 
-        let response = format!("Directory set to {}", root_path);
-        message.respond(response.as_str()).await.details(response)?;
-    }
+    onedrive.set_root_path(root_path).await?;
+
+    let response = format!("Directory set to {}", root_path);
+    message.respond(response.as_str()).await.details(response)?;
 
     Ok(())
 }
@@ -134,12 +143,12 @@ async fn set_temp_dir(
     message: TelegramMessage,
     temp_root_path: &str,
 ) -> Result<()> {
-    if is_root_path_valid(temp_root_path, message.clone()).await? {
-        onedrive.set_temp_root_path(temp_root_path).await?;
+    validate_root_path(temp_root_path).await?;
 
-        let response = format!("Temporary directory set to {}", temp_root_path);
-        message.respond(response.as_str()).await.details(response)?;
-    }
+    onedrive.set_temp_root_path(temp_root_path).await?;
+
+    let response = format!("Temporary directory set to {}", temp_root_path);
+    message.respond(response.as_str()).await.details(response)?;
 
     Ok(())
 }

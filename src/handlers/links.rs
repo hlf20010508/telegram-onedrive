@@ -17,7 +17,7 @@ use super::{
 };
 use crate::{
     env::BYPASS_PREFIX,
-    error::{Error, Result},
+    error::{Error, ParserType, Result},
     message::{ChatEntity, MessageInfo, TelegramMessage},
     state::AppState,
     tasker::{CmdType, InsertTask},
@@ -36,7 +36,18 @@ pub const PATTERN: &str = "/links";
 #[add_context]
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
-    let cmd = cmd_parser(message.text());
+    handle_links(message.clone(), message.text(), state, true).await
+}
+
+#[add_context]
+#[add_trace]
+pub async fn handle_links(
+    message: TelegramMessage,
+    text: &str,
+    state: AppState,
+    should_delete: bool,
+) -> Result<()> {
+    let cmd = cmd_parser(text);
 
     if cmd.len() == 2 && cmd[1] == "help" {
         // /links help
@@ -170,16 +181,16 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             );
         }
 
-        // command message is useless now, delete it
-        telegram_user
-            .get_message(chat_user, message.id())
-            .await?
-            .delete()
-            .await?;
+        if should_delete {
+            // command message is useless now, delete it
+            telegram_user
+                .get_message(chat_user, message.id())
+                .await?
+                .delete()
+                .await?;
+        }
     } else {
-        message
-            .reply(InputMessage::html(format_unknown_command_help(PATTERN)))
-            .await?;
+        return Err(Error::new(format_unknown_command_help(PATTERN)).parser_type(ParserType::Html));
     }
 
     Ok(())

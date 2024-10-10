@@ -7,6 +7,7 @@
 
 pub mod auth;
 pub mod auto_delete;
+pub mod batch;
 pub mod clear;
 pub mod dir;
 mod docs;
