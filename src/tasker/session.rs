@@ -120,6 +120,7 @@ impl TaskSession {
             message_id,
             message_id_forward,
             message_id_origin,
+            auto_delete,
         }: InsertTask,
     ) -> Result<i64> {
         let insert_item = tasks::ActiveModel {
@@ -139,6 +140,7 @@ impl TaskSession {
             message_id_forward: Set(message_id_forward),
             message_id_origin: Set(message_id_origin),
             status: Set(TaskStatus::Waiting),
+            auto_delete: Set(auto_delete),
         };
 
         let id = tasks::Entity::insert(insert_item)

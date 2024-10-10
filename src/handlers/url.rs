@@ -5,6 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use std::sync::atomic::Ordering;
+
 use super::{
     docs::{format_help, format_unknown_command_help},
     utils::{
@@ -119,6 +121,8 @@ pub async fn handler_url(
                 let chat_bot_hex = message.chat().pack().to_hex();
                 let chat_user_hex = chat_user.pack().to_hex();
 
+                let auto_delete = state.should_auto_delete.load(Ordering::Acquire);
+
                 let _aborters = state.task_session.aborters.lock().await;
 
                 task_session
@@ -137,6 +141,7 @@ pub async fn handler_url(
                         message_id,
                         message_id_forward: None,
                         message_id_origin: None,
+                        auto_delete,
                     })
                     .await?;
 

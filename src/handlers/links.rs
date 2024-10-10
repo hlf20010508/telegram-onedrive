@@ -5,6 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use std::sync::atomic::Ordering;
+
 use super::{
     docs::{format_help, format_unknown_command_help},
     utils::{
@@ -76,6 +78,8 @@ pub async fn handle_links(
         } = get_message_info(link_head)?;
 
         let chat_origin = telegram_user.get_chat(&chat_entity).await?;
+
+        let auto_delete = state.should_auto_delete.load(Ordering::Acquire);
 
         tracing::info!("processing links task...");
 
@@ -171,6 +175,7 @@ pub async fn handle_links(
                     message_id,
                     message_id_forward: None,
                     message_id_origin: Some(message_origin.id()),
+                    auto_delete,
                 })
                 .await?;
 

@@ -6,7 +6,11 @@
 */
 
 use super::{auto_delete, dir, link, links, url};
-use crate::{error::Result, message::TelegramMessage, state::AppState};
+use crate::{
+    error::Result,
+    message::{ChatEntity, TelegramMessage},
+    state::AppState,
+};
 use proc_macros::{add_context, add_trace};
 
 #[add_context]
@@ -37,6 +41,18 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 .details(detail)?;
         }
     }
+
+    let telegram_user = &state.telegram_user;
+
+    let chat_user = telegram_user
+        .get_chat(&ChatEntity::from(message.chat()))
+        .await?;
+
+    telegram_user
+        .get_message(chat_user, message.id())
+        .await?
+        .delete()
+        .await?;
 
     Ok(())
 }

@@ -5,6 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use std::sync::atomic::Ordering;
+
 use super::utils::upload::upload_thumb;
 use crate::{
     env::BYPASS_PREFIX,
@@ -107,6 +109,8 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let chat_bot_hex = message.chat().pack().to_hex();
     let chat_user_hex = chat_user.pack().to_hex();
 
+    let auto_delete = state.should_auto_delete.load(Ordering::Acquire);
+
     let _aborters = state.task_session.aborters.lock().await;
 
     task_session
@@ -125,6 +129,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             message_id,
             message_id_forward,
             message_id_origin: None,
+            auto_delete,
         })
         .await?;
 

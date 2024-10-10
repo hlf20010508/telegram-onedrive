@@ -44,6 +44,7 @@ pub struct Model {
     // for link
     pub message_id_origin: Option<i32>,
     pub status: TaskStatus,
+    pub auto_delete: bool,
 }
 
 #[derive(Clone, Debug, EnumIter, DeriveRelation)]
@@ -219,4 +220,5 @@ pub struct InsertTask {
     pub message_id: i32,
     pub message_id_forward: Option<i32>,
     pub message_id_origin: Option<i32>,
+    pub auto_delete: bool,
 }

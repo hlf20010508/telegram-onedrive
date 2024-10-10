@@ -5,6 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use std::sync::atomic::Ordering;
+
 use super::utils::{message::get_message_from_link, upload::upload_thumb};
 use crate::{
     env::BYPASS_PREFIX,
@@ -116,6 +118,8 @@ pub async fn handle_link(
     let chat_user_hex = chat_user.pack().to_hex();
     let chat_origin_hex = message_origin.chat().pack().to_hex();
 
+    let auto_delete = state.should_auto_delete.load(Ordering::Acquire);
+
     let _aborters = state.task_session.aborters.lock().await;
 
     task_session
@@ -134,6 +138,7 @@ pub async fn handle_link(
             message_id,
             message_id_forward: None,
             message_id_origin: Some(message_origin.id()),
+            auto_delete,
         })
         .await?;
 

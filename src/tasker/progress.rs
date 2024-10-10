@@ -17,7 +17,7 @@ use crate::{
 use grammers_client::InputMessage;
 use path_slash::PathBufExt;
 use proc_macros::{add_context, add_trace};
-use std::{collections::HashMap, path::Path, sync::atomic::Ordering, time::Duration};
+use std::{collections::HashMap, path::Path, time::Duration};
 
 pub struct Progress {
     state: AppState,
@@ -145,14 +145,12 @@ impl Progress {
         let telegram_bot = &self.state.telegram_bot;
         let telegram_user = &self.state.telegram_user;
 
-        let should_auto_delete = self.state.should_auto_delete.load(Ordering::Acquire);
-
         for task in completed_tasks {
             let chat = chat_from_hex(chat_user_hex)?;
 
             let message_user = telegram_user.get_message(chat, task.message_id).await?;
 
-            if should_auto_delete {
+            if task.auto_delete {
                 message_user.delete().await?;
             } else {
                 let file_path_raw = Path::new(&task.root_path).join(task.filename);
