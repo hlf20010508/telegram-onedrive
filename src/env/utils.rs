@@ -34,3 +34,17 @@ where
         Err(_) => default,
     }
 }
+
+// to be compatible with the python version
+pub fn get_env_value_option_legacy<T>(names: &[&str], default: T) -> T
+where
+    T: FromStr,
+{
+    for name in names {
+        if let Ok(value_s) = env::var(name) {
+            return value_s.parse::<T>().unwrap_or(default);
+        }
+    }
+
+    default
+}
