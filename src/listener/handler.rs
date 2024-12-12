@@ -25,6 +25,9 @@ impl<'h> Handler<'h> {
     pub async fn handle_message(&self, message: TelegramMessage) -> Result<()> {
         match message.media() {
             Some(media) => match media {
+                Media::Document(document) if document.name().to_lowercase().ends_with(".t2o") => {
+                    self.handle_batch(message).await?;
+                }
                 Media::Photo(_) | Media::Document(_) | Media::Sticker(_) => {
                     self.handle_media(message).await?;
                 }
@@ -61,9 +64,7 @@ impl<'h> Handler<'h> {
         let text = message.text().trim();
 
         if !text.is_empty() {
-            if text.contains('\n') {
-                self.trigger(EventType::Batch, message.clone()).await?;
-            } else if text.starts_with('/') {
+            if text.starts_with('/') {
                 self.handle_command(message.clone()).await?;
             } else {
                 tracing::info!("handle text");
@@ -81,6 +82,14 @@ impl<'h> Handler<'h> {
         tracing::info!("handle media");
 
         self.trigger(EventType::Media, message).await
+    }
+
+    #[add_context]
+    #[add_trace]
+    async fn handle_batch(&self, message: TelegramMessage) -> Result<()> {
+        tracing::info!("handle batch");
+
+        self.trigger(EventType::Batch, message).await
     }
 
     #[add_context]

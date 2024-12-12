@@ -5,54 +5,63 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use super::{auto_delete, dir, link, links, url};
 use crate::{
-    error::Result,
+    error::{Error, Result, ResultUnwrapExt},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
 };
+use grammers_client::types::Downloadable;
 use proc_macros::{add_context, add_trace};
 
 #[add_context]
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
-    for (i, line) in message.text().split('\n').enumerate() {
-        let detail = format!("line {}: {}", i + 1, line);
-
-        if line.starts_with(auto_delete::PATTERN) {
-            auto_delete::handler(message.clone(), state.clone())
-                .await
-                .details(detail)?;
-        } else if line.starts_with(dir::PATTERN) {
-            dir::handle_dir(message.clone(), line, state.clone())
-                .await
-                .details(detail)?;
-        } else if line.starts_with(links::PATTERN) {
-            links::handle_links(message.clone(), line, state.clone(), false)
-                .await
-                .details(detail)?;
-        } else if line.starts_with(url::PATTERN) {
-            url::handler_url(message.clone(), line, state.clone(), true)
-                .await
-                .details(detail)?;
-        } else {
-            link::handle_link(message.clone(), line, state.clone(), false)
-                .await
-                .details(detail)?;
-        }
-    }
-
-    let telegram_user = &state.telegram_user;
+    let telegram_user = state.telegram_user.clone();
 
     let chat_user = telegram_user
         .get_chat(&ChatEntity::from(message.chat()))
         .await?;
 
-    telegram_user
-        .get_message(chat_user, message.id())
-        .await?
-        .delete()
-        .await?;
+    let message_user = telegram_user.get_message(&chat_user, message.id()).await?;
+
+    let media = message_user
+        .media()
+        .ok_or_else(|| Error::new("message does not contain any media"))?;
+
+    let downloadable = Downloadable::Media(media);
+    let mut download = telegram_user.iter_download(&downloadable);
+    let mut batch_bytes = Vec::new();
+    while let Some(chunk) = download
+        .next()
+        .await
+        .map_err(|e| Error::new("failed to get next chunk from tg file downloader").raw(e))?
+    {
+        batch_bytes.extend(chunk);
+    }
+
+    let batch =
+        String::from_utf8(batch_bytes).map_err(|e| Error::new("failed to parse batch").raw(e))?;
+
+    tokio::spawn(async move {
+        let batch = batch.trim();
+
+        for (i, line) in batch.split('\n').enumerate() {
+            let detail = format!("line {}: {}", i + 1, line);
+
+            if let Err(e) = telegram_user
+                .send_message(&chat_user, line)
+                .await
+                .context("failed to send command in batch")
+                .details(detail)
+            {
+                e.send(message.clone()).await.unwrap_both().trace();
+            }
+        }
+
+        if let Err(e) = message_user.delete().await {
+            e.send(message.clone()).await.unwrap_both().trace();
+        }
+    });
 
     Ok(())
 }

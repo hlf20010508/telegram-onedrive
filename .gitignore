@@ -6,6 +6,7 @@ dev.*
 devrc.*
 .env
 /.vscode
+*.t2o
 
 # Added by cargo
 

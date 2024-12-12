@@ -15,7 +15,6 @@ use super::{
     },
 };
 use crate::{
-    env::BYPASS_PREFIX,
     error::{Error, ParserType, Result},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
@@ -37,18 +36,7 @@ pub const PATTERN: &str = "/url";
 #[add_context]
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
-    handler_url(message.clone(), message.text(), state, false).await
-}
-
-#[add_context]
-#[add_trace]
-pub async fn handler_url(
-    message: TelegramMessage,
-    text: &str,
-    state: AppState,
-    should_send: bool,
-) -> Result<()> {
-    let cmd = cmd_parser(text);
+    let cmd = cmd_parser(message.text());
 
     if cmd.len() == 2 {
         if cmd[1] == "help" {
@@ -95,17 +83,7 @@ pub async fn handler_url(
                     .get_chat(&ChatEntity::from(message.chat()))
                     .await?;
 
-                let message_id = if should_send {
-                    let response = format!("{}{}\n\n{}", BYPASS_PREFIX, url, filename);
-                    telegram_user
-                        .send_message(&chat_user, response.as_str())
-                        .await
-                        .context("linked message with thumb")
-                        .details(response)?
-                        .id()
-                } else {
-                    message.id()
-                };
+                let message_id = message.id();
 
                 let root_path = onedrive.get_root_path(true).await?;
 

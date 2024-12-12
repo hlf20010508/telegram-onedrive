@@ -26,15 +26,9 @@ pub const PATTERN: &str = "/dir";
 #[add_context]
 #[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
-    handle_dir(message.clone(), message.text(), state).await
-}
-
-#[add_context]
-#[add_trace]
-pub async fn handle_dir(message: TelegramMessage, text: &str, state: AppState) -> Result<()> {
     let onedrive = &state.onedrive;
 
-    let cmd = cmd_parser(text);
+    let cmd = cmd_parser(message.text());
 
     if cmd.len() == 1 {
         // /dir
