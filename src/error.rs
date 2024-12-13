@@ -125,11 +125,3 @@ impl Display for TaskAbortError {
         write!(f, "Task was aborted")
     }
 }
-
-pub fn catch_unwind_silent<F: FnOnce() -> R, R>(f: F) -> std::thread::Result<R> {
-    let prev_hook = panic::take_hook();
-    panic::set_hook(Box::new(|_| {}));
-    let result = panic::catch_unwind(panic::AssertUnwindSafe(f));
-    panic::set_hook(prev_hook);
-    result
-}

@@ -9,7 +9,6 @@ use super::TelegramClient;
 use crate::{
     error::ResultExt,
     message::{ChatEntity, QueuedMessage, QueuedMessageType, TelegramMessage},
-    trace::indenter,
 };
 use anyhow::{anyhow, Context, Result};
 use grammers_client::{
@@ -147,85 +146,79 @@ impl TelegramClient {
         };
 
         tokio::spawn(async move {
-            indenter::set_file_indenter(indenter::Coroutine::Message, async {
-                loop {
-                    let mut chat_message_queue = chat_message_queue.lock().await;
+            loop {
+                let mut chat_message_queue = chat_message_queue.lock().await;
 
-                    let chat_ids = chat_message_queue.keys().copied().collect::<Vec<i64>>();
-                    for chat_id in chat_ids {
-                        if let Some(QueuedMessage {
-                            message_type,
-                            input_message,
-                            chat,
-                            tx,
-                        }) = chat_message_queue.pop_front(chat_id)
-                        {
-                            let message_result = match message_type {
-                                QueuedMessageType::Respond => {
-                                    let result = telegram_client
-                                        .raw()
-                                        .send_message(chat, input_message)
-                                        .await
-                                        .context("failed to respond message");
+                let chat_ids = chat_message_queue.keys().copied().collect::<Vec<i64>>();
+                for chat_id in chat_ids {
+                    if let Some(QueuedMessage {
+                        message_type,
+                        input_message,
+                        chat,
+                        tx,
+                    }) = chat_message_queue.pop_front(chat_id)
+                    {
+                        let message_result = match message_type {
+                            QueuedMessageType::Respond => {
+                                let result = telegram_client
+                                    .raw()
+                                    .send_message(chat, input_message)
+                                    .await
+                                    .context("failed to respond message");
 
-                                    match result {
-                                        Ok(message_raw) => Ok(Some(TelegramMessage::new(
-                                            telegram_client.clone(),
-                                            message_raw,
-                                        ))),
-                                        Err(e) => Err(e),
-                                    }
+                                match result {
+                                    Ok(message_raw) => Ok(Some(TelegramMessage::new(
+                                        telegram_client.clone(),
+                                        message_raw,
+                                    ))),
+                                    Err(e) => Err(e),
                                 }
-                                QueuedMessageType::Reply(message_id) => {
-                                    let result = telegram_client
-                                        .raw()
-                                        .send_message(
-                                            chat,
-                                            input_message.reply_to(Some(message_id)),
-                                        )
-                                        .await
-                                        .context("failed to respond message");
+                            }
+                            QueuedMessageType::Reply(message_id) => {
+                                let result = telegram_client
+                                    .raw()
+                                    .send_message(chat, input_message.reply_to(Some(message_id)))
+                                    .await
+                                    .context("failed to respond message");
 
-                                    match result {
-                                        Ok(message_raw) => Ok(Some(TelegramMessage::new(
-                                            telegram_client.clone(),
-                                            message_raw,
-                                        ))),
-                                        Err(e) => Err(e),
-                                    }
+                                match result {
+                                    Ok(message_raw) => Ok(Some(TelegramMessage::new(
+                                        telegram_client.clone(),
+                                        message_raw,
+                                    ))),
+                                    Err(e) => Err(e),
                                 }
-                                QueuedMessageType::Edit(message_id) => {
-                                    let result = telegram_client
-                                        .raw()
-                                        .edit_message(chat, message_id, input_message)
-                                        .await
-                                        .context("failed to respond message");
+                            }
+                            QueuedMessageType::Edit(message_id) => {
+                                let result = telegram_client
+                                    .raw()
+                                    .edit_message(chat, message_id, input_message)
+                                    .await
+                                    .context("failed to respond message");
 
-                                    match result {
-                                        Ok(()) => Ok(None),
-                                        Err(e) => Err(e),
-                                    }
+                                match result {
+                                    Ok(()) => Ok(None),
+                                    Err(e) => Err(e),
                                 }
-                            };
+                            }
+                        };
 
-                            tx.send(message_result)
-                                .await
-                                .context("failed to send message result to rx")
-                                .trace();
-                        }
-
-                        if chat_message_queue.get(&chat_id).unwrap().is_empty() {
-                            chat_message_queue.remove(&chat_id);
-                        }
+                        tx.send(message_result)
+                            .await
+                            .context("failed to send message result to rx")
+                            .trace();
                     }
 
-                    drop(chat_message_queue);
-
-                    let millis = rng.gen_range(2700..3500);
-                    tokio::time::sleep(Duration::from_millis(millis)).await;
+                    if chat_message_queue.get(&chat_id).unwrap().is_empty() {
+                        chat_message_queue.remove(&chat_id);
+                    }
                 }
-            })
-            .await;
+
+                drop(chat_message_queue);
+
+                let millis = rng.gen_range(2700..3500);
+                tokio::time::sleep(Duration::from_millis(millis)).await;
+            }
         });
     }
 }

@@ -19,7 +19,7 @@ use std::{
 pub fn run() {
     // remove logs older than 7 days
     spawn(|| loop {
-        let pattern = r"(\d{4}-\d{2}-\d{2})\.\w+\.log";
+        let pattern = r"(\d{4}-\d{2}-\d{2})\.log";
         let re = Regex::new(pattern)
             .context("invalid regex pattern")
             .context(pattern)

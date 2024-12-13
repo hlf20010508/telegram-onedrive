@@ -7,12 +7,11 @@
 
 mod cleaner;
 mod formatter;
-pub mod indenter;
 mod visitor;
 
-use crate::env::ENV;
+use crate::env::{ENV, LOGS_PATH};
 use formatter::EventFormatter;
-use indenter::FileIndenterLayer;
+use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_log::LogTracer;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
@@ -25,9 +24,19 @@ pub fn trace_registor() {
         .with_writer(std::io::stdout)
         .event_format(EventFormatter);
 
+    let log_writer = RollingFileAppender::builder()
+        .rotation(Rotation::DAILY)
+        .filename_suffix("log")
+        .build(LOGS_PATH)
+        .unwrap();
+
+    let file_layer = fmt::layer()
+        .with_writer(log_writer)
+        .event_format(EventFormatter);
+
     tracing_subscriber::registry()
         .with(stdout_layer)
-        .with(FileIndenterLayer)
+        .with(file_layer)
         .with(EnvFilter::new(trace_level).add_directive("sqlx=error".parse().unwrap()))
         .init();
 

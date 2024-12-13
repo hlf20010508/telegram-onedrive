@@ -23,7 +23,7 @@ use handlers::{
 };
 use listener::{EventType, HashMapExt, Listener};
 use std::collections::HashMap;
-use trace::{indenter, trace_registor};
+use trace::trace_registor;
 
 // tested on ubuntu server, 2C2G,
 // if not using current_thread, invokes in grammers may be blocked for 1 minute
@@ -52,8 +52,5 @@ async fn main() {
         .on(EventType::text(), link::handler)
         .on(EventType::batch(), batch::handler);
 
-    indenter::set_file_indenter(indenter::Coroutine::Listener, async {
-        Listener::new(events).await.run().await;
-    })
-    .await;
+    Listener::new(events).await.run().await;
 }
