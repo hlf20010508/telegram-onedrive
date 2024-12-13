@@ -6,16 +6,11 @@
 */
 
 use super::{tasks, transfer::multi_parts_uploader_from_tg_file, Progress};
-use crate::{
-    error::{Result, TaskAbortError},
-    state::AppState,
-};
-use proc_macros::{add_context, add_trace};
+use crate::{error::TaskAbortError, state::AppState};
+use anyhow::Result;
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 
-#[add_context]
-#[add_trace]
 pub async fn handler(
     task: tasks::Model,
     progress: Arc<Progress>,
@@ -28,10 +23,8 @@ pub async fn handler(
         {
             Ok(filename) => filename,
             Err(e) => {
-                if let Some(boxed_e) = e.get_raw() {
-                    if boxed_e.downcast_ref::<TaskAbortError>().is_some() {
-                        return Ok(());
-                    }
+                if e.downcast_ref::<TaskAbortError>().is_some() {
+                    return Ok(());
                 }
                 return Err(e);
             }

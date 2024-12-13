@@ -6,14 +6,11 @@
 */
 
 use super::invalid_name::INVALID_FOLDER_DIR;
-use crate::error::{Error, Result};
-use proc_macros::{add_context, add_trace};
+use anyhow::{anyhow, Result};
 
-#[add_context]
-#[add_trace]
 pub fn validate_root_path(path: &str) -> Result<()> {
     if path == INVALID_FOLDER_DIR || path.starts_with(&format!("{}/", INVALID_FOLDER_DIR)) {
-        return Err(Error::new(format!(
+        return Err(anyhow!(format!(
             "root folder should not be {} according restrictions",
             INVALID_FOLDER_DIR
         )));

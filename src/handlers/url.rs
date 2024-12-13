@@ -15,16 +15,14 @@ use super::{
     },
 };
 use crate::{
-    error::{Error, ParserType, Result},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
     tasker::{CmdType, InsertTask},
     utils::get_http_client,
 };
+use anyhow::{anyhow, Context, Result};
 use grammers_client::InputMessage;
-use proc_macros::{
-    add_context, add_trace, check_in_group, check_od_login, check_senders, check_tg_login,
-};
+use proc_macros::{check_in_group, check_od_login, check_senders, check_tg_login};
 use reqwest::header;
 
 pub const PATTERN: &str = "/url";
@@ -33,8 +31,6 @@ pub const PATTERN: &str = "/url";
 #[check_tg_login]
 #[check_senders]
 #[check_in_group]
-#[add_context]
-#[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let cmd = cmd_parser(message.text());
 
@@ -62,21 +58,21 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                     .head(&url)
                     .send()
                     .await
-                    .map_err(|e| Error::new("failed to send head request for /url").raw(e))?;
+                    .context("failed to send head request for /url")?;
 
                 let filename = get_filename(&url, &response)?;
 
                 let total_length = match response.headers().get(header::CONTENT_LENGTH) {
                     Some(content_length) => content_length
                         .to_str()
-                        .map_err(|e| Error::new( "header Content-Length has invisible ASCII chars").raw(e))?
+                        .context("header Content-Length has invisible ASCII chars")?
                         .parse::<u64>()
-                        .map_err(|e| Error::new( "failed to parse header Content-Length to u64").raw(e))?,
-                    None => return Err(Error::new(format!(
+                        .context("failed to parse header Content-Length to u64")?,
+                    None => return Err(anyhow!(
                         "Content-Length not found in response headers.\nStatus code:\n{}\nResponse headers:\n{:#?}",
                         response.status(),
                         response.headers()
-                    ))),
+                    )),
                 };
 
                 let chat_user = telegram_user
@@ -127,10 +123,10 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
                 Ok(())
             } else {
-                Err(Error::new("not an http url"))
+                Err(anyhow!("not an http url"))
             }
         }
     } else {
-        Err(Error::new(format_unknown_command_help(PATTERN)).parser_type(ParserType::Html))
+        Err(anyhow!(format_unknown_command_help(PATTERN)))
     }
 }

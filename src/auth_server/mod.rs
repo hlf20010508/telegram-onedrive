@@ -11,8 +11,9 @@ mod handlers;
 
 use crate::{
     env::{Env, ENV},
-    error::{Error, Result},
+    error::ResultExt,
 };
+use anyhow::{Context, Result};
 use auto_abort::AutoAbortHandle;
 use axum::{
     routing::{get, post},
@@ -21,7 +22,6 @@ use axum::{
 use axum_server::Handle;
 use cert::get_rustls_config;
 use handlers::{onedrive, telegram};
-use proc_macros::{add_context, add_trace};
 use std::net::TcpListener;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
@@ -31,8 +31,6 @@ struct SenderTG(Sender<String>);
 #[derive(Clone)]
 struct SenderOD(Sender<String>);
 
-#[add_context]
-#[add_trace]
 pub async fn spawn() -> Result<(Receiver<String>, Receiver<String>, AutoAbortHandle)> {
     tracing::debug!("spawning auth server");
 
@@ -52,8 +50,8 @@ pub async fn spawn() -> Result<(Receiver<String>, Receiver<String>, AutoAbortHan
         .layer(Extension(SenderTG(tx_tg)))
         .layer(Extension(SenderOD(tx_od)));
 
-    let server = TcpListener::bind(format!("0.0.0.0:{}", port))
-        .map_err(|e| Error::new("failed to create tcp listener").raw(e))?;
+    let server =
+        TcpListener::bind(format!("0.0.0.0:{}", port)).context("failed to create tcp listener")?;
 
     let shutdown_handle = Handle::new();
     let shutdown_handle_clone = shutdown_handle.clone();
@@ -66,7 +64,7 @@ pub async fn spawn() -> Result<(Receiver<String>, Receiver<String>, AutoAbortHan
                 .handle(shutdown_handle_clone)
                 .serve(router.into_make_service())
                 .await
-                .map_err(|e| Error::new("auth server failed to serve").raw(e))
+                .context("auth server failed to serve")
                 .trace();
         })
         .abort_handle()
@@ -80,7 +78,7 @@ pub async fn spawn() -> Result<(Receiver<String>, Receiver<String>, AutoAbortHan
                 .handle(shutdown_handle_clone)
                 .serve(router.into_make_service())
                 .await
-                .map_err(|e| Error::new("auth server failed to serve").raw(e))
+                .context("auth server failed to serve")
                 .trace();
         })
         .abort_handle()

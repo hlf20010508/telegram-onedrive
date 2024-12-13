@@ -6,15 +6,13 @@
 */
 
 use crate::{
-    error::{Error, Result, ResultUnwrapExt},
+    error::{ErrorExt, ResultUnwrapExt},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
 };
+use anyhow::{anyhow, Context, Result};
 use grammers_client::types::Downloadable;
-use proc_macros::{add_context, add_trace};
 
-#[add_context]
-#[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let telegram_user = state.telegram_user.clone();
 
@@ -26,7 +24,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     let media = message_user
         .media()
-        .ok_or_else(|| Error::new("message does not contain any media"))?;
+        .ok_or_else(|| anyhow!("message does not contain any media"))?;
 
     let downloadable = Downloadable::Media(media);
     let mut download = telegram_user.iter_download(&downloadable);
@@ -34,13 +32,12 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     while let Some(chunk) = download
         .next()
         .await
-        .map_err(|e| Error::new("failed to get next chunk from tg file downloader").raw(e))?
+        .context("failed to get next chunk from tg file downloader")?
     {
         batch_bytes.extend(chunk);
     }
 
-    let batch =
-        String::from_utf8(batch_bytes).map_err(|e| Error::new("failed to parse batch").raw(e))?;
+    let batch = String::from_utf8(batch_bytes).context("failed to parse batch")?;
 
     tokio::spawn(async move {
         let batch = batch.trim();
@@ -52,7 +49,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 .send_message(&chat_user, line)
                 .await
                 .context("failed to send command in batch")
-                .details(detail)
+                .context(detail)
             {
                 e.send(message.clone()).await.unwrap_both().trace();
             }

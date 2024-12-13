@@ -6,13 +6,11 @@
 */
 
 use super::docs::format_help;
-use crate::{error::Result, message::TelegramMessage, state::AppState};
-use proc_macros::{add_context, add_trace};
+use crate::{message::TelegramMessage, state::AppState};
+use anyhow::Result;
 
 pub const PATTERN: &str = "/start";
 
-#[add_context]
-#[add_trace]
 pub async fn handler(message: TelegramMessage, _state: AppState) -> Result<()> {
     message.respond(format_help(PATTERN)).await?;
 

@@ -5,10 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::{
-    env::LOGS_PATH,
-    error::{Error, ResultExt},
-};
+use crate::{env::LOGS_PATH, error::ResultExt};
+use anyhow::Context;
 use chrono::{Local, NaiveDate};
 use regex::Regex;
 use std::{
@@ -23,18 +21,19 @@ pub fn run() {
     spawn(|| loop {
         let pattern = r"(\d{4}-\d{2}-\d{2})\.\w+\.log";
         let re = Regex::new(pattern)
-            .map_err(|e| Error::new("invalid regex pattern").raw(e).details(pattern))
+            .context("invalid regex pattern")
+            .context(pattern)
             .unwrap_or_trace();
 
         let cutoff_date = Local::now().naive_local().date() - chrono::Duration::days(7);
 
         if Path::new(LOGS_PATH).exists() {
             for entry in fs::read_dir(LOGS_PATH)
-                .map_err(|e| Error::new("failed to read logs dir").raw(e))
+                .context("failed to read logs dir")
                 .unwrap_or_trace()
             {
                 let entry = entry
-                    .map_err(|e| Error::new("failed to visit log file entry").raw(e))
+                    .context("failed to visit log file entry")
                     .unwrap_or_trace();
                 let path = entry.path();
 
@@ -44,11 +43,8 @@ pub fn run() {
                             if let Ok(file_date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
                                 if file_date < cutoff_date {
                                     fs::remove_file(&path)
-                                        .map_err(|e| {
-                                            Error::new("failed to remove file")
-                                                .raw(e)
-                                                .details(path.to_string_lossy())
-                                        })
+                                        .context("failed to remove file")
+                                        .context(path.to_string_lossy().to_string())
                                         .trace();
                                 }
                             }

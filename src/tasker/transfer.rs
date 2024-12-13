@@ -7,21 +7,16 @@
 
 use super::{tasks, Progress};
 use crate::{
-    client::utils::chat_from_hex,
-    error::{Error, Result, TaskAbortError},
-    state::AppState,
-    utils::get_http_client,
+    client::utils::chat_from_hex, error::TaskAbortError, state::AppState, utils::get_http_client,
 };
+use anyhow::{anyhow, Context, Error, Result};
 use grammers_client::{client::files::MAX_CHUNK_SIZE, types::Downloadable};
 use onedrive_api::{resource::DriveItem, UploadSession};
-use proc_macros::{add_context, add_trace};
 use std::{collections::VecDeque, ops::Range, sync::Arc, time::Duration};
 use tokio_util::sync::CancellationToken;
 
 const MAX_RETRIES: i32 = 5;
 
-#[add_context]
-#[add_trace]
 pub async fn multi_parts_uploader_from_url(
     tasks::Model {
         id,
@@ -37,7 +32,7 @@ pub async fn multi_parts_uploader_from_url(
 
     let http_client = get_http_client()?;
 
-    let url = url.clone().ok_or_else(|| Error::new("url is none"))?;
+    let url = url.clone().ok_or_else(|| anyhow!("url is none"))?;
 
     let upload_session = UploadSession::from_upload_url(upload_url);
 
@@ -52,16 +47,12 @@ pub async fn multi_parts_uploader_from_url(
         .get(url)
         .send()
         .await
-        .map_err(|e| Error::new("failed to send request for /url").raw(e))?;
+        .context("failed to send request for /url")?;
 
     let upload_response = loop {
         let mut buffer = Vec::with_capacity(PART_SIZE);
 
-        while let Some(chunk) = response
-            .chunk()
-            .await
-            .map_err(|e| Error::new("failed to get chunk").raw(e))?
-        {
+        while let Some(chunk) = response.chunk().await.context("failed to get chunk")? {
             buffer.extend_from_slice(&chunk);
 
             if buffer.len() >= PART_SIZE {
@@ -93,9 +84,9 @@ pub async fn multi_parts_uploader_from_url(
     };
 
     let filename = upload_response
-        .ok_or_else(|| Error::new("failed to get drive item after upload"))?
+        .ok_or_else(|| anyhow!("failed to get drive item after upload"))?
         .name
-        .ok_or_else(|| Error::new("drive item name not found"))?;
+        .ok_or_else(|| anyhow!("drive item name not found"))?;
 
     tracing::info!(
         "uploaded file from url: {} size: {}",
@@ -106,8 +97,6 @@ pub async fn multi_parts_uploader_from_url(
     Ok(filename)
 }
 
-#[add_context]
-#[add_trace]
 pub async fn multi_parts_uploader_from_tg_file(
     tasks::Model {
         id,
@@ -158,21 +147,21 @@ pub async fn multi_parts_uploader_from_tg_file(
             let chat = chat_from_hex(
                 chat_origin_hex
                     .as_ref()
-                    .ok_or_else(|| Error::new("chat_origin_hex is None"))?,
+                    .ok_or_else(|| anyhow!("chat_origin_hex is None"))?,
             )?;
 
             let message_id = message_id_origin
                 .as_ref()
-                .ok_or_else(|| Error::new("message_id_origin is None"))?;
+                .ok_or_else(|| anyhow!("message_id_origin is None"))?;
 
             telegram_user.get_message(chat, *message_id).await?
         }
-        tasks::CmdType::Url => return Err(Error::new("invalid cmd type")),
+        tasks::CmdType::Url => return Err(anyhow!("invalid cmd type")),
     };
 
     let media = message
         .media()
-        .ok_or_else(|| Error::new("message does not contain any media"))?;
+        .ok_or_else(|| anyhow!("message does not contain any media"))?;
 
     let downloadable = Arc::new(Downloadable::Media(media));
 
@@ -198,9 +187,8 @@ pub async fn multi_parts_uploader_from_tg_file(
                 .skip_chunks(current_chunk_num);
 
             tokio::select! {
-                result = download.next() => result
-                    .map_err(|e| Error::new("failed to get next chunk from tg file downloader").raw(e)),
-                () = cancellation_token_clone.cancelled() => Err(Error::new("").raw(TaskAbortError))
+                result = download.next() => result.context("failed to get next chunk from tg file downloader"),
+                () = cancellation_token_clone.cancelled() => Err(TaskAbortError.into())
             }
         }));
 
@@ -214,8 +202,8 @@ pub async fn multi_parts_uploader_from_tg_file(
             while let Some(handle) = work_handles.pop_front() {
                 let mut chunk_part = handle
                     .await
-                    .map_err(|e| Error::new("failed to join handle").raw(e))??
-                    .ok_or_else(|| Error::new("failed to get chunk from tg file downloader"))?;
+                    .context("failed to join handle")??
+                    .ok_or_else(|| anyhow!("failed to get chunk from tg file downloader"))?;
 
                 chunk.append(&mut chunk_part);
             }
@@ -241,9 +229,9 @@ pub async fn multi_parts_uploader_from_tg_file(
     }
 
     let filename = upload_response
-        .ok_or_else(|| Error::new("failed to get drive item after upload"))?
+        .ok_or_else(|| anyhow!("failed to get drive item after upload"))?
         .name
-        .ok_or_else(|| Error::new("drive item name not found"))?;
+        .ok_or_else(|| anyhow!("drive item name not found"))?;
 
     if message_id_forward.is_some() {
         message.delete().await?;
@@ -258,8 +246,6 @@ pub async fn multi_parts_uploader_from_tg_file(
     Ok(filename)
 }
 
-#[add_context]
-#[add_trace]
 async fn upload_file(
     upload_session: &UploadSession,
     buffer: &[u8],
@@ -317,7 +303,7 @@ async fn upload_file(
                     continue;
                 }
 
-                return Err(Error::new("failed to upload part").raw(e));
+                return Err(Error::from(e)).context("failed to upload part");
             }
         }
     }

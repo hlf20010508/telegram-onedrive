@@ -5,11 +5,12 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::error::ResultExt;
+
 use super::{
     utils::get_env_value,
     var::{RECONNECTION_POLICY, TG_BOT_SESSION_PATH},
 };
-use crate::error::ResultExt;
 
 pub struct TelegramBotEnv {
     pub api_id: i32,

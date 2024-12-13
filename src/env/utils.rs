@@ -5,22 +5,22 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::error::{Error, RawError, Result};
+use anyhow::{Context, Result};
 use std::{env, str::FromStr};
 
 pub fn get_env_value<T>(name: &str) -> Result<T>
 where
     T: FromStr,
-    T::Err: Into<RawError>,
+    T::Err: std::error::Error + Send + Sync + 'static,
 {
-    let value_s =
-        env::var(name).map_err(|e| Error::new("failed to get env value").raw(e).details(name))?;
+    let value_s = env::var(name)
+        .context("failed to get env value")
+        .context(name.to_string())?;
 
-    let value = value_s.parse::<T>().map_err(|e| {
-        Error::new("failed to parse env value")
-            .raw(e)
-            .details(format!("{}={}", name, value_s))
-    })?;
+    let value = value_s
+        .parse::<T>()
+        .context("failed to parse env value")
+        .context(format!("{}={}", name, value_s))?;
 
     Ok(value)
 }

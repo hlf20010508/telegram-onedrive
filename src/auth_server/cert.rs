@@ -5,14 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::error::{Error, Result};
+use anyhow::{Context, Result};
 use axum_server::tls_rustls::RustlsConfig;
-use proc_macros::{add_context, add_trace};
 use rcgen::{generate_simple_self_signed, CertifiedKey};
 use std::path::Path;
 
-#[add_context]
-#[add_trace]
 pub async fn get_rustls_config() -> Result<RustlsConfig> {
     let cert_path = Path::new("ssl/server.crt");
     let key_path = Path::new("ssl/server.key");
@@ -22,7 +19,7 @@ pub async fn get_rustls_config() -> Result<RustlsConfig> {
 
         RustlsConfig::from_pem_file(cert_path, key_path)
             .await
-            .map_err(|e| Error::new("failed to create rustls config from pem file").raw(e))?
+            .context("failed to create rustls config from pem file")?
     } else {
         tracing::debug!("auth server uses self signed cert");
 
@@ -30,19 +27,17 @@ pub async fn get_rustls_config() -> Result<RustlsConfig> {
 
         RustlsConfig::from_pem(cert, key)
             .await
-            .map_err(|e| Error::new("failed to create self signed rustls config").raw(e))?
+            .context("failed to create self signed rustls config")?
     };
 
     Ok(config)
 }
 
-#[add_context]
-#[add_trace]
 fn gen_self_signed_cert() -> Result<(Vec<u8>, Vec<u8>)> {
     let subject_alt_names = vec!["127.0.0.1".to_string(), "localhost".to_string()];
 
     let CertifiedKey { cert, key_pair } = generate_simple_self_signed(subject_alt_names)
-        .map_err(|e| Error::new("failed to generate self signed cert").raw(e))?;
+        .context("failed to generate self signed cert")?;
 
     Ok((
         cert.pem().into_bytes(),

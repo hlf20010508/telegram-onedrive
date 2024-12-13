@@ -7,14 +7,11 @@
 
 mod models;
 
-use crate::{
-    error::{Error, Result},
-    utils::get_current_timestamp,
-};
+use crate::utils::get_current_timestamp;
+use anyhow::{anyhow, Context, Result};
 use axum::http::header;
 use models::{current_user, session};
 use onedrive_api::OneDrive;
-use proc_macros::{add_context, add_trace};
 use sea_orm::{
     sea_query::Expr, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityName, EntityTrait,
     ModelTrait, QueryFilter, QuerySelect, Schema, Set,
@@ -34,7 +31,6 @@ pub struct OneDriveSession {
 }
 
 impl OneDriveSession {
-    #[add_context]
     pub async fn new(
         client: &OneDrive,
         expires_in_secs: u64,
@@ -57,7 +53,6 @@ impl OneDriveSession {
         })
     }
 
-    #[add_trace]
     fn get_expiration_timestamp(expires_in_secs: u64) -> i64 {
         let expiration_timestamp = get_current_timestamp() + expires_in_secs as i64;
 
@@ -69,7 +64,6 @@ impl OneDriveSession {
         expiration_timestamp
     }
 
-    #[add_trace]
     pub fn set_expiration_timestamp(&mut self, expires_in_secs: u64) {
         self.expiration_timestamp = Self::get_expiration_timestamp(expires_in_secs);
 
@@ -79,8 +73,6 @@ impl OneDriveSession {
         );
     }
 
-    #[add_context]
-    #[add_trace]
     async fn get_username(client: &OneDrive) -> Result<String> {
         let http_client = client.client();
 
@@ -94,21 +86,21 @@ impl OneDriveSession {
             )
             .send()
             .await
-            .map_err(|e| Error::new("failed to send request for user profile").raw(e))?;
+            .context("failed to send request for user profile")?;
 
         let content = response
             .text()
             .await
-            .map_err(|e| Error::new("failed to get response text for user profile").raw(e))?;
+            .context("failed to get response text for user profile")?;
 
         let user_profile = serde_json::from_str::<Value>(&content)
-            .map_err(|e| Error::new("failed to deserialize user profile into Value").raw(e))?;
+            .context("failed to deserialize user profile into Value")?;
 
         let username = user_profile
             .get("userPrincipalName")
-            .ok_or_else(|| Error::new("field userPrincipalName not found in user profile"))?
+            .ok_or_else(|| anyhow!("field userPrincipalName not found in user profile"))?
             .as_str()
-            .ok_or_else(|| Error::new("userPrincipalName value is not a string"))?
+            .ok_or_else(|| anyhow!("userPrincipalName value is not a string"))?
             .to_string();
 
         tracing::debug!("got onedrive username: {}", username);
@@ -116,12 +108,10 @@ impl OneDriveSession {
         Ok(username)
     }
 
-    #[add_context]
-    #[add_trace]
     async fn connect_db(path: &str) -> Result<DatabaseConnection> {
         let connection = sea_orm::Database::connect(format!("sqlite://{}?mode=rwc", path))
             .await
-            .map_err(|e| Error::new("failed to connect to onedrive session").raw(e))?;
+            .context("failed to connect to onedrive session")?;
 
         Self::create_table_if_not_exists(&connection, session::Entity).await?;
         Self::create_table_if_not_exists(&connection, current_user::Entity).await?;
@@ -129,15 +119,12 @@ impl OneDriveSession {
         Ok(connection)
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn set_connection(mut self, session_path: &str) -> Result<Self> {
         self.connection = Self::connect_db(session_path).await?;
 
         Ok(self)
     }
 
-    #[add_trace]
     async fn is_table_exists<E>(connection: &DatabaseConnection) -> bool
     where
         E: EntityTrait,
@@ -147,8 +134,6 @@ impl OneDriveSession {
         result.is_ok()
     }
 
-    #[add_context]
-    #[add_trace]
     async fn create_table_if_not_exists<E>(connection: &DatabaseConnection, entity: E) -> Result<()>
     where
         E: EntityTrait + EntityName,
@@ -171,16 +156,12 @@ impl OneDriveSession {
             connection
                 .execute(backend.build(&table_create_statement))
                 .await
-                .map_err(|e| {
-                    Error::new(format!("failed to create table {}", entity.table_name())).raw(e)
-                })?;
+                .context(format!("failed to create table {}", entity.table_name()))?;
         }
 
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn load(path: &str) -> Result<Self> {
         tracing::debug!("load onedrive session");
 
@@ -193,8 +174,6 @@ impl OneDriveSession {
         Ok(session)
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn save(&self) -> Result<()> {
         tracing::debug!("save onedrive session");
 
@@ -216,13 +195,12 @@ impl OneDriveSession {
             session::Entity::insert(insert_item)
                 .exec(&self.connection)
                 .await
-                .map_err(|e| Error::new("failed to insert onedrive session").raw(e))?;
+                .context("failed to insert onedrive session")?;
         }
 
         Ok(())
     }
 
-    #[add_trace]
     pub fn overwrite(
         &mut self,
         Self {
@@ -241,14 +219,12 @@ impl OneDriveSession {
         self.root_path = root_path;
     }
 
-    #[add_context]
-    #[add_trace]
     async fn user_exists(&self) -> Result<bool> {
         let exists = session::Entity::find()
             .filter(session::Column::Username.eq(&self.username))
             .one(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to query onedrive session").raw(e))?
+            .context("failed to query onedrive session")?
             .is_some();
 
         tracing::debug!("user {} exists: {}", self.username, exists);
@@ -256,8 +232,6 @@ impl OneDriveSession {
         Ok(exists)
     }
 
-    #[add_context]
-    #[add_trace]
     async fn update(&self) -> Result<()> {
         session::Entity::update_many()
             .filter(session::Column::Username.eq(&self.username))
@@ -276,28 +250,26 @@ impl OneDriveSession {
             .col_expr(session::Column::RootPath, Expr::value(&self.root_path))
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to update onedrive session").raw(e))?;
+            .context("failed to update onedrive session")?;
 
         tracing::debug!("updated onedrive session for user {}", self.username);
 
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     async fn get_current_session(connection: &DatabaseConnection) -> Result<session::Model> {
         let current_user = current_user::Entity::find()
             .one(connection)
             .await
-            .map_err(|e| Error::new("faield to query onedrive current user").raw(e))?
-            .ok_or_else(|| Error::new("onedrive current user not found"))?;
+            .context("faield to query onedrive current user")?
+            .ok_or_else(|| anyhow!("onedrive current user not found"))?;
 
         let session = current_user
             .find_related(session::Entity)
             .one(connection)
             .await
-            .map_err(|e| Error::new("failed to query related onedrive session").raw(e))?
-            .ok_or_else(|| Error::new("related onedrive session not found"))?;
+            .context("failed to query related onedrive session")?
+            .ok_or_else(|| anyhow!("related onedrive session not found"))?;
 
         tracing::debug!(
             "got onedrive current session for user {}",
@@ -307,15 +279,13 @@ impl OneDriveSession {
         Ok(session)
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn set_current_user(&self) -> Result<()> {
         tracing::debug!("onedrive session user to be set: {}", self.username);
 
         let current_user_col = current_user::Entity::find()
             .one(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to query onedrive current user").raw(e))?;
+            .context("failed to query onedrive current user")?;
 
         if let Some(current_user_col) = current_user_col {
             tracing::debug!(
@@ -335,7 +305,7 @@ impl OneDriveSession {
             current_user::Entity::delete_many()
                 .exec(&self.connection)
                 .await
-                .map_err(|e| Error::new("failed to delete onedrive current user").raw(e))?;
+                .context("failed to delete onedrive current user")?;
         }
 
         let insert_item = current_user::ActiveModel {
@@ -345,19 +315,17 @@ impl OneDriveSession {
         current_user::Entity::insert(insert_item)
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to insert onedrive current user").raw(e))?;
+            .context("failed to insert onedrive current user")?;
 
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn get_usernames(&self) -> Result<Vec<String>> {
         let result = session::Entity::find()
             .column(session::Column::Username)
             .all(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to query onedrive usernames").raw(e))?;
+            .context("failed to query onedrive usernames")?;
 
         let usernames = result
             .into_iter()
@@ -368,13 +336,11 @@ impl OneDriveSession {
         Ok(usernames)
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn get_current_username(&self) -> Result<Option<String>> {
         if let Some(model) = current_user::Entity::find()
             .one(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to query onedrive current username").raw(e))?
+            .context("failed to query onedrive current username")?
         {
             tracing::debug!("got onedrive current username: {}", model.username);
 
@@ -386,8 +352,6 @@ impl OneDriveSession {
         }
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn remove_user(&mut self, username: Option<String>) -> Result<()> {
         tracing::debug!("onedrive user to be removed: {:?}", username);
         tracing::debug!("onedrive current user: {}", self.username);
@@ -405,7 +369,7 @@ impl OneDriveSession {
             current_user::Entity::delete_many()
                 .exec(&self.connection)
                 .await
-                .map_err(|e| Error::new("failed to delete onedrive current user").raw(e))?;
+                .context("failed to delete onedrive current user")?;
         }
 
         tracing::debug!("remove onedrive user in table session");
@@ -414,7 +378,7 @@ impl OneDriveSession {
             .filter(session::Column::Username.eq(&username))
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to delete onedrive session").raw(e))?;
+            .context("failed to delete onedrive session")?;
 
         if username != self.username {
             return Ok(());
@@ -437,14 +401,12 @@ impl OneDriveSession {
 
                 self.overwrite(session);
             }
-            Err(e) => return Err(Error::new("failed to query onedrive session").raw(e)),
+            Err(e) => return Err(e).context("failed to query onedrive session"),
         }
 
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn change_session(&mut self, username: &str) -> Result<()> {
         tracing::debug!("onedrive session to change is {}", username);
 
@@ -458,8 +420,8 @@ impl OneDriveSession {
             .filter(session::Column::Username.eq(username))
             .one(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to query onedrive session").raw(e))?
-            .ok_or_else(|| Error::new("onedrive session not found"))?;
+            .context("failed to query onedrive session")?
+            .ok_or_else(|| anyhow!("onedrive session not found"))?;
 
         tracing::debug!(
             "change onedrive session user from {} to {}",
@@ -474,7 +436,6 @@ impl OneDriveSession {
         Ok(())
     }
 
-    #[add_trace]
     pub fn is_expired(&self) -> bool {
         let is_expired = self.expiration_timestamp < get_current_timestamp() + 60;
 

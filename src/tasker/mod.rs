@@ -14,12 +14,12 @@ mod transfer;
 use crate::{
     client::utils::chat_from_hex,
     env::ENV,
-    error::{Error, Result, ResultExt, ResultUnwrapExt},
+    error::{ErrorExt, ResultExt, ResultUnwrapExt},
     message::TelegramMessage,
     state::AppState,
     trace::indenter,
 };
-use proc_macros::add_context;
+use anyhow::{Context, Result};
 use progress::Progress;
 pub use session::{TaskAborter, TaskSession};
 use std::{sync::Arc, time::Duration};
@@ -75,7 +75,6 @@ impl Tasker {
         }
     }
 
-    #[add_context]
     async fn handle_tasks(&self, semaphore: Arc<Semaphore>, handler_id: u8) -> Result<()> {
         let mut aborters = self.state.task_session.aborters.lock().await;
         let task = self.session().fetch_task().await?;
@@ -189,9 +188,7 @@ impl Tasker {
                         let _permit = semaphore_clone
                             .acquire()
                             .await
-                            .map_err(|e| {
-                                Error::new("failed to acquire semaphore for task handler").raw(e)
-                            })
+                            .context("failed to acquire semaphore for task handler")
                             .unwrap_or_trace();
 
                         if let Err(e) = handler(

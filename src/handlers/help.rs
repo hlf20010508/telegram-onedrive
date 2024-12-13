@@ -6,14 +6,12 @@
 */
 
 use super::docs::format_help;
-use crate::{error::Result, message::TelegramMessage, state::AppState};
+use crate::{message::TelegramMessage, state::AppState};
+use anyhow::Result;
 use grammers_client::InputMessage;
-use proc_macros::{add_context, add_trace};
 
 pub const PATTERN: &str = "/help";
 
-#[add_context]
-#[add_trace]
 pub async fn handler(message: TelegramMessage, _state: AppState) -> Result<()> {
     message
         .respond(InputMessage::html(format_help(PATTERN)))

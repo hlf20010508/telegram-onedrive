@@ -10,17 +10,17 @@ mod handler;
 
 use crate::{
     env::BYPASS_PREFIX,
-    error::{Result, ResultExt, ResultUnwrapExt},
+    error::{ErrorExt, ResultExt, ResultUnwrapExt},
     message::{ChatEntity, TelegramMessage},
     state::{AppState, State},
     tasker::Tasker,
     trace::indenter,
 };
+use anyhow::Result;
 use events::Events;
 pub use events::{EventType, HashMapExt};
 use grammers_client::Update;
 use handler::Handler;
-use proc_macros::{add_context, add_trace};
 use std::sync::Arc;
 
 pub struct Listener {
@@ -110,8 +110,6 @@ impl Listener {
         }
     }
 
-    #[add_context]
-    #[add_trace]
     async fn handle_message(&self) -> Result<()> {
         let client = &self.state.telegram_bot;
 

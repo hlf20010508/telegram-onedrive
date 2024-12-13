@@ -10,4 +10,5 @@ FROM scratch
 COPY --from=rust-builder /telegram-onedrive/target/release/telegram-onedrive /
 COPY --from=rust-builder /telegram-onedrive/index.html /
 COPY --from=certs /etc/ssl/cert.pem /etc/ssl/
+ENV RUST_BACKTRACE=1
 ENTRYPOINT [ "/telegram-onedrive" ]

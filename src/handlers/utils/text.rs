@@ -5,10 +5,12 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::error::{Error, ResultExt};
+use anyhow::Context;
 use regex::Regex;
 use std::fmt::Display;
 use url::Url;
+
+use crate::error::ResultExt;
 
 pub fn cmd_parser<T>(cmd: T) -> Vec<String>
 where
@@ -57,7 +59,8 @@ where
 
         let pattern = "<pre[^>]*>";
         let re = Regex::new(pattern)
-            .map_err(|e| Error::new("invalid regex pattern").raw(e).details(pattern))
+            .context("invalid regex pattern")
+            .context(pattern)
             .unwrap_or_trace();
         re.replace_all(&text, "").to_string()
     }

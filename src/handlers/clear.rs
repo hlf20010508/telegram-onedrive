@@ -6,19 +6,17 @@
 */
 
 use crate::{
-    error::{Error, Result},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
 };
-use proc_macros::{add_context, add_trace, check_in_group, check_senders, check_tg_login};
+use anyhow::{Context, Result};
+use proc_macros::{check_in_group, check_senders, check_tg_login};
 
 pub const PATTERN: &str = "/clear";
 
 #[check_tg_login]
 #[check_senders]
 #[check_in_group]
-#[add_context]
-#[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let telegram_user = &state.telegram_user;
     let task_session = &state.task_session;
@@ -37,7 +35,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         while let Some(message) = messages
             .next()
             .await
-            .map_err(|e| Error::new("failed to get next message").raw(e))?
+            .context("failed to get next message")?
         {
             let id = message.id();
             // id 1 message is a service message that always exists when the group was created and it cannot be deleted

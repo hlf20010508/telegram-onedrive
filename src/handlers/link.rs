@@ -10,23 +10,19 @@ use std::sync::atomic::Ordering;
 use super::utils::{message::get_message_from_link, upload::upload_thumb};
 use crate::{
     env::BYPASS_PREFIX,
-    error::{Error, Result},
     handlers::utils::{get_tg_file_size, preprocess_tg_file_name},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
     tasker::{CmdType, InsertTask},
 };
+use anyhow::{anyhow, Context, Result};
 use grammers_client::{types::Media, InputMessage};
-use proc_macros::{
-    add_context, add_trace, check_in_group, check_od_login, check_senders, check_tg_login,
-};
+use proc_macros::{check_in_group, check_od_login, check_senders, check_tg_login};
 
 #[check_od_login]
 #[check_tg_login]
 #[check_senders]
 #[check_in_group]
-#[add_context]
-#[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let telegram_user = &state.telegram_user;
     let onedrive = &state.onedrive;
@@ -44,7 +40,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     let media = message_origin
         .media()
-        .ok_or_else(|| Error::new("message does not contain any media"))?;
+        .ok_or_else(|| anyhow!("message does not contain any media"))?;
 
     let filename = preprocess_tg_file_name(&media);
 
@@ -52,7 +48,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     let cmd_type = match media {
         Media::Photo(_) | Media::Document(_) | Media::Sticker(_) => CmdType::Link,
-        _ => Err(Error::new(
+        _ => Err(anyhow!(
             "media type is not one of photo, document and sticker",
         ))?,
     };
@@ -62,7 +58,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         Media::Photo(file) => upload_thumb(telegram_user, file.thumbs()).await?,
         Media::Document(file) => upload_thumb(telegram_user, file.thumbs()).await?,
         Media::Sticker(file) => upload_thumb(telegram_user, file.document.thumbs()).await?,
-        _ => Err(Error::new(
+        _ => Err(anyhow!(
             "media type is not one of photo, document and sticker",
         ))?,
     };
@@ -76,13 +72,13 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             )
             .await
             .context("linked message with thumb")
-            .details(response)?
+            .context(response)?
             .id(),
         None => telegram_user
             .send_message(&chat_user, response.as_str())
             .await
             .context("linked message without thumn")
-            .details(response)?
+            .context(response)?
             .id(),
     };
 

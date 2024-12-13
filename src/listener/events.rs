@@ -5,7 +5,8 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::{error::Result, message::TelegramMessage, state::AppState};
+use crate::{message::TelegramMessage, state::AppState};
+use anyhow::Result;
 use futures::{future::BoxFuture, Future, FutureExt};
 use std::{collections::HashMap, fmt::Display};
 

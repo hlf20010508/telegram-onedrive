@@ -6,27 +6,19 @@
 */
 
 use super::models::CodeParams;
-use crate::{
-    auth_server::SenderOD,
-    error::{Error, Result},
-};
-use axum::{debug_handler, extract::Query, Extension};
-use proc_macros::{add_context, add_trace};
+use crate::{auth_server::SenderOD, error::HttpError};
+use axum::{debug_handler, extract::Query, response::Result, Extension};
 
 pub const CODE_PATH: &str = "/auth";
 
 #[debug_handler]
-#[add_context]
-#[add_trace]
 pub async fn code_handler(
     Extension(SenderOD(tx)): Extension<SenderOD>,
     Query(CodeParams { code }): Query<CodeParams>,
 ) -> Result<String> {
     tracing::debug!("received od auth code: {}", code);
 
-    tx.send(code)
-        .await
-        .map_err(|e| Error::new("failed to send od auth code").raw(e))?;
+    tx.send(code).await.map_err(HttpError::new)?;
 
     Ok("Authorization successful!".to_string())
 }

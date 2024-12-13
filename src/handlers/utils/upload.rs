@@ -5,20 +5,15 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::{
-    client::TelegramClient,
-    error::{Error, Result},
-};
+use crate::client::TelegramClient;
+use anyhow::{Context, Result};
 use grammers_client::types::{
     media::Uploaded,
     photo_sizes::{PhotoSize, VecExt},
     Downloadable,
 };
-use proc_macros::{add_context, add_trace};
 use std::io::Cursor;
 
-#[add_context]
-#[add_trace]
 pub async fn upload_thumb(
     client: &TelegramClient,
     thumbs: Vec<PhotoSize>,
@@ -32,7 +27,7 @@ pub async fn upload_thumb(
             while let Some(chunk) = download
                 .next()
                 .await
-                .map_err(|e| Error::new("failed to download chunk for thumb").raw(e))?
+                .context("failed to download chunk for thumb")?
             {
                 buffer.extend(chunk);
             }

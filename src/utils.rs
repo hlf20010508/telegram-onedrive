@@ -5,18 +5,14 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::error::{Error, Result};
+use anyhow::{Context, Result};
 use chrono::Utc;
-use proc_macros::{add_context, add_trace};
 use reqwest::header;
 
-#[add_trace]
 pub fn get_current_timestamp() -> i64 {
     Utc::now().timestamp()
 }
 
-#[add_context]
-#[add_trace]
 pub fn get_http_client() -> Result<reqwest::Client> {
     const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15";
 
@@ -24,9 +20,7 @@ pub fn get_http_client() -> Result<reqwest::Client> {
         let mut headers = header::HeaderMap::new();
         headers.insert(
             header::USER_AGENT,
-            USER_AGENT
-                .parse()
-                .map_err(|e| Error::new("failed to parse user agent").raw(e))?,
+            USER_AGENT.parse().context("failed to parse user agent")?,
         );
 
         headers
@@ -37,10 +31,9 @@ pub fn get_http_client() -> Result<reqwest::Client> {
         .danger_accept_invalid_certs(true)
         .danger_accept_invalid_hostnames(true)
         .build()
-        .map_err(|e| Error::new("failed to build http client").raw(e))
+        .context("failed to build http client")
 }
 
-#[add_trace]
 pub fn get_ext(filename: &str) -> String {
     filename.split('.').last().unwrap().to_lowercase()
 }

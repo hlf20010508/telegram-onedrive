@@ -6,8 +6,7 @@
 */
 
 use super::tasks::{self, InsertTask, TaskStatus};
-use crate::error::{Error, Result};
-use proc_macros::{add_context, add_trace};
+use anyhow::{Context, Result};
 use sea_orm::{
     sea_query::Expr, ActiveValue, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection,
     EntityName, EntityTrait, PaginatorTrait, QueryFilter, Schema, Set,
@@ -25,12 +24,11 @@ pub struct TaskSession {
 }
 
 impl TaskSession {
-    #[add_context]
     pub async fn new(session_path: &str) -> Result<Self> {
         if Path::new(session_path).exists() {
             fs::remove_file(session_path)
                 .await
-                .map_err(|e| Error::new("failed to remove old task session").raw(e))?;
+                .context("failed to remove old task session")?;
         }
 
         let connection = Self::connect_db(session_path).await?;
@@ -42,20 +40,16 @@ impl TaskSession {
         })
     }
 
-    #[add_context]
-    #[add_trace]
     async fn connect_db(path: &str) -> Result<DatabaseConnection> {
         let connection = sea_orm::Database::connect(format!("sqlite://{}?mode=rwc", path))
             .await
-            .map_err(|e| Error::new("failed to connect to task session").raw(e))?;
+            .context("failed to connect to task session")?;
 
         Self::create_table_if_not_exists(&connection).await?;
 
         Ok(connection)
     }
 
-    #[add_context]
-    #[add_trace]
     async fn create_table_if_not_exists(connection: &DatabaseConnection) -> Result<()> {
         if !Self::is_table_exists(connection).await {
             let backend = connection.get_database_backend();
@@ -66,32 +60,27 @@ impl TaskSession {
             connection
                 .execute(backend.build(&table_create_statement))
                 .await
-                .map_err(|e| {
-                    Error::new(format!(
-                        "failed to create table {}",
-                        tasks::Entity.table_name()
-                    ))
-                    .raw(e)
-                })?;
+                .context(format!(
+                    "failed to create table {}",
+                    tasks::Entity.table_name()
+                ))?;
         }
 
         Ok(())
     }
 
-    #[add_trace]
     async fn is_table_exists(connection: &DatabaseConnection) -> bool {
         let result = tasks::Entity::find().all(connection).await;
 
         result.is_ok()
     }
 
-    #[add_context]
     pub async fn fetch_task(&self) -> Result<Option<tasks::Model>> {
         let task = tasks::Entity::find()
             .filter(tasks::Column::Status.eq(TaskStatus::Waiting))
             .one(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to get a task").raw(e))?;
+            .context("failed to get a task")?;
 
         if let Some(task) = &task {
             self.set_task_status(task.id, tasks::TaskStatus::Fetched)
@@ -101,8 +90,6 @@ impl TaskSession {
         Ok(task)
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn insert_task(
         &self,
         InsertTask {
@@ -146,27 +133,23 @@ impl TaskSession {
         let id = tasks::Entity::insert(insert_item)
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to insert url task").raw(e))?
+            .context("failed to insert url task")?
             .last_insert_id;
 
         Ok(id)
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn set_task_status(&self, id: i64, status: TaskStatus) -> Result<()> {
         tasks::Entity::update_many()
             .filter(tasks::Column::Id.eq(id))
             .col_expr(tasks::Column::Status, Expr::value(status))
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to update task status").raw(e))?;
+            .context("failed to update task status")?;
 
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn set_current_length(&self, id: i64, current_length: u64) -> Result<()> {
         tasks::Entity::update_many()
             .filter(tasks::Column::Id.eq(id))
@@ -176,12 +159,11 @@ impl TaskSession {
             )
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to update current length").raw(e))?;
+            .context("failed to update current length")?;
 
         Ok(())
     }
 
-    #[add_context]
     pub async fn get_chats_tasks(&self) -> Result<HashMap<ChatHex, ChatTasks>> {
         let mut chats = HashMap::new();
 
@@ -191,7 +173,7 @@ impl TaskSession {
                     .filter(tasks::Column::Status.eq(TaskStatus::$status))
                     .all(&self.connection)
                     .await
-                    .map_err(|e| Error::new("failed to get chat current tasks").raw(e))?;
+                    .context("failed to get chat current tasks")?;
 
                 for task in tasks {
                     chats
@@ -217,8 +199,6 @@ impl TaskSession {
         Ok(chats)
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn get_chat_pending_tasks_number(&self, chat_bot_hex: &str) -> Result<u64> {
         tasks::Entity::find()
             .filter(
@@ -232,11 +212,9 @@ impl TaskSession {
             )
             .count(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to get pending tasks number").raw(e))
+            .context("failed to get pending tasks number")
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn does_chat_has_started_tasks(&self, chat_bot_hex: &str) -> Result<bool> {
         let has_started_tasks = tasks::Entity::find()
             .filter(
@@ -246,38 +224,32 @@ impl TaskSession {
             )
             .count(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to get chat started tasks number").raw(e))?
+            .context("failed to get chat started tasks number")?
             > 0;
 
         Ok(has_started_tasks)
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn update_filename(&self, id: i64, filename: &str) -> Result<()> {
         tasks::Entity::update_many()
             .filter(tasks::Column::Id.eq(id))
             .col_expr(tasks::Column::Filename, Expr::value(filename))
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to update filename").raw(e))?;
+            .context("failed to update filename")?;
 
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn delete_task(&self, id: i64) -> Result<()> {
         tasks::Entity::delete_by_id(id)
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to delete task").raw(e))?;
+            .context("failed to delete task")?;
 
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn clear(&self) -> Result<()> {
         let mut aborters_guard = self.aborters.lock().await;
         let aborters = aborters_guard.values();
@@ -291,13 +263,11 @@ impl TaskSession {
         tasks::Entity::delete_many()
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to clear tasks").raw(e))?;
+            .context("failed to clear tasks")?;
 
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn delete_task_from_message_id_if_exists(
         &self,
         chat_id: i64,
@@ -312,7 +282,7 @@ impl TaskSession {
             )
             .exec(&self.connection)
             .await
-            .map_err(|e| Error::new("failed to delete task from message id").raw(e))?;
+            .context("failed to delete task from message id")?;
 
         Ok(())
     }

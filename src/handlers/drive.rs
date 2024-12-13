@@ -10,22 +10,17 @@ use super::{
     utils::text::cmd_parser,
 };
 use crate::{
-    auth_server,
-    client::OneDriveClient,
-    error::{Error, ParserType, Result},
-    handlers::auth::authorize_onedrive,
-    message::TelegramMessage,
-    state::AppState,
+    auth_server, client::OneDriveClient, handlers::auth::authorize_onedrive,
+    message::TelegramMessage, state::AppState,
 };
+use anyhow::{anyhow, Context, Result};
 use grammers_client::InputMessage;
-use proc_macros::{add_context, add_trace, check_in_group, check_senders};
+use proc_macros::{check_in_group, check_senders};
 
 pub const PATTERN: &str = "/drive";
 
 #[check_senders]
 #[check_in_group]
-#[add_context]
-#[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let onedrive = &state.onedrive;
 
@@ -51,7 +46,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             // /drive $index
             let index = cmd[1]
                 .parse::<usize>()
-                .map_err(|e| Error::new("account index should be integer").raw(e))?
+                .context("account index should be integer")?
                 - 1;
 
             set_drive(onedrive, message, index).await?;
@@ -61,26 +56,20 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             // /drive logout $index
             let index = cmd[2]
                 .parse::<usize>()
-                .map_err(|e| Error::new("account index should be integer").raw(e))?
+                .context("account index should be integer")?
                 - 1;
 
             logout_drive(onedrive, message, index).await?;
         } else {
-            return Err(Error::new(format_unknown_command_help(PATTERN))
-                .parser_type(ParserType::Html)
-                .context("sub command error"));
+            return Err(anyhow!("sub command error")).context(format_unknown_command_help(PATTERN));
         }
     } else {
-        return Err(Error::new(format_unknown_command_help(PATTERN))
-            .parser_type(ParserType::Html)
-            .context("command error"));
+        return Err(anyhow!("command error")).context(format_unknown_command_help(PATTERN));
     }
 
     Ok(())
 }
 
-#[add_context]
-#[add_trace]
 async fn show_drive(onedrive: &OneDriveClient, message: TelegramMessage) -> Result<()> {
     let usernames = onedrive.get_usernames().await?;
     if let Some(current_username) = onedrive.get_current_username().await? {
@@ -97,20 +86,18 @@ async fn show_drive(onedrive: &OneDriveClient, message: TelegramMessage) -> Resu
 
                 response
             };
-            message.respond(response.as_str()).await.details(response)?;
+            message.respond(response.as_str()).await.context(response)?;
 
             return Ok(());
         }
     }
 
     let response = "No account found.";
-    message.respond(response).await.details(response)?;
+    message.respond(response).await.context(response)?;
 
     Ok(())
 }
 
-#[add_context]
-#[add_trace]
 async fn add_drive(message: TelegramMessage, state: AppState) -> Result<()> {
     let (_, rx, _server_abort_handle) = auth_server::spawn().await?;
     authorize_onedrive(message, state, true, rx).await?;
@@ -118,13 +105,11 @@ async fn add_drive(message: TelegramMessage, state: AppState) -> Result<()> {
     Ok(())
 }
 
-#[add_context]
-#[add_trace]
 async fn logout_current_drive(onedrive: &OneDriveClient, message: TelegramMessage) -> Result<()> {
     let current_username = onedrive
         .get_current_username()
         .await?
-        .ok_or_else(|| Error::new("no onedrive account is logged in"))?;
+        .ok_or_else(|| anyhow!("no onedrive account is logged in"))?;
 
     onedrive.logout(None).await?;
 
@@ -141,13 +126,11 @@ async fn logout_current_drive(onedrive: &OneDriveClient, message: TelegramMessag
         response
     };
 
-    message.respond(response.as_str()).await.details(response)?;
+    message.respond(response.as_str()).await.context(response)?;
 
     Ok(())
 }
 
-#[add_context]
-#[add_trace]
 async fn set_drive(
     onedrive: &OneDriveClient,
     message: TelegramMessage,
@@ -156,32 +139,30 @@ async fn set_drive(
     let current_username = onedrive
         .get_current_username()
         .await?
-        .ok_or_else(|| Error::new("no onedrive account is logged in"))?;
+        .ok_or_else(|| anyhow!("no onedrive account is logged in"))?;
 
     let usernames = onedrive.get_usernames().await?;
 
     let selected_username = usernames
         .get(index)
-        .ok_or_else(|| Error::new("account index out of range"))?;
+        .ok_or_else(|| anyhow!("account index out of range"))?;
 
     onedrive.change_account(selected_username).await?;
 
     if current_username == *selected_username {
         let response = "Same account, nothing to change.";
-        message.respond(response).await.details(response)?;
+        message.respond(response).await.context(response)?;
     } else {
         let response = format!(
             "Changed account from\n{}\nto\n{}",
             current_username, selected_username
         );
-        message.respond(response.as_str()).await.details(response)?;
+        message.respond(response.as_str()).await.context(response)?;
     }
 
     Ok(())
 }
 
-#[add_context]
-#[add_trace]
 async fn logout_drive(
     onedrive: &OneDriveClient,
     message: TelegramMessage,
@@ -191,7 +172,7 @@ async fn logout_drive(
 
     let selected_username = usernames
         .get(index)
-        .ok_or_else(|| Error::new("account index out of range"))?;
+        .ok_or_else(|| anyhow!("account index out of range"))?;
 
     onedrive.logout(Some(selected_username.clone())).await?;
 
@@ -208,7 +189,7 @@ async fn logout_drive(
         response
     };
 
-    message.respond(response.as_str()).await.details(response)?;
+    message.respond(response.as_str()).await.context(response)?;
 
     Ok(())
 }

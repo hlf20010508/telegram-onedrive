@@ -5,16 +5,15 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::{error::Result, message::TelegramMessage, state::AppState};
-use proc_macros::{add_context, add_trace, check_in_group, check_senders};
+use crate::{message::TelegramMessage, state::AppState};
+use anyhow::{Context, Result};
+use proc_macros::{check_in_group, check_senders};
 use std::sync::atomic::Ordering;
 
 pub const PATTERN: &str = "/autoDelete";
 
 #[check_senders]
 #[check_in_group]
-#[add_context]
-#[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let should_auto_delete = state.should_auto_delete.load(Ordering::Acquire);
 
@@ -24,10 +23,10 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     if should_auto_delete {
         let response = "Bot won't auto delete message.";
-        message.respond(response).await.details(response)?;
+        message.respond(response).await.context(response)?;
     } else {
         let response = "Bot will auto delete message.";
-        message.respond(response).await.details(response)?;
+        message.respond(response).await.context(response)?;
     }
 
     Ok(())

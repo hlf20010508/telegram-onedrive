@@ -6,17 +6,14 @@
 */
 
 use super::OneDriveClient;
-use crate::error::{Error, Result};
+use anyhow::{anyhow, Context, Result};
 use onedrive_api::{
     option::DriveItemPutOption, ConflictBehavior, ItemLocation, UploadSession, UploadSessionMeta,
 };
 use path_slash::PathBufExt;
-use proc_macros::{add_context, add_trace};
 use std::path::Path;
 
 impl OneDriveClient {
-    #[add_context]
-    #[add_trace]
     pub async fn multipart_upload_session_builder(
         &self,
         root_path: &str,
@@ -26,7 +23,7 @@ impl OneDriveClient {
         let file_path = file_path_obj.to_slash_lossy();
 
         let item_location = ItemLocation::from_path(&file_path)
-            .ok_or_else(|| Error::new("file path does not start with /"))?;
+            .ok_or_else(|| anyhow!("file path does not start with /"))?;
 
         self.refresh_access_token().await?;
 
@@ -39,7 +36,7 @@ impl OneDriveClient {
                 DriveItemPutOption::new().conflict_behavior(ConflictBehavior::Rename),
             )
             .await
-            .map_err(|e| Error::new("failed to create upload session").raw(e))?;
+            .context("failed to create upload session")?;
 
         tracing::debug!("built upload session for {}", filename);
 

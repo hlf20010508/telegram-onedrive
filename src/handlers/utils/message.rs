@@ -7,13 +7,10 @@
 
 use crate::{
     client::TelegramClient,
-    error::{Error, Result},
     message::{ChatEntity, MessageInfo, TelegramMessage},
 };
-use proc_macros::{add_context, add_trace};
+use anyhow::{anyhow, Context, Result};
 
-#[add_context]
-#[add_trace]
 pub fn get_message_info(link: &str) -> Result<MessageInfo> {
     let (message_info, is_private) =
         if let Some(message_info) = link.strip_prefix("https://t.me/c/") {
@@ -23,7 +20,7 @@ pub fn get_message_info(link: &str) -> Result<MessageInfo> {
             // link from public group
             (message_info, false)
         } else {
-            return Err(Error::new("not a message link"));
+            return Err(anyhow!("not a message link"));
         };
 
     let message_info_vec = message_info
@@ -32,13 +29,13 @@ pub fn get_message_info(link: &str) -> Result<MessageInfo> {
         .collect::<Vec<String>>();
 
     if message_info_vec.len() != 2 {
-        return Err(Error::new("message info doesn't contain 2 elements"));
+        return Err(anyhow!("message info doesn't contain 2 elements"));
     }
 
     let chat_entity = if is_private {
         let chat_id = message_info_vec[0]
             .parse::<i64>()
-            .map_err(|e| Error::new("failed to parse chat id").raw(e))?;
+            .context("failed to parse chat id")?;
 
         ChatEntity::from(chat_id)
     } else {
@@ -49,13 +46,11 @@ pub fn get_message_info(link: &str) -> Result<MessageInfo> {
 
     let message_id = message_info_vec[1]
         .parse()
-        .map_err(|e| Error::new("failed to parse message id").raw(e))?;
+        .context("failed to parse message id")?;
 
     Ok(MessageInfo::new(chat_entity, message_id))
 }
 
-#[add_context]
-#[add_trace]
 pub async fn get_message_from_link(
     telegram_user: &TelegramClient,
     link: &str,

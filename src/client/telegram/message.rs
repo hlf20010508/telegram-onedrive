@@ -7,16 +7,16 @@
 
 use super::TelegramClient;
 use crate::{
-    error::{Error, Result, ResultExt},
+    error::ResultExt,
     message::{ChatEntity, QueuedMessage, QueuedMessageType, TelegramMessage},
     trace::indenter,
 };
+use anyhow::{anyhow, Context, Result};
 use grammers_client::{
     client::messages::MessageIter,
     types::{Chat, InputMessage, PackedChat},
     Update,
 };
-use proc_macros::{add_context, add_trace};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::{
     collections::{HashMap, VecDeque},
@@ -25,8 +25,6 @@ use std::{
 use tokio::sync::mpsc;
 
 impl TelegramClient {
-    #[add_context]
-    #[add_trace]
     pub async fn get_message<C>(&self, chat: C, message_id: i32) -> Result<TelegramMessage>
     where
         C: Into<PackedChat>,
@@ -35,11 +33,11 @@ impl TelegramClient {
             .raw()
             .get_messages_by_id(chat, &[message_id])
             .await
-            .map_err(|e| Error::new("failed to get message by id").raw(e))?
+            .context("failed to get message by id")?
             .first()
-            .ok_or_else(|| Error::new("message vec is empty"))?
+            .ok_or_else(|| anyhow!("message vec is empty"))?
             .to_owned()
-            .ok_or_else(|| Error::new("message not found"))?;
+            .ok_or_else(|| anyhow!("message not found"))?;
 
         let message = TelegramMessage::new(self.clone(), message_raw);
 
@@ -48,16 +46,10 @@ impl TelegramClient {
         Ok(message)
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn get_chat(&self, chat_entity: &ChatEntity) -> Result<Chat> {
         let mut dialogs = self.raw().iter_dialogs();
 
-        while let Some(dialog) = dialogs
-            .next()
-            .await
-            .map_err(|e| Error::new("failed to get dialog").raw(e))?
-        {
+        while let Some(dialog) = dialogs.next().await.context("failed to get dialog")? {
             let chat = dialog.chat();
 
             if match chat_entity {
@@ -74,16 +66,13 @@ impl TelegramClient {
             }
         }
 
-        Err(Error::new("chat not found"))
+        Err(anyhow!("chat not found"))
     }
 
-    #[add_trace]
     pub fn iter_messages<C: Into<PackedChat>>(&self, chat: C) -> MessageIter {
         self.raw().iter_messages(chat)
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn delete_messages<C: Into<PackedChat>>(
         &self,
         chat: C,
@@ -92,11 +81,9 @@ impl TelegramClient {
         self.raw()
             .delete_messages(chat, message_ids)
             .await
-            .map_err(|e| Error::new("failed to delete messages").raw(e))
+            .context("failed to delete messages")
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn send_message<C: Into<PackedChat>, M: Into<InputMessage>>(
         &self,
         chat: C,
@@ -110,12 +97,10 @@ impl TelegramClient {
 
         rx.recv()
             .await
-            .ok_or_else(|| Error::new("failed to receive message result"))??
-            .ok_or_else(|| Error::new("received message is None"))
+            .ok_or_else(|| anyhow!("failed to receive message result"))??
+            .ok_or_else(|| anyhow!("received message is None"))
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn edit_message<C: Into<PackedChat>, M: Into<InputMessage>>(
         &self,
         chat: C,
@@ -136,16 +121,13 @@ impl TelegramClient {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn next_update(&self) -> Result<Update> {
         self.raw()
             .next_update()
             .await
-            .map_err(|e| Error::new("Failed to get next update").raw(e))
+            .context("Failed to get next update")
     }
 
-    #[add_trace]
     pub async fn push_queued_message(&self, queued_message: QueuedMessage) {
         self.chat_message_queue()
             .lock()
@@ -153,7 +135,6 @@ impl TelegramClient {
             .push_back(queued_message);
     }
 
-    #[add_trace]
     pub fn run_message_loop(&self) {
         let chat_message_queue = self.chat_message_queue();
         let telegram_client = self.clone();
@@ -161,7 +142,7 @@ impl TelegramClient {
         let mut rng = {
             let rng = rand::thread_rng();
             StdRng::from_rng(rng)
-                .map_err(|e| Error::new("failed to create rng").raw(e))
+                .context("failed to create rng")
                 .unwrap_or_trace()
         };
 
@@ -185,9 +166,7 @@ impl TelegramClient {
                                         .raw()
                                         .send_message(chat, input_message)
                                         .await
-                                        .map_err(|e| {
-                                            Error::new("failed to respond message").raw(e)
-                                        });
+                                        .context("failed to respond message");
 
                                     match result {
                                         Ok(message_raw) => Ok(Some(TelegramMessage::new(
@@ -205,9 +184,7 @@ impl TelegramClient {
                                             input_message.reply_to(Some(message_id)),
                                         )
                                         .await
-                                        .map_err(|e| {
-                                            Error::new("failed to respond message").raw(e)
-                                        });
+                                        .context("failed to respond message");
 
                                     match result {
                                         Ok(message_raw) => Ok(Some(TelegramMessage::new(
@@ -222,9 +199,7 @@ impl TelegramClient {
                                         .raw()
                                         .edit_message(chat, message_id, input_message)
                                         .await
-                                        .map_err(|e| {
-                                            Error::new("failed to respond message").raw(e)
-                                        });
+                                        .context("failed to respond message");
 
                                     match result {
                                         Ok(()) => Ok(None),
@@ -235,9 +210,7 @@ impl TelegramClient {
 
                             tx.send(message_result)
                                 .await
-                                .map_err(|e| {
-                                    Error::new("failed to send message result to rx").raw(e)
-                                })
+                                .context("failed to send message result to rx")
                                 .trace();
                         }
 
@@ -317,7 +290,6 @@ trait ChatMessageHashMapExt {
 }
 
 impl ChatMessageHashMapExt for ChatMessageVecDeque {
-    #[add_trace]
     fn push_back(&mut self, queued_message: QueuedMessage) {
         self.entry(queued_message.chat.id)
             .or_insert_with(MessageVecDeque::new)

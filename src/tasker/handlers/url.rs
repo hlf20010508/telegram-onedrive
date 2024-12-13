@@ -6,12 +6,9 @@
 */
 
 use super::{tasks, transfer::multi_parts_uploader_from_url, Progress};
-use crate::error::Result;
-use proc_macros::{add_context, add_trace};
+use anyhow::Result;
 use std::sync::Arc;
 
-#[add_context]
-#[add_trace]
 pub async fn handler(task: tasks::Model, progress: Arc<Progress>) -> Result<()> {
     let filename = multi_parts_uploader_from_url(&task, progress.clone()).await?;
 

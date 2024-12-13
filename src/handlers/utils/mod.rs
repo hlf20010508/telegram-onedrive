@@ -12,23 +12,21 @@ pub mod zip;
 
 use crate::{
     client::onedrive::invalid_name::{INVALID_COMPONENT, INVALID_NAME, INVALID_NAME_PREFIX},
-    error::{Error, Result, ResultExt},
+    error::ResultExt,
     utils::{get_current_timestamp, get_ext},
 };
+use anyhow::{anyhow, Context, Result};
 use grammers_client::types::media::{Document, Media};
 use mime_guess::get_mime_extensions_str;
 use percent_encoding::percent_decode_str;
-use proc_macros::{add_context, add_trace};
 use regex::Regex;
 use reqwest::{header, Response, StatusCode};
 use std::collections::HashMap;
 use url::Url;
 
-#[add_context]
-#[add_trace]
 pub fn get_filename(url: &str, response: &Response) -> Result<String> {
     if response.status() != StatusCode::OK {
-        return Err(Error::new("file from url not found"));
+        return Err(anyhow!("file from url not found"));
     }
 
     let filename = match get_filename_from_cd(response)? {
@@ -39,7 +37,7 @@ pub fn get_filename(url: &str, response: &Response) -> Result<String> {
     let content_type = match response.headers().get(header::CONTENT_TYPE) {
         Some(content_type) => content_type
             .to_str()
-            .map_err(|e| Error::new("header Content-Type has invisible ASCII chars").raw(e))?,
+            .context("header Content-Type has invisible ASCII chars")?,
         None => "application/octet-stream",
     };
 
@@ -87,17 +85,16 @@ pub fn get_filename(url: &str, response: &Response) -> Result<String> {
     Ok(preprocess_url_file_name(&filename))
 }
 
-#[add_context]
-#[add_trace]
 fn get_filename_from_cd(response: &Response) -> Result<Option<String>> {
     if let Some(cd) = response.headers().get(header::CONTENT_DISPOSITION) {
-        let cd = cd.to_str().map_err(|e| {
-            Error::new("header Content-Disposition has invisible ASCII chars").raw(e)
-        })?;
+        let cd = cd
+            .to_str()
+            .context("header Content-Disposition has invisible ASCII chars")?;
 
         let pattern = r"filename=(.+)";
         let re = Regex::new(pattern)
-            .map_err(|e| Error::new("invalid regex pattern").raw(e).details(pattern))
+            .context("invalid regex pattern")
+            .context(pattern)
             .unwrap_or_trace();
 
         let filename = re
@@ -122,10 +119,8 @@ fn get_filename_from_cd(response: &Response) -> Result<Option<String>> {
     Ok(None)
 }
 
-#[add_context]
-#[add_trace]
 fn get_filename_from_url(url: &str) -> Result<Option<String>> {
-    let parsed_url = Url::parse(url).map_err(|e| Error::new("failed to parse url").raw(e))?;
+    let parsed_url = Url::parse(url).context("failed to parse url")?;
     let captured_value_dict = parsed_url
         .query_pairs()
         .into_iter()
@@ -167,7 +162,6 @@ fn get_filename_from_url(url: &str) -> Result<Option<String>> {
     }
 }
 
-#[add_trace]
 fn guess_exts(content_type: &str) -> Vec<String> {
     let content_type = {
         // text/html
@@ -176,7 +170,8 @@ fn guess_exts(content_type: &str) -> Vec<String> {
         // text/html; charset=utf-8
         let pattern = r"([^;]+)";
         let re = Regex::new(pattern)
-            .map_err(|e| Error::new("invalid regex pattern").raw(e).details(pattern))
+            .context("invalid regex pattern")
+            .context(pattern)
             .unwrap_or_trace();
 
         if let Some(cap) = re.captures(&content_type) {
@@ -195,7 +190,6 @@ fn guess_exts(content_type: &str) -> Vec<String> {
     })
 }
 
-#[add_trace]
 fn validate_filename(filename: &str) -> bool {
     if filename.is_empty() || INVALID_NAME.contains(&filename) {
         return false;
@@ -210,17 +204,14 @@ fn validate_filename(filename: &str) -> bool {
     true
 }
 
-#[add_context]
-#[add_trace]
 pub async fn validate_root_path(root_path: &str) -> Result<()> {
     if !root_path.starts_with('/') {
-        return Err(Error::new("directory path should start with /"));
+        return Err(anyhow!("directory path should start with /"));
     }
 
     Ok(())
 }
 
-#[add_trace]
 fn preprocess_url_file_name(filename: &str) -> String {
     if validate_filename(filename) {
         filename
@@ -243,7 +234,6 @@ fn preprocess_url_file_name(filename: &str) -> String {
     }
 }
 
-#[add_trace]
 pub fn preprocess_tg_file_name(media: &Media) -> String {
     let (filename, id) = match media {
         Media::Photo(file) => return file.id().to_string() + ".jpg",
@@ -264,7 +254,6 @@ pub fn preprocess_tg_file_name(media: &Media) -> String {
     }
 }
 
-#[add_trace]
 fn get_tg_document_name_and_id(document: &Document) -> (String, i64) {
     let mut filename = document.name().to_string();
     let file_id = document.id();
@@ -283,7 +272,6 @@ fn get_tg_document_name_and_id(document: &Document) -> (String, i64) {
     (filename, file_id)
 }
 
-#[add_trace]
 pub fn get_tg_file_size(media: &Media) -> u64 {
     let size = match media {
         Media::Photo(file) => file.size(),

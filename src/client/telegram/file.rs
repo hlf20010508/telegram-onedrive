@@ -6,29 +6,24 @@
 */
 
 use super::TelegramClient;
-use crate::error::{Error, Result};
+use anyhow::{Context, Result};
 use grammers_client::{
     client::files::DownloadIter,
     types::{media::Uploaded, Downloadable},
 };
-use proc_macros::{add_context, add_trace};
 use std::path::Path;
 use tokio::io::AsyncRead;
 
 impl TelegramClient {
-    #[add_context]
-    #[add_trace]
     pub async fn upload_file<P: AsRef<Path>>(&self, path: P) -> Result<Uploaded> {
         tracing::info!("uploading file: {}", path.as_ref().to_string_lossy());
 
         self.raw()
             .upload_file(path)
             .await
-            .map_err(|e| Error::new("failed to upload file").raw(e))
+            .context("failed to upload file")
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn upload_stream<S: AsyncRead + Unpin>(
         &self,
         stream: &mut S,
@@ -40,7 +35,7 @@ impl TelegramClient {
         self.raw()
             .upload_stream(stream, size, name)
             .await
-            .map_err(|e| Error::new("failed to upload stream").raw(e))
+            .context("failed to upload stream")
     }
 
     pub fn iter_download(&self, downloadable: &Downloadable) -> DownloadIter {

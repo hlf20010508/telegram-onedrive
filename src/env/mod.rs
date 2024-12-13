@@ -11,7 +11,7 @@ mod telegram_user;
 mod utils;
 mod var;
 
-use crate::error::{Error, ResultExt};
+use anyhow::Context;
 pub use onedrive::OneDriveEnv;
 use std::{fs, sync::OnceLock};
 pub use telegram_bot::TelegramBotEnv;
@@ -19,6 +19,8 @@ pub use telegram_user::TelegramUserEnv;
 use utils::{get_env_value, get_env_value_option, get_env_value_option_legacy};
 use var::SESSION_DIR;
 pub use var::{BYPASS_PREFIX, LOGS_PATH};
+
+use crate::error::ResultExt;
 
 pub static ENV: OnceLock<Env> = OnceLock::new();
 
@@ -67,7 +69,7 @@ impl Env {
 
     fn init() {
         fs::create_dir_all(SESSION_DIR)
-            .map_err(|e| Error::new("failed to create session dir").raw(e))
+            .context("failed to create session dir")
             .unwrap_or_trace();
     }
 }

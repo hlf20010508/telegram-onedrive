@@ -14,14 +14,13 @@ mod utils;
 
 use crate::{
     env::{Env, OneDriveEnv, ENV},
-    error::{Error, Result},
     message::TelegramMessage,
 };
+use anyhow::{anyhow, Context, Result};
 use onedrive_api::{
     Auth, ClientCredential, DriveLocation, OneDrive as Client, Permission, Tenant, TokenResponse,
 };
 use path_slash::PathBufExt;
-use proc_macros::{add_context, add_trace};
 use session::OneDriveSession;
 use std::path::Path;
 use tokio::sync::{mpsc::Receiver, RwLock};
@@ -37,8 +36,6 @@ pub struct OneDriveClient {
 }
 
 impl OneDriveClient {
-    #[add_context]
-    #[add_trace]
     pub async fn new() -> Result<Self> {
         let Env {
             onedrive:
@@ -84,8 +81,6 @@ impl OneDriveClient {
         Ok(onedrive_client)
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn login(
         &self,
         message: TelegramMessage,
@@ -118,20 +113,20 @@ impl OneDriveClient {
             "Here are the authorization url of OneDrive:\n\n{}",
             self.get_auth_url()
         );
-        message.respond(response.as_str()).await.details(response)?;
+        message.respond(response.as_str()).await.context(response)?;
 
         tracing::info!("onedrive authorization url sent");
 
         let code = rx
             .recv()
             .await
-            .ok_or_else(|| Error::new("failed to receive onedrive code"))?;
+            .ok_or_else(|| anyhow!("failed to receive onedrive code"))?;
 
         tracing::info!("onedrive code received");
         tracing::debug!("onedrive code: {}", code);
 
         let response = "Code received, authorizing...";
-        message.respond(response).await.details(response)?;
+        message.respond(response).await.context(response)?;
 
         tracing::info!("onedrive authorizing");
 
@@ -144,12 +139,10 @@ impl OneDriveClient {
             .auth_provider
             .login_with_code(&code, &ClientCredential::Secret(self.client_secret.clone()))
             .await
-            .map_err(|e| {
-                Error::new("failed to get onedrive token response when login with code").raw(e)
-            })?;
+            .context("failed to get onedrive token response when login with code")?;
 
         let refresh_token = refresh_token.ok_or_else(|| {
-            Error::new("failed to receive onedrive refresh token when login with code")
+            anyhow!("failed to receive onedrive refresh token when login with code")
         })?;
 
         let client = Client::new(&access_token, DriveLocation::me());
@@ -182,8 +175,6 @@ impl OneDriveClient {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     async fn auto_login(&self) -> Result<()> {
         let mut session = OneDriveSession::load(&self.session_path).await?;
 
@@ -195,7 +186,7 @@ impl OneDriveClient {
         *self.client.write().await = Client::new(&access_token, DriveLocation::me());
 
         session.refresh_token = token_response.refresh_token.ok_or_else(|| {
-            Error::new("failed to receive onedrive refresh token when login with refresh token")
+            anyhow!("failed to receive onedrive refresh token when login with refresh token")
         })?;
         session.access_token = access_token;
         session.set_expiration_timestamp(token_response.expires_in_secs);
@@ -206,8 +197,6 @@ impl OneDriveClient {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn get_token_using_refresh_token(
         &self,
         refresh_token: &str,
@@ -218,13 +207,9 @@ impl OneDriveClient {
                 &ClientCredential::Secret(self.client_secret.clone()),
             )
             .await
-            .map_err(|e| {
-                Error::new("failed to get refresh token response when login with refresh token")
-                    .raw(e)
-            })
+            .context("failed to get refresh token response when login with refresh token")
     }
 
-    #[add_trace]
     pub fn get_auth_url(&self) -> String {
         let auth_url = self.auth_provider.code_auth_url().to_string();
 
@@ -233,7 +218,6 @@ impl OneDriveClient {
         auth_url
     }
 
-    #[add_trace]
     pub async fn is_authorized(&self) -> bool {
         let is_expired = { self.session.read().await.is_expired() };
 
@@ -244,14 +228,10 @@ impl OneDriveClient {
         self.client.read().await.get_drive().await.is_ok()
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn set_current_user(&self) -> Result<()> {
         self.session.write().await.set_current_user().await
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn logout(&self, username: Option<String>) -> Result<()> {
         let mut session = self.session.write().await;
         session.remove_user(username).await?;
@@ -261,8 +241,6 @@ impl OneDriveClient {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn refresh_access_token(&self) -> Result<()> {
         let is_expired = { self.session.read().await.is_expired() };
 
@@ -275,7 +253,7 @@ impl OneDriveClient {
 
             session.access_token = token_response.access_token;
             session.refresh_token = token_response.refresh_token.ok_or_else(|| {
-                Error::new("failed to receive onedrive refresh token when login with refresh token")
+                anyhow!("failed to receive onedrive refresh token when login with refresh token")
             })?;
             session.set_expiration_timestamp(token_response.expires_in_secs);
 

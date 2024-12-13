@@ -6,12 +6,9 @@
 */
 
 use super::{utils::validate_root_path, OneDriveClient};
-use crate::error::Result;
-use proc_macros::{add_context, add_trace};
+use anyhow::Result;
 
 impl OneDriveClient {
-    #[add_context]
-    #[add_trace]
     pub async fn get_root_path(&self, should_consume_temp: bool) -> Result<String> {
         let temp_root_path_read = self.temp_root_path.read().await;
         let temp_root_path_exists = self.does_temp_root_path_exist().await;
@@ -40,7 +37,6 @@ impl OneDriveClient {
         Ok(root_path)
     }
 
-    #[add_trace]
     pub async fn does_temp_root_path_exist(&self) -> bool {
         let is_exist = !self.temp_root_path.read().await.is_empty();
 
@@ -49,8 +45,6 @@ impl OneDriveClient {
         is_exist
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn set_root_path(&self, path: &str) -> Result<()> {
         validate_root_path(path)?;
 
@@ -65,8 +59,6 @@ impl OneDriveClient {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn reset_root_path(&self) -> Result<()> {
         tracing::info!("reset onedrive root path to default");
         tracing::debug!("default root path: {}", self.default_root_path);
@@ -85,8 +77,6 @@ impl OneDriveClient {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn set_temp_root_path(&self, path: &str) -> Result<()> {
         validate_root_path(path)?;
 
@@ -97,8 +87,6 @@ impl OneDriveClient {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn clear_temp_root_path(&self) -> Result<()> {
         tracing::info!("clear onedrive temp root path");
 

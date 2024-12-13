@@ -5,13 +5,9 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::error::{Error, Result};
+use anyhow::{Context, Result};
 use grammers_client::types::PackedChat;
-use proc_macros::{add_context, add_trace};
 
-#[add_context]
-#[add_trace]
 pub fn chat_from_hex(chat_hex: &str) -> Result<PackedChat> {
-    PackedChat::from_hex(chat_hex)
-        .map_err(|e| Error::new("failed to parse chat hex to packed chat").raw(e))
+    PackedChat::from_hex(chat_hex).context("failed to parse chat hex to packed chat")
 }

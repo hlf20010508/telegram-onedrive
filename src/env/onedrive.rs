@@ -5,11 +5,12 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::error::ResultExt;
+
 use super::{
     utils::{get_env_value, get_env_value_option_legacy},
     var::OD_SESSION_PATH,
 };
-use crate::error::ResultExt;
 
 pub struct OneDriveEnv {
     pub client_id: String,

@@ -19,15 +19,13 @@ use super::{
 };
 use crate::{
     env::BYPASS_PREFIX,
-    error::{Error, ParserType, Result},
     message::{ChatEntity, MessageInfo, TelegramMessage},
     state::AppState,
     tasker::{CmdType, InsertTask},
 };
+use anyhow::{anyhow, Context, Result};
 use grammers_client::{types::Media, InputMessage};
-use proc_macros::{
-    add_context, add_trace, check_in_group, check_od_login, check_senders, check_tg_login,
-};
+use proc_macros::{check_in_group, check_od_login, check_senders, check_tg_login};
 
 pub const PATTERN: &str = "/links";
 
@@ -35,8 +33,6 @@ pub const PATTERN: &str = "/links";
 #[check_tg_login]
 #[check_senders]
 #[check_in_group]
-#[add_context]
-#[add_trace]
 pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let cmd = cmd_parser(message.text());
 
@@ -59,7 +55,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         let link_head = &cmd[1];
         let link_num = cmd[2]
             .parse::<usize>()
-            .map_err(|e| Error::new("failed to parse link number").raw(e))?;
+            .context("failed to parse link number")?;
 
         let MessageInfo {
             chat_entity,
@@ -88,7 +84,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
             let media = message_origin
                 .media()
-                .ok_or_else(|| Error::new("message does not contain any media"))?;
+                .ok_or_else(|| anyhow!("message does not contain any media"))?;
 
             let filename = preprocess_tg_file_name(&media);
 
@@ -96,7 +92,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
             let cmd_type = match media {
                 Media::Photo(_) | Media::Document(_) | Media::Sticker(_) => CmdType::Link,
-                _ => Err(Error::new(
+                _ => Err(anyhow!(
                     "media type is not one of photo, document and sticker",
                 ))?,
             };
@@ -106,7 +102,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 Media::Photo(file) => upload_thumb(telegram_user, file.thumbs()).await?,
                 Media::Document(file) => upload_thumb(telegram_user, file.thumbs()).await?,
                 Media::Sticker(file) => upload_thumb(telegram_user, file.document.thumbs()).await?,
-                _ => Err(Error::new(
+                _ => Err(anyhow!(
                     "media type is not one of photo, document and sticker",
                 ))?,
             };
@@ -120,13 +116,13 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                     )
                     .await
                     .context("linked message with thumb")
-                    .details(response)?
+                    .context(response)?
                     .id(),
                 None => telegram_user
                     .send_message(&chat_user, response.as_str())
                     .await
                     .context("linked message without thumn")
-                    .details(response)?
+                    .context(response)?
                     .id(),
             };
 
@@ -182,7 +178,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             .delete()
             .await?;
     } else {
-        return Err(Error::new(format_unknown_command_help(PATTERN)).parser_type(ParserType::Html));
+        return Err(anyhow!(format_unknown_command_help(PATTERN)));
     }
 
     Ok(())

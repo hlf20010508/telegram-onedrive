@@ -6,7 +6,6 @@
 */
 
 use axum_server::Handle;
-use proc_macros::add_trace;
 use tokio::task::AbortHandle;
 
 pub struct AutoAbortHandle {
@@ -15,8 +14,7 @@ pub struct AutoAbortHandle {
 }
 
 impl AutoAbortHandle {
-    #[add_trace]
-    pub fn new(abort_handle: AbortHandle, shutdown_handle: Handle) -> Self {
+    pub const fn new(abort_handle: AbortHandle, shutdown_handle: Handle) -> Self {
         Self {
             abort_handle,
             shutdown_handle,
@@ -25,7 +23,6 @@ impl AutoAbortHandle {
 }
 
 impl Drop for AutoAbortHandle {
-    #[add_trace]
     fn drop(&mut self) {
         self.shutdown_handle.shutdown();
         self.abort_handle.abort();

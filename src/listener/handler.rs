@@ -6,9 +6,9 @@
 */
 
 use super::{EventType, Events};
-use crate::{error::Result, message::TelegramMessage, state::AppState};
+use crate::{message::TelegramMessage, state::AppState};
+use anyhow::Result;
 use grammers_client::types::Media;
-use proc_macros::{add_context, add_trace};
 
 pub struct Handler<'h> {
     pub events: &'h Events,
@@ -20,8 +20,6 @@ impl<'h> Handler<'h> {
         Self { events, state }
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn handle_message(&self, message: TelegramMessage) -> Result<()> {
         match message.media() {
             Some(media) => match media {
@@ -41,8 +39,6 @@ impl<'h> Handler<'h> {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     async fn handle_command(&self, message: TelegramMessage) -> Result<()> {
         let text = message.text();
 
@@ -58,8 +54,6 @@ impl<'h> Handler<'h> {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     async fn handle_text(&self, message: TelegramMessage) -> Result<()> {
         let text = message.text().trim();
 
@@ -76,24 +70,18 @@ impl<'h> Handler<'h> {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     async fn handle_media(&self, message: TelegramMessage) -> Result<()> {
         tracing::info!("handle media");
 
         self.trigger(EventType::Media, message).await
     }
 
-    #[add_context]
-    #[add_trace]
     async fn handle_batch(&self, message: TelegramMessage) -> Result<()> {
         tracing::info!("handle batch");
 
         self.trigger(EventType::Batch, message).await
     }
 
-    #[add_context]
-    #[add_trace]
     async fn trigger(&self, event_name: EventType, message: TelegramMessage) -> Result<()> {
         if let Some(callback) = self.events.get(event_name.to_str()) {
             callback(message, self.state.clone()).await?;
@@ -102,7 +90,6 @@ impl<'h> Handler<'h> {
         Ok(())
     }
 
-    #[add_trace]
     fn get_event_names(&self) -> Vec<EventType> {
         self.events.keys().map(EventType::from).collect()
     }

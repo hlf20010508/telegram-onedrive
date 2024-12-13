@@ -37,6 +37,10 @@ strip = true
 
 [dependencies]
 proc_macros = { path = "./lib/proc_macros" }
+anyhow = { version = "1.0.94", default-features = false, features = [
+    "std",
+    "backtrace",
+] }
 axum = { version = "0.7.5", default-features = false, features = [
     "tokio",
     "http1",

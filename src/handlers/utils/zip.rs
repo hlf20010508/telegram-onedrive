@@ -5,28 +5,23 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::error::{Error, Result};
+use anyhow::{Context, Result};
 use path_slash::PathExt;
-use proc_macros::{add_context, add_trace};
 use std::{
     io::{Read, Write},
     path::Path,
 };
 use zip::write::{FileOptions, SimpleFileOptions};
 
-#[add_context]
-#[add_trace]
 pub fn zip_dir<P: AsRef<Path>>(input_path: P, output_path: P) -> Result<()> {
-    let zip_file = std::fs::File::create(&output_path)
-        .map_err(|e| Error::new("failed to create file").raw(e))?;
+    let zip_file = std::fs::File::create(&output_path).context("failed to create file")?;
     let mut zip = zip::ZipWriter::new(zip_file);
 
     let options = SimpleFileOptions::default();
 
     add_entry(input_path.as_ref(), input_path.as_ref(), &mut zip, options)?;
 
-    zip.finish()
-        .map_err(|e| Error::new("failed to finish zip").raw(e))?;
+    zip.finish().context("failed to finish zip")?;
 
     Ok(())
 }
@@ -41,41 +36,37 @@ fn add_entry(
 
     let name = path
         .strip_prefix(base_path)
-        .map_err(|e| Error::new(format!("failed to strip prefix: {}", e)))?;
+        .context("failed to strip prefix")?;
 
     // path seperator in zip must be slash /, not backslash \
 
     if path.is_file() {
         zip.start_file(name.to_slash_lossy(), options)
-            .map_err(|e| Error::new("failed to start zip file").raw(e))?;
+            .context("failed to start zip file")?;
 
-        let mut file =
-            std::fs::File::open(path).map_err(|e| Error::new("failed to open file").raw(e))?;
+        let mut file = std::fs::File::open(path).context("failed to open file")?;
 
         loop {
-            let size = file
-                .read(&mut buffer)
-                .map_err(|e| Error::new("failed to read file").raw(e))?;
+            let size = file.read(&mut buffer).context("failed to read file")?;
 
             if size == 0 {
                 break;
             }
 
             zip.write_all(&buffer[..size])
-                .map_err(|e| Error::new("failed to write file").raw(e))?;
+                .context("failed to write file")?;
         }
     } else if path.is_dir() {
         zip.add_directory(name.to_slash_lossy(), options)
-            .map_err(|e| Error::new("failed to add directory to zip").raw(e))?;
+            .context("failed to add directory to zip")?;
 
         for entry in std::fs::read_dir(path)
-            .map_err(|e| Error::new("failed to read dir").raw(e).context("sub dir"))?
+            .context("failed to read dir")
+            .context("sub dir")?
         {
-            let entry = entry.map_err(|e| {
-                Error::new("failed to read dir entry")
-                    .raw(e)
-                    .context("sub dir entry")
-            })?;
+            let entry = entry
+                .context("failed to read dir entry")
+                .context("sub dir entry")?;
 
             add_entry(base_path, &entry.path(), zip, options)?;
         }

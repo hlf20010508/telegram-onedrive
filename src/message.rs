@@ -5,15 +5,12 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::{
-    client::TelegramClient,
-    error::{Error, Result},
-};
+use crate::client::TelegramClient;
+use anyhow::{anyhow, Context, Result};
 use grammers_client::{
     grammers_tl_types as tl,
     types::{Chat, InputMessage, Media, Message, PackedChat},
 };
-use proc_macros::{add_context, add_trace};
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Sender};
 
@@ -51,8 +48,6 @@ impl TelegramMessage {
         self.raw.sender()
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn respond<M: Into<InputMessage>>(&self, message: M) -> Result<Self> {
         let (tx, mut rx) = mpsc::channel(1);
 
@@ -63,12 +58,10 @@ impl TelegramMessage {
 
         rx.recv()
             .await
-            .ok_or_else(|| Error::new("failed to receive message result"))??
-            .ok_or_else(|| Error::new("received message is None"))
+            .ok_or_else(|| anyhow!("failed to receive message result"))??
+            .ok_or_else(|| anyhow!("received message is None"))
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn reply<M: Into<InputMessage>>(&self, message: M) -> Result<Self> {
         let (tx, mut rx) = mpsc::channel(1);
 
@@ -83,17 +76,12 @@ impl TelegramMessage {
 
         rx.recv()
             .await
-            .ok_or_else(|| Error::new("failed to receive message result"))??
-            .ok_or_else(|| Error::new("received message is None"))
+            .ok_or_else(|| anyhow!("failed to receive message result"))??
+            .ok_or_else(|| anyhow!("received message is None"))
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn delete(&self) -> Result<()> {
-        self.raw
-            .delete()
-            .await
-            .map_err(|e| Error::new("failed to delete message").raw(e))
+        self.raw.delete().await.context("failed to delete message")
     }
 
     pub fn forward_header(&self) -> Option<tl::enums::MessageFwdHeader> {

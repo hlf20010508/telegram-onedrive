@@ -11,12 +11,12 @@ use super::{
 };
 use crate::{
     client::utils::chat_from_hex,
-    error::{Error, Result, ResultExt, ResultUnwrapExt},
+    error::{ErrorExt, ResultExt, ResultUnwrapExt},
     state::AppState,
 };
+use anyhow::{anyhow, Context, Result};
 use grammers_client::InputMessage;
 use path_slash::PathBufExt;
-use proc_macros::{add_context, add_trace};
 use std::{collections::HashMap, path::Path, time::Duration};
 
 pub struct Progress {
@@ -32,8 +32,6 @@ impl Progress {
         &self.state.task_session
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn set_current_length(&self, id: i64, current_length: u64) -> Result<()> {
         self.session().set_current_length(id, current_length).await
     }
@@ -56,7 +54,6 @@ impl Progress {
         }
     }
 
-    #[add_context]
     async fn handle_chat_tasks_progress(
         &self,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
@@ -102,8 +99,6 @@ impl Progress {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     async fn handle_chat_current_tasks(
         &self,
         current_tasks: Vec<tasks::Model>,
@@ -135,8 +130,6 @@ impl Progress {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     async fn handle_chat_completed_tasks(
         &self,
         completed_tasks: Vec<tasks::Model>,
@@ -165,7 +158,7 @@ impl Progress {
                 if let Err(e) = telegram_user
                     .edit_message(chat, task.message_id, response.as_str())
                     .await
-                    .details(response)
+                    .context(response)
                 {
                     let chat = chat_from_hex(chat_user_hex)?;
 
@@ -179,8 +172,6 @@ impl Progress {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     async fn handle_chat_failed_tasks(
         &self,
         failed_tasks: Vec<tasks::Model>,
@@ -199,7 +190,7 @@ impl Progress {
             if let Err(e) = telegram_user
                 .edit_message(chat, task.message_id, response.as_str())
                 .await
-                .details(response)
+                .context(response)
             {
                 let chat = chat_from_hex(chat_bot_hex)?;
 
@@ -212,7 +203,6 @@ impl Progress {
         Ok(())
     }
 
-    #[add_context]
     async fn remove_chats_without_tasks(
         &self,
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
@@ -252,8 +242,6 @@ impl Progress {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     async fn sync_chat_progress(
         &self,
         chat_bot_hex: &str,
@@ -291,7 +279,7 @@ impl Progress {
 
         let progress_message_id = chat_progress_message_id
             .get_mut(chat_bot_hex)
-            .ok_or_else(|| Error::new("chat_bot_hex not in chat_progress_message_id"))?;
+            .ok_or_else(|| anyhow!("chat_bot_hex not in chat_progress_message_id"))?;
 
         match progress_message_id {
             Some(progress_message_id) => {
@@ -302,7 +290,7 @@ impl Progress {
                     .limit(1)
                     .next()
                     .await
-                    .map_err(|e| Error::new("failed to iter messages for latest message").raw(e))?;
+                    .context("failed to iter messages for latest message")?;
 
                 if let Some(latest_message) = latest_message {
                     if latest_message.id() == *progress_message_id {
@@ -314,7 +302,7 @@ impl Progress {
                                     InputMessage::html(response.as_str()),
                                 )
                                 .await
-                                .details(&response)?;
+                                .context(response.clone())?;
                         }
                     } else {
                         telegram_bot
@@ -324,7 +312,7 @@ impl Progress {
                         let message = telegram_bot
                             .send_message(chat, InputMessage::html(response.as_str()))
                             .await
-                            .details(&response)?;
+                            .context(response.clone())?;
 
                         *progress_message_id = message.id();
                     }
@@ -334,7 +322,7 @@ impl Progress {
                 let message = telegram_bot
                     .send_message(chat, InputMessage::html(response.as_str()))
                     .await
-                    .details(&response)?;
+                    .context(response.clone())?;
 
                 *progress_message_id = Some(message.id());
             }
@@ -345,8 +333,6 @@ impl Progress {
         Ok(())
     }
 
-    #[add_context]
-    #[add_trace]
     pub async fn update_filename(&self, id: i64, filename: &str) -> Result<()> {
         self.session().update_filename(id, filename).await
     }
