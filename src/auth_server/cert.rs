@@ -11,8 +11,24 @@ use rcgen::{generate_simple_self_signed, CertifiedKey};
 use std::path::Path;
 
 pub async fn get_rustls_config() -> Result<RustlsConfig> {
-    let cert_path = Path::new("ssl/server.crt");
-    let key_path = Path::new("ssl/server.key");
+    let cert_path = {
+        let path = Path::new("ssl/server.crt");
+
+        if path.exists() {
+            path
+        } else {
+            Path::new("/telegram-onedrive/server/ssl/server.crt")
+        }
+    };
+    let key_path = {
+        let path = Path::new("ssl/server.key");
+
+        if path.exists() {
+            path
+        } else {
+            Path::new("/telegram-onedrive/server/ssl/server.key")
+        }
+    };
 
     let config = if cert_path.exists() && key_path.exists() {
         tracing::debug!("auth server uses cert from file");
