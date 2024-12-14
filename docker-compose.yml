@@ -1,14 +1,12 @@
 version: '3'
 services:
-  telegram-onedrive-rust:
-    build: https://github.com/hlf20010508/telegram-onedrive.git#rust
-    container_name: telegram-onedrive-rust
-    image: telegram-onedrive-rust
+  telegram-onedrive:
+    container_name: telegram-onedrive
+    image: hlf01/telegram-onedrive
     restart: always
     volumes:
       - telegram-onedrive-rust-session:/session
       - telegram-onedrive-rust-logs:/logs
-      # if you have your own ssl files, uncomment and edit these two lines:
       # - /path/to/*.crt:/ssl/server.crt
       # - /path/to/*.key:/ssl/server.key
     ports:
