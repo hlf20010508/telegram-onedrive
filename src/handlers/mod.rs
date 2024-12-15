@@ -20,3 +20,4 @@ pub mod logs;
 pub mod start;
 pub mod url;
 mod utils;
+pub mod version;

@@ -19,7 +19,7 @@ mod utils;
 
 use env::{Env, ENV};
 use handlers::{
-    auth, auto_delete, batch, clear, dir, drive, file, help, link, links, logs, start, url,
+    auth, auto_delete, batch, clear, dir, drive, file, help, link, links, logs, start, url, version,
 };
 use listener::{EventType, HashMapExt, Listener};
 use std::collections::HashMap;
@@ -48,6 +48,7 @@ async fn main() {
         .on(EventType::command(drive::PATTERN), drive::handler)
         .on(EventType::command(url::PATTERN), url::handler)
         .on(EventType::command(links::PATTERN), links::handler)
+        .on(EventType::command(version::PATTERN), version::handler)
         .on(EventType::media(), file::handler)
         .on(EventType::text(), link::handler)
         .on(EventType::batch(), batch::handler);

@@ -134,6 +134,7 @@ If you don't follow these steps, the bot may not work.
 - `/dir temp $path` to set temporary OneDrive directory.
 - `/dir temp cancel` to restore OneDrive directory to the previous one.
 - `/dir reset` to reset OneDrive directory to default.
+- `/version` to show the version.
 - `/help` for help.
 
 The bot support files with extension `.t2o` as scripts. You can use them to automate the bot.

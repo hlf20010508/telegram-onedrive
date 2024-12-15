@@ -20,6 +20,8 @@ To authorize for Telegram and OneDrive.
 To clear all history.
 <pre><code>/autoDelete</code></pre>
 To toggle whether bot should auto delete message.
+<pre><code>/version</code></pre>
+To show the version.
 ";
 
 const HELP_LINKS: &str = "\
