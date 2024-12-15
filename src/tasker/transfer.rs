@@ -109,6 +109,7 @@ pub async fn multi_parts_uploader_from_tg_file(
         message_id,
         message_id_forward,
         message_id_origin,
+        auto_delete,
         ..
     }: &tasks::Model,
     progress: Arc<Progress>,
@@ -131,11 +132,10 @@ pub async fn multi_parts_uploader_from_tg_file(
     let mut upload_response = None;
 
     let telegram_user = &state.telegram_user;
+    let chat = chat_from_hex(chat_user_hex)?;
 
     let message = match cmd_type {
         tasks::CmdType::File => {
-            let chat = chat_from_hex(chat_user_hex)?;
-
             // if message_id_forward is not None, use it as message_id
             let message_id = message_id_forward
                 .as_ref()
@@ -235,6 +235,17 @@ pub async fn multi_parts_uploader_from_tg_file(
 
     if message_id_forward.is_some() {
         message.delete().await?;
+    }
+
+    // if not delete here but delete in progress, after the forwarded message is deleted,
+    // progress may not be able to delete the indicator message
+    // because the deletion of the forwarded message will trigger cancellation
+    if *auto_delete {
+        telegram_user
+            .get_message(chat, *message_id)
+            .await?
+            .delete()
+            .await?;
     }
 
     tracing::info!(

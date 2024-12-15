@@ -141,13 +141,11 @@ impl Progress {
         for task in completed_tasks {
             let chat = chat_from_hex(chat_user_hex)?;
 
-            let message_user = telegram_user.get_message(chat, task.message_id).await?;
-
-            if task.auto_delete {
-                message_user.delete().await?;
-            } else {
+            if !task.auto_delete {
                 let file_path_raw = Path::new(&task.root_path).join(task.filename);
                 let file_path = file_path_raw.to_slash_lossy();
+
+                let message_user = telegram_user.get_message(chat, task.message_id).await?;
 
                 let response = format!(
                     "{}\n\nDone.\nFile uploaded to {}\nSize {:.2}MB.",
