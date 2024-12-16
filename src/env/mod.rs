@@ -17,8 +17,8 @@ use std::{fs, sync::OnceLock};
 pub use telegram_bot::TelegramBotEnv;
 pub use telegram_user::TelegramUserEnv;
 use utils::{get_env_value, get_env_value_option, get_env_value_option_legacy};
+pub use var::LOGS_PATH;
 use var::SESSION_DIR;
-pub use var::{BYPASS_PREFIX, LOGS_PATH};
 
 use crate::error::ResultExt;
 

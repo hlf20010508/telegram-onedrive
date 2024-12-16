@@ -77,3 +77,10 @@ pub fn get_message_link(chat_entity: &ChatEntity, id: i32) -> String {
         ChatEntity::Username(username) => format!("https://t.me/{}/{}", username, id),
     }
 }
+
+pub fn format_message_link(chat_id: i64, message_id: i32, filename: &str) -> String {
+    format!(
+        "<a href=\"https://t.me/c/{}/{}\">{}</a>",
+        chat_id, message_id, filename
+    )
+}

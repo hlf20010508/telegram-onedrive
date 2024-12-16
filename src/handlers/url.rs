@@ -15,6 +15,7 @@ use super::{
     },
 };
 use crate::{
+    handlers::utils::message::format_message_link,
     message::{ChatEntity, TelegramMessage},
     state::AppState,
     tasker::{CmdType, InsertTask},
@@ -79,7 +80,16 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                     .get_chat(&ChatEntity::from(message.chat()))
                     .await?;
 
-                let message_id = message.id();
+                let response = format!(
+                    "{}\n\n{}",
+                    url,
+                    format_message_link(chat_user.id(), message.id(), &filename)
+                );
+                let message_indicator_id = message
+                    .respond(InputMessage::html(&response))
+                    .await
+                    .context(response)?
+                    .id();
 
                 let root_path = onedrive.get_root_path(true).await?;
 
@@ -97,6 +107,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
                 let auto_delete = state.should_auto_delete.load(Ordering::Acquire);
 
+                // in case if cancellation happens before inserting the task
                 let _aborters = state.task_session.aborters.lock().await;
 
                 task_session
@@ -112,9 +123,9 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                         chat_bot_hex,
                         chat_user_hex,
                         chat_origin_hex: None,
-                        message_id,
-                        message_id_forward: None,
-                        message_id_origin: None,
+                        message_id: message.id(),
+                        message_indicator_id,
+                        message_origin_id: None,
                         auto_delete,
                     })
                     .await?;

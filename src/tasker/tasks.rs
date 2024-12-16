@@ -35,14 +35,12 @@ pub struct Model {
     // chat hex used by user and is from the origin chat of the message
     // for link
     pub chat_origin_hex: Option<String>,
-    // if message if not forwarded, it's its message id
-    // else, it's the message id of its thumbnail message
     pub message_id: i32,
-    // message id of the forwarded message
-    pub message_id_forward: Option<i32>,
+    // message id of the indicator(sent from the bot)
+    pub message_indicator_id: i32,
     // message id of the origin message in the origin chat
     // for link
-    pub message_id_origin: Option<i32>,
+    pub message_origin_id: Option<i32>,
     pub status: TaskStatus,
     pub auto_delete: bool,
 }
@@ -218,7 +216,7 @@ pub struct InsertTask {
     pub chat_user_hex: String,
     pub chat_origin_hex: Option<String>,
     pub message_id: i32,
-    pub message_id_forward: Option<i32>,
-    pub message_id_origin: Option<i32>,
+    pub message_indicator_id: i32,
+    pub message_origin_id: Option<i32>,
     pub auto_delete: bool,
 }

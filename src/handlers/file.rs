@@ -9,8 +9,7 @@ use std::sync::atomic::Ordering;
 
 use super::utils::upload::upload_thumb;
 use crate::{
-    env::BYPASS_PREFIX,
-    handlers::utils::{get_tg_file_size, preprocess_tg_file_name},
+    handlers::utils::{get_tg_file_size, message::format_message_link, preprocess_tg_file_name},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
     tasker::{CmdType, InsertTask},
@@ -42,8 +41,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     let total_length = get_tg_file_size(&media);
 
-    let mut message_id = message.id();
-    let mut message_id_forward = None;
+    let message_id = message.id();
 
     let cmd_type = match media {
         Media::Photo(_) | Media::Document(_) | Media::Sticker(_) => CmdType::File,
@@ -52,43 +50,30 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         ))?,
     };
 
-    // if message is forwarded, or is grouped in a album, send its file name and thumb if exists
-    // so that information of uploading successful can be showed
-    if message_user.forward_header().is_some() || message_user.raw.grouped_id().is_some() {
-        message_id_forward = Some(message_id);
+    let uploaded = match media {
+        Media::Photo(file) => upload_thumb(state.clone(), file.thumbs()).await?,
+        Media::Document(file) => upload_thumb(state.clone(), file.thumbs()).await?,
+        Media::Sticker(file) => upload_thumb(state.clone(), file.document.thumbs()).await?,
+        _ => Err(anyhow!(
+            "media type is not one of photo, document and sticker",
+        ))?,
+    };
 
-        let uploaded = match media {
-            Media::Photo(file) => upload_thumb(telegram_user, file.thumbs()).await?,
-            Media::Document(file) => upload_thumb(telegram_user, file.thumbs()).await?,
-            Media::Sticker(file) => upload_thumb(telegram_user, file.document.thumbs()).await?,
-            _ => Err(anyhow!(
-                "media type is not one of photo, document and sticker",
-            ))?,
-        };
-
-        let response = format!("{}{}", BYPASS_PREFIX, filename);
-        match uploaded {
-            Some(uploaded) => {
-                message_id = telegram_user
-                    .send_message(
-                        &chat_user,
-                        InputMessage::text(response.as_str()).photo(uploaded),
-                    )
-                    .await
-                    .context("forwarded message with thumb")
-                    .context(response)?
-                    .id();
-            }
-            None => {
-                message_id = telegram_user
-                    .send_message(&chat_user, response.as_str())
-                    .await
-                    .context("forwarded message without thumn")
-                    .context(response)?
-                    .id();
-            }
-        }
-    }
+    let response = format_message_link(chat_user.id(), message_id, &filename);
+    let message_indicator_id = match uploaded {
+        Some(uploaded) => message
+            .respond(InputMessage::html(&response).photo(uploaded))
+            .await
+            .context("message with thumb")
+            .context(response)?
+            .id(),
+        None => message
+            .respond(InputMessage::html(&response))
+            .await
+            .context("message without thumn")
+            .context(response)?
+            .id(),
+    };
 
     let root_path = onedrive.get_root_path(true).await?;
 
@@ -107,6 +92,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     let auto_delete = state.should_auto_delete.load(Ordering::Acquire);
 
+    // in case if cancellation happens before inserting the task
     let _aborters = state.task_session.aborters.lock().await;
 
     task_session
@@ -123,8 +109,8 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             chat_user_hex,
             chat_origin_hex: None,
             message_id,
-            message_id_forward,
-            message_id_origin: None,
+            message_indicator_id,
+            message_origin_id: None,
             auto_delete,
         })
         .await?;

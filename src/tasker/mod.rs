@@ -19,9 +19,10 @@ use crate::{
     state::AppState,
 };
 use anyhow::{Context, Result};
+use path_slash::PathBufExt;
 use progress::Progress;
 pub use session::{TaskAborter, TaskSession};
-use std::{sync::Arc, time::Duration};
+use std::{path::Path, sync::Arc, time::Duration};
 pub use tasks::{CmdType, InsertTask};
 use tokio::sync::Semaphore;
 use tokio_util::sync::CancellationToken;
@@ -89,21 +90,16 @@ impl Tasker {
             let state_clone = self.state.clone();
             let progress_clone = self.progress.clone();
 
-            let aborter = Arc::new(TaskAborter::new(task.id, &task.filename));
+            // create aborter here to avoid creating too many aborters before tasks start
+            let aborter = Arc::new(TaskAborter::new(
+                task.id,
+                &task.chat_user_hex,
+                task.message_id,
+                &task.filename,
+            ));
             let cancellation_token = aborter.token.clone();
 
-            // insert both message_id and message_id_forward so that both of them can be used to abort the task
-            aborters.insert(
-                (chat.id, task.message_id),
-                (aborter.clone(), task.message_id_forward),
-            );
-
-            if let Some(message_id_forward) = task.message_id_forward {
-                aborters.insert(
-                    (chat.id, message_id_forward),
-                    (aborter, Some(task.message_id)),
-                );
-            }
+            aborters.insert((chat.id, task.message_indicator_id), aborter);
 
             drop(aborters);
 
@@ -148,46 +144,116 @@ async fn handler_dispatch(
     cancellation_token: CancellationToken,
     state: AppState,
 ) -> Result<()> {
-    let task_id = task.id;
     let session = &state.task_session;
+    let telegram_bot = &state.telegram_bot;
+    let telegram_user = &state.telegram_user;
 
     session
-        .set_task_status(task_id, tasks::TaskStatus::Started)
+        .set_task_status(task.id, tasks::TaskStatus::Started)
         .await?;
 
     let result = match task.cmd_type {
         CmdType::Url => {
             tracing::info!("handle url task");
 
-            handlers::url::handler(task, progress).await
+            handlers::url::handler(task.clone(), progress).await
         }
         CmdType::File | CmdType::Link => {
             tracing::info!("handle file or link task");
 
-            handlers::file::handler(task, progress, cancellation_token, state.clone()).await
+            handlers::file::handler(task.clone(), progress, cancellation_token, state.clone()).await
         }
     };
+
+    let mut aborters = state.task_session.aborters.lock().await;
+    let chat_id = message.chat().id();
 
     match result {
         Ok(()) => {
             session
-                .set_task_status(task_id, tasks::TaskStatus::Completed)
+                .set_task_status(task.id, tasks::TaskStatus::Completed)
                 .await?;
+
+            if aborters
+                .remove(&(chat_id, task.message_indicator_id))
+                .is_some()
+            {
+                if task.auto_delete {
+                    let chat_bot = chat_from_hex(&task.chat_bot_hex)?;
+                    let chat_user = chat_from_hex(&task.chat_user_hex)?;
+
+                    telegram_bot
+                        .delete_messages(chat_bot, &[task.message_indicator_id])
+                        .await?;
+
+                    if state
+                        .task_session
+                        .is_last_task(chat_id, task.message_id)
+                        .await?
+                    {
+                        telegram_user
+                            .delete_messages(chat_user, &[task.message_id])
+                            .await?;
+                    }
+                } else {
+                    handle_completed_task(task.clone(), state.clone()).await?;
+                }
+            }
         }
         Err(e) => {
             e.send(message.clone()).await.unwrap_both().trace();
 
             session
-                .set_task_status(task_id, tasks::TaskStatus::Failed)
+                .set_task_status(task.id, tasks::TaskStatus::Failed)
                 .await?;
+
+            handle_failed_task(task.clone(), state.clone()).await?;
         }
     }
 
-    let mut aborters = state.task_session.aborters.lock().await;
-    let chat_id = message.chat().id();
-    if let Some((_, Some(message_id_related))) = aborters.remove(&(chat_id, message.id())) {
-        aborters.remove(&(chat_id, message_id_related));
-    }
+    session.delete_task(task.id).await?;
+
+    Ok(())
+}
+
+async fn handle_completed_task(task: tasks::Model, state: AppState) -> Result<()> {
+    let chat_bot = chat_from_hex(&task.chat_bot_hex)?;
+
+    let file_path_raw = Path::new(&task.root_path).join(task.filename);
+    let file_path = file_path_raw.to_slash_lossy();
+
+    let telegram_bot = &state.telegram_bot;
+
+    let message_indicator = telegram_bot
+        .get_message(chat_bot, task.message_indicator_id)
+        .await?;
+
+    let response = format!(
+        "{}\n\nDone.\nFile uploaded to {}\nSize {:.2}MB.",
+        message_indicator.text(),
+        file_path,
+        task.total_length as f64 / 1024.0 / 1024.0
+    );
+    message_indicator
+        .edit(task.message_indicator_id, response.as_str())
+        .await
+        .context(response)?;
+
+    Ok(())
+}
+
+async fn handle_failed_task(task: tasks::Model, state: AppState) -> Result<()> {
+    let chat_bot = chat_from_hex(&task.chat_bot_hex)?;
+
+    let telegram_bot = &state.telegram_bot;
+
+    let message_indicator = telegram_bot.get_message(chat_bot, task.message_id).await?;
+
+    let response = format!("{}\n\nFailed.", message_indicator.text());
+    message_indicator
+        .edit(task.message_id, response.as_str())
+        .await
+        .context(response)?;
 
     Ok(())
 }

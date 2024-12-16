@@ -9,14 +9,13 @@ mod events;
 mod handler;
 
 use crate::{
-    client::TelegramClient,
-    env::BYPASS_PREFIX,
+    client::utils::chat_from_hex,
     error::{ErrorExt, ResultExt, ResultUnwrapExt},
-    message::{ChatEntity, TelegramMessage},
+    message::TelegramMessage,
     state::{AppState, State},
     tasker::Tasker,
 };
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use events::Events;
 pub use events::{EventType, HashMapExt};
 use grammers_client::Update;
@@ -43,16 +42,12 @@ impl Listener {
             tasker.run().await;
         });
 
-        let telegram_user = self.state.telegram_user.clone();
         let state = self.state.clone();
         tokio::spawn(async move {
-            // this is not only used to catch Update::MessageDeleted, but also keep the user alive
-            // cooperate with reconnection policy
-            // if only loop update, connection will still be closed after a long time
-            // if only reconnection policy, in current grammers version, it will block the client
-            // fixed in https://github.com/Lonami/grammers/pull/273
             loop {
-                Self::handle_cancellation(telegram_user.clone(), state.clone()).await;
+                handle_batch_cancellation(state.clone())
+                    .await
+                    .unwrap_or_trace();
             }
         });
 
@@ -63,67 +58,103 @@ impl Listener {
 
     async fn handle_message(&self) -> Result<()> {
         let client = &self.state.telegram_bot;
+        let telegram_user = &self.state.telegram_user;
+        let task_session = &self.state.task_session;
 
         let update = client.next_update().await?;
-        if let Update::NewMessage(message_raw) = update {
-            // bypass message that the bot sent itself, and message that starts with bypass prefix
-            if !message_raw.outgoing() && !message_raw.text().starts_with(BYPASS_PREFIX) {
-                let message = TelegramMessage::new(client.clone(), message_raw);
+        match update {
+            Update::NewMessage(message_raw) => {
+                // bypass message that the bot sent itself
+                if !message_raw.outgoing() {
+                    let message = TelegramMessage::new(client.clone(), message_raw);
 
-                let handler = Handler::new(&self.events, &self.state);
-                if let Err(e) = handler.handle_message(message.clone()).await {
-                    e.send(message).await.unwrap_both().trace();
+                    let handler = Handler::new(&self.events, &self.state);
+                    if let Err(e) = handler.handle_message(message.clone()).await {
+                        e.send(message).await.unwrap_both().trace();
+                    }
                 }
             }
+            Update::MessageDeleted(messages_info) => {
+                // abort the task if the related message is deleted
+                // bot can only catch deleted message immediately if it is sent by itself
+                let mut task_aborters = task_session.aborters.lock().await;
+
+                // ignore the deletion in none-channel chat
+                if let Some(chat_id) = messages_info.channel_id() {
+                    for message_indicator_id in messages_info.messages() {
+                        if let Some(aborter) =
+                            task_aborters.remove(&(chat_id, *message_indicator_id))
+                        {
+                            aborter.abort();
+
+                            let should_delete_message = task_session
+                                .is_last_task(chat_id, *message_indicator_id)
+                                .await
+                                .unwrap_or_trace();
+
+                            task_session.delete_task(aborter.id).await.unwrap_or_trace();
+
+                            if should_delete_message {
+                                let chat = chat_from_hex(&aborter.chat_user_hex).unwrap_or_trace();
+
+                                telegram_user
+                                    .delete_messages(chat, &[aborter.message_id])
+                                    .await
+                                    .unwrap_or_trace();
+                            }
+                        } else {
+                            task_session
+                                .delete_task_from_message_indicator_id_if_exists(
+                                    chat_id,
+                                    *message_indicator_id,
+                                )
+                                .await
+                                .unwrap_or_trace();
+                        }
+                    }
+                }
+            }
+            _ => {}
         }
 
         Ok(())
     }
+}
 
-    async fn handle_cancellation(telegram_user: TelegramClient, state: AppState) {
-        let update = telegram_user.next_update().await.unwrap_or_trace();
-        if let Update::MessageDeleted(messages_info) = update {
-            // abort the task if the related message is deleted
-            // bot can only catch deleted message immediately if it is sent by itself
-            // that's why we use user client to catch it instead of bot client
-            let mut task_aborters = state.task_session.aborters.lock().await;
+async fn handle_batch_cancellation(state: AppState) -> Result<()> {
+    let telegram_user = &state.telegram_user;
+    let task_session = &state.task_session;
+    let update = telegram_user.next_update().await?;
 
-            // ignore the deletion in none-channel chat
-            if let Some(chat_id) = messages_info.channel_id() {
-                for message_id in messages_info.messages() {
-                    if let Some((aborter, message_id_related)) =
-                        task_aborters.remove(&(chat_id, *message_id))
-                    {
+    if let Update::MessageDeleted(messages_info) = update {
+        if let Some(chat_id) = messages_info.channel_id() {
+            for message_id in messages_info.messages() {
+                let message_indicator_ids = task_session
+                    .get_message_indicator_ids(chat_id, *message_id)
+                    .await?;
+
+                let mut task_aborters = task_session.aborters.lock().await;
+                for message_indicator_id in message_indicator_ids {
+                    if let Some(aborter) = task_aborters.remove(&(chat_id, message_indicator_id)) {
                         aborter.abort();
-                        state
-                            .task_session
-                            .delete_task(aborter.id)
-                            .await
-                            .unwrap_or_trace();
+                        task_session.delete_task(aborter.id).await?;
 
-                        // if deleted message is the forwarded message, also delete the indicator message, vice versa
-                        if let Some(message_id_related) = message_id_related {
-                            let chat = telegram_user
-                                .get_chat(&ChatEntity::Id(chat_id))
-                                .await
-                                .unwrap_or_trace();
-
-                            telegram_user
-                                .delete_messages(chat, &[message_id_related])
-                                .await
-                                .unwrap_or_trace();
-
-                            task_aborters.remove(&(chat_id, message_id_related));
-                        }
+                        let chat_user = chat_from_hex(&aborter.chat_user_hex)?;
+                        telegram_user
+                            .delete_messages(chat_user, &[message_indicator_id])
+                            .await?;
                     } else {
-                        state
-                            .task_session
-                            .delete_task_from_message_id_if_exists(chat_id, *message_id)
-                            .await
-                            .unwrap_or_trace();
+                        task_session
+                            .delete_task_from_message_indicator_id_if_exists(
+                                chat_id,
+                                message_indicator_id,
+                            )
+                            .await?;
                     }
                 }
             }
         }
     }
+
+    Ok(())
 }

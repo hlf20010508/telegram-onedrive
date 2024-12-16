@@ -107,9 +107,7 @@ pub async fn multi_parts_uploader_from_tg_file(
         chat_user_hex,
         chat_origin_hex,
         message_id,
-        message_id_forward,
-        message_id_origin,
-        auto_delete,
+        message_origin_id,
         ..
     }: &tasks::Model,
     progress: Arc<Progress>,
@@ -135,14 +133,7 @@ pub async fn multi_parts_uploader_from_tg_file(
     let chat = chat_from_hex(chat_user_hex)?;
 
     let message = match cmd_type {
-        tasks::CmdType::File => {
-            // if message_id_forward is not None, use it as message_id
-            let message_id = message_id_forward
-                .as_ref()
-                .map_or(message_id, |message_id| message_id);
-
-            telegram_user.get_message(chat, *message_id).await?
-        }
+        tasks::CmdType::File => telegram_user.get_message(chat, *message_id).await?,
         tasks::CmdType::Link => {
             let chat = chat_from_hex(
                 chat_origin_hex
@@ -150,11 +141,11 @@ pub async fn multi_parts_uploader_from_tg_file(
                     .ok_or_else(|| anyhow!("chat_origin_hex is None"))?,
             )?;
 
-            let message_id = message_id_origin
+            let message_origin_id = message_origin_id
                 .as_ref()
                 .ok_or_else(|| anyhow!("message_id_origin is None"))?;
 
-            telegram_user.get_message(chat, *message_id).await?
+            telegram_user.get_message(chat, *message_origin_id).await?
         }
         tasks::CmdType::Url => return Err(anyhow!("invalid cmd type")),
     };
@@ -232,21 +223,6 @@ pub async fn multi_parts_uploader_from_tg_file(
         .ok_or_else(|| anyhow!("failed to get drive item after upload"))?
         .name
         .ok_or_else(|| anyhow!("drive item name not found"))?;
-
-    if message_id_forward.is_some() {
-        message.delete().await?;
-    }
-
-    // if not delete here but delete in progress, after the forwarded message is deleted,
-    // progress may not be able to delete the indicator message
-    // because the deletion of the forwarded message will trigger cancellation
-    if *auto_delete {
-        telegram_user
-            .get_message(chat, *message_id)
-            .await?
-            .delete()
-            .await?;
-    }
 
     tracing::info!(
         "uploaded file from telegram: {} size: {}",

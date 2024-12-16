@@ -5,10 +5,7 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use super::{
-    session::{ChatHex, ChatTasks},
-    tasks, TaskSession,
-};
+use super::{session::ChatHex, tasks, TaskSession};
 use crate::{
     client::utils::chat_from_hex,
     error::{ErrorExt, ResultExt, ResultUnwrapExt},
@@ -16,8 +13,7 @@ use crate::{
 };
 use anyhow::{anyhow, Context, Result};
 use grammers_client::InputMessage;
-use path_slash::PathBufExt;
-use std::{collections::HashMap, path::Path, time::Duration};
+use std::{collections::HashMap, time::Duration};
 
 pub struct Progress {
     state: AppState,
@@ -59,144 +55,43 @@ impl Progress {
         chat_progress_message_id: &mut HashMap<String, Option<i32>>,
         last_progress_response: &mut String,
     ) -> Result<()> {
-        let chat_tasks = self.session().get_chats_tasks().await?;
+        let chat_tasks = self.session().get_chats_current_tasks().await?;
 
         for (
             ChatHex {
                 chat_bot_hex,
                 chat_user_hex,
             },
-            ChatTasks {
-                current_tasks,
-                completed_tasks,
-                failed_tasks,
-            },
+            current_tasks,
         ) in chat_tasks
         {
             if chat_progress_message_id.get(&chat_bot_hex).is_none() {
                 chat_progress_message_id.insert(chat_bot_hex.clone(), None);
             }
 
-            self.handle_chat_current_tasks(
-                current_tasks,
-                &chat_bot_hex,
-                &chat_user_hex,
-                chat_progress_message_id,
-                last_progress_response,
-            )
-            .await?;
+            let telegram_bot = &self.state.telegram_bot;
 
-            self.handle_chat_completed_tasks(completed_tasks, &chat_user_hex)
-                .await?;
+            if !current_tasks.is_empty() {
+                let result = self
+                    .sync_chat_progress(
+                        &chat_bot_hex,
+                        &chat_user_hex,
+                        current_tasks,
+                        chat_progress_message_id,
+                        last_progress_response,
+                    )
+                    .await;
 
-            self.handle_chat_failed_tasks(failed_tasks, &chat_bot_hex, &chat_user_hex)
-                .await?;
-        }
-
-        self.remove_chats_without_tasks(chat_progress_message_id)
-            .await?;
-
-        Ok(())
-    }
-
-    async fn handle_chat_current_tasks(
-        &self,
-        current_tasks: Vec<tasks::Model>,
-        chat_bot_hex: &str,
-        chat_user_hex: &str,
-        chat_progress_message_id: &mut HashMap<String, Option<i32>>,
-        last_progress_response: &mut String,
-    ) -> Result<()> {
-        let telegram_bot = &self.state.telegram_bot;
-
-        if !current_tasks.is_empty() {
-            let result = self
-                .sync_chat_progress(
-                    chat_bot_hex,
-                    chat_user_hex,
-                    current_tasks,
-                    chat_progress_message_id,
-                    last_progress_response,
-                )
-                .await;
-
-            if let Err(e) = result {
-                let chat = chat_from_hex(chat_bot_hex)?;
-
-                e.send_chat(telegram_bot, chat).await.unwrap_both().trace();
-            }
-        }
-
-        Ok(())
-    }
-
-    async fn handle_chat_completed_tasks(
-        &self,
-        completed_tasks: Vec<tasks::Model>,
-        chat_user_hex: &str,
-    ) -> Result<()> {
-        let telegram_bot = &self.state.telegram_bot;
-        let telegram_user = &self.state.telegram_user;
-
-        for task in completed_tasks {
-            let chat = chat_from_hex(chat_user_hex)?;
-
-            if !task.auto_delete {
-                let file_path_raw = Path::new(&task.root_path).join(task.filename);
-                let file_path = file_path_raw.to_slash_lossy();
-
-                let message_user = telegram_user.get_message(chat, task.message_id).await?;
-
-                let response = format!(
-                    "{}\n\nDone.\nFile uploaded to {}\nSize {:.2}MB.",
-                    message_user.text(),
-                    file_path,
-                    task.total_length as f64 / 1024.0 / 1024.0
-                );
-                if let Err(e) = telegram_user
-                    .edit_message(chat, task.message_id, response.as_str())
-                    .await
-                    .context(response)
-                {
-                    let chat = chat_from_hex(chat_user_hex)?;
+                if let Err(e) = result {
+                    let chat = chat_from_hex(&chat_bot_hex)?;
 
                     e.send_chat(telegram_bot, chat).await.unwrap_both().trace();
                 }
             }
-
-            self.session().delete_task(task.id).await?;
         }
 
-        Ok(())
-    }
-
-    async fn handle_chat_failed_tasks(
-        &self,
-        failed_tasks: Vec<tasks::Model>,
-        chat_bot_hex: &str,
-        chat_user_hex: &str,
-    ) -> Result<()> {
-        let telegram_bot = &self.state.telegram_bot;
-        let telegram_user = &self.state.telegram_user;
-
-        for task in failed_tasks {
-            let chat = chat_from_hex(chat_user_hex)?;
-
-            let message_user = telegram_user.get_message(chat, task.message_id).await?;
-
-            let response = format!("{}\n\nFailed.", message_user.text());
-            if let Err(e) = telegram_user
-                .edit_message(chat, task.message_id, response.as_str())
-                .await
-                .context(response)
-            {
-                let chat = chat_from_hex(chat_bot_hex)?;
-
-                e.send_chat(telegram_bot, chat).await.unwrap_both().trace();
-            }
-
-            self.session().delete_task(task.id).await?;
-        }
+        self.remove_chats_without_tasks(chat_progress_message_id)
+            .await?;
 
         Ok(())
     }

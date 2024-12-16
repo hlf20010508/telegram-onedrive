@@ -16,9 +16,6 @@ pub const TG_USER_SESSION_PATH: &str = "./session/tg-user.session";
 pub const OD_SESSION_PATH: &str = "./session/od.session";
 pub const TASKER_SESSION_PATH: &str = "./session/tasker.session";
 
-// messages with this prefix will be ignored
-pub const BYPASS_PREFIX: &str = "\u{200B}";
-
 pub const RECONNECTION_POLICY: FixedReconnect = FixedReconnect {
     attempts: 5,
     delay: Duration::from_secs(1),

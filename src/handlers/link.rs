@@ -9,8 +9,7 @@ use std::sync::atomic::Ordering;
 
 use super::utils::{message::get_message_from_link, upload::upload_thumb};
 use crate::{
-    env::BYPASS_PREFIX,
-    handlers::utils::{get_tg_file_size, preprocess_tg_file_name},
+    handlers::utils::{get_tg_file_size, message::format_message_link, preprocess_tg_file_name},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
     tasker::{CmdType, InsertTask},
@@ -36,8 +35,6 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         .get_chat(&ChatEntity::from(message.chat()))
         .await?;
 
-    let message_user = telegram_user.get_message(&chat_user, message.id()).await?;
-
     let media = message_origin
         .media()
         .ok_or_else(|| anyhow!("message does not contain any media"))?;
@@ -55,35 +52,33 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     // send its file name and thumb if exists so that information of uploading successful can be showed
     let uploaded = match media {
-        Media::Photo(file) => upload_thumb(telegram_user, file.thumbs()).await?,
-        Media::Document(file) => upload_thumb(telegram_user, file.thumbs()).await?,
-        Media::Sticker(file) => upload_thumb(telegram_user, file.document.thumbs()).await?,
+        Media::Photo(file) => upload_thumb(state.clone(), file.thumbs()).await?,
+        Media::Document(file) => upload_thumb(state.clone(), file.thumbs()).await?,
+        Media::Sticker(file) => upload_thumb(state.clone(), file.document.thumbs()).await?,
         _ => Err(anyhow!(
             "media type is not one of photo, document and sticker",
         ))?,
     };
 
-    let response = format!("{}{}\n\n{}", BYPASS_PREFIX, link, filename);
-    let message_id = match uploaded {
-        Some(uploaded) => telegram_user
-            .send_message(
-                &chat_user,
-                InputMessage::text(response.as_str()).photo(uploaded),
-            )
+    let response = format!(
+        "{}\n\n{}",
+        link,
+        format_message_link(chat_user.id(), message.id(), &filename)
+    );
+    let message_indicator_id = match uploaded {
+        Some(uploaded) => message
+            .respond(InputMessage::html(&response).photo(uploaded))
             .await
             .context("linked message with thumb")
             .context(response)?
             .id(),
-        None => telegram_user
-            .send_message(&chat_user, response.as_str())
+        None => message
+            .respond(InputMessage::html(&response))
             .await
             .context("linked message without thumn")
             .context(response)?
             .id(),
     };
-
-    // link message is useless now, delete it
-    message_user.delete().await?;
 
     let root_path = onedrive.get_root_path(true).await?;
 
@@ -103,6 +98,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
     let auto_delete = state.should_auto_delete.load(Ordering::Acquire);
 
+    // in case if cancellation happens before inserting the task
     let _aborters = state.task_session.aborters.lock().await;
 
     task_session
@@ -118,9 +114,9 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             chat_bot_hex,
             chat_user_hex,
             chat_origin_hex: Some(chat_origin_hex),
-            message_id,
-            message_id_forward: None,
-            message_id_origin: Some(message_origin.id()),
+            message_id: message.id(),
+            message_indicator_id,
+            message_origin_id: Some(message_origin.id()),
             auto_delete,
         })
         .await?;

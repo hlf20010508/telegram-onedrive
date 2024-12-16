@@ -6,7 +6,7 @@
 */
 
 use super::tasks::{self, InsertTask, TaskStatus};
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 use sea_orm::{
     sea_query::Expr, ActiveValue, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection,
     EntityName, EntityTrait, PaginatorTrait, QueryFilter, Schema, Set,
@@ -15,8 +15,8 @@ use std::{collections::HashMap, path::Path, sync::Arc};
 use tokio::{fs, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
-// (chat id, message id) -> (task aborter, related message id if exists)
-pub type TaskAborters = Arc<Mutex<HashMap<(i64, i32), (Arc<TaskAborter>, Option<i32>)>>>;
+// (chat id, message indicator id) -> (task aborter, message id)
+pub type TaskAborters = Arc<Mutex<HashMap<(i64, i32), Arc<TaskAborter>>>>;
 
 pub struct TaskSession {
     connection: DatabaseConnection,
@@ -105,8 +105,8 @@ impl TaskSession {
             chat_user_hex,
             chat_origin_hex,
             message_id,
-            message_id_forward,
-            message_id_origin,
+            message_indicator_id,
+            message_origin_id,
             auto_delete,
         }: InsertTask,
     ) -> Result<i64> {
@@ -124,8 +124,8 @@ impl TaskSession {
             chat_user_hex: Set(chat_user_hex.to_string()),
             chat_origin_hex: Set(chat_origin_hex),
             message_id: Set(message_id),
-            message_id_forward: Set(message_id_forward),
-            message_id_origin: Set(message_id_origin),
+            message_indicator_id: Set(message_indicator_id),
+            message_origin_id: Set(message_origin_id),
             status: Set(TaskStatus::Waiting),
             auto_delete: Set(auto_delete),
         };
@@ -164,37 +164,24 @@ impl TaskSession {
         Ok(())
     }
 
-    pub async fn get_chats_tasks(&self) -> Result<HashMap<ChatHex, ChatTasks>> {
+    pub async fn get_chats_current_tasks(&self) -> Result<HashMap<ChatHex, Vec<tasks::Model>>> {
         let mut chats = HashMap::new();
 
-        macro_rules! insert_chat_tasks {
-            ($status: ident, $task_type: ident) => {
-                let tasks = tasks::Entity::find()
-                    .filter(tasks::Column::Status.eq(TaskStatus::$status))
-                    .all(&self.connection)
-                    .await
-                    .context("failed to get chat current tasks")?;
+        let tasks = tasks::Entity::find()
+            .filter(tasks::Column::Status.eq(TaskStatus::Started))
+            .all(&self.connection)
+            .await
+            .context("failed to get chat current tasks")?;
 
-                for task in tasks {
-                    chats
-                        .entry(ChatHex {
-                            chat_bot_hex: task.chat_bot_hex.clone(),
-                            chat_user_hex: task.chat_user_hex.clone(),
-                        })
-                        .or_insert(ChatTasks {
-                            current_tasks: Vec::new(),
-                            completed_tasks: Vec::new(),
-                            failed_tasks: Vec::new(),
-                        })
-                        .$task_type
-                        .push(task);
-                }
-            };
+        for task in tasks {
+            chats
+                .entry(ChatHex {
+                    chat_bot_hex: task.chat_bot_hex.clone(),
+                    chat_user_hex: task.chat_user_hex.clone(),
+                })
+                .or_insert(Vec::new())
+                .push(task);
         }
-
-        insert_chat_tasks!(Started, current_tasks);
-        insert_chat_tasks!(Completed, completed_tasks);
-        insert_chat_tasks!(Failed, failed_tasks);
 
         Ok(chats)
     }
@@ -254,7 +241,7 @@ impl TaskSession {
         let mut aborters_guard = self.aborters.lock().await;
         let aborters = aborters_guard.values();
 
-        for (aborter, _) in aborters {
+        for aborter in aborters {
             aborter.abort();
         }
 
@@ -268,6 +255,21 @@ impl TaskSession {
         Ok(())
     }
 
+    pub async fn delete_task_from_message_indicator_id_if_exists(
+        &self,
+        chat_id: i64,
+        message_id: i32,
+    ) -> Result<()> {
+        tasks::Entity::delete_many()
+            .filter(tasks::Column::ChatId.eq(chat_id))
+            .filter(tasks::Column::MessageIndicatorId.eq(message_id))
+            .exec(&self.connection)
+            .await
+            .context("failed to delete task from message indicator id")?;
+
+        Ok(())
+    }
+
     pub async fn delete_task_from_message_id_if_exists(
         &self,
         chat_id: i64,
@@ -277,14 +279,53 @@ impl TaskSession {
             .filter(tasks::Column::ChatId.eq(chat_id))
             .filter(
                 Condition::any()
-                    .add(tasks::Column::MessageId.eq(message_id))
-                    .add(tasks::Column::MessageIdForward.eq(Some(message_id))),
+                    .add(tasks::Column::MessageIndicatorId.eq(message_id))
+                    .add(tasks::Column::MessageId.eq(message_id)),
             )
             .exec(&self.connection)
             .await
-            .context("failed to delete task from message id")?;
+            .context("failed to delete task from message id or message indicator id")?;
 
         Ok(())
+    }
+
+    pub async fn is_last_task(&self, chat_id: i64, message_indicator_id: i32) -> Result<bool> {
+        // check if the task is the last task in batch or /links
+        let task = tasks::Entity::find()
+            .filter(tasks::Column::ChatId.eq(chat_id))
+            .filter(tasks::Column::MessageIndicatorId.eq(message_indicator_id))
+            .one(&self.connection)
+            .await
+            .context("failed to get task with message indicator id")?;
+
+        if let Some(task) = task {
+            let count = tasks::Entity::find()
+                .filter(tasks::Column::MessageId.eq(task.message_id))
+                .count(&self.connection)
+                .await
+                .context("failed to count with message id")?;
+
+            if count == 1 {
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
+    }
+
+    pub async fn get_message_indicator_ids(
+        &self,
+        chat_id: i64,
+        message_id: i32,
+    ) -> Result<Vec<i32>> {
+        let tasks = tasks::Entity::find()
+            .filter(tasks::Column::ChatId.eq(chat_id))
+            .filter(tasks::Column::MessageId.eq(message_id))
+            .all(&self.connection)
+            .await
+            .context("failed to get message indicator ids")?;
+
+        Ok(tasks.iter().map(|task| task.message_indicator_id).collect())
     }
 }
 
@@ -294,22 +335,20 @@ pub struct ChatHex {
     pub chat_user_hex: String,
 }
 
-pub struct ChatTasks {
-    pub current_tasks: Vec<tasks::Model>,
-    pub completed_tasks: Vec<tasks::Model>,
-    pub failed_tasks: Vec<tasks::Model>,
-}
-
 pub struct TaskAborter {
     pub id: i64,
+    pub chat_user_hex: String,
+    pub message_id: i32,
     filename: String,
     pub token: CancellationToken,
 }
 
 impl TaskAborter {
-    pub fn new(id: i64, filename: &str) -> Self {
+    pub fn new(id: i64, chat_user_hex: &str, message_id: i32, filename: &str) -> Self {
         Self {
             id,
+            chat_user_hex: chat_user_hex.to_string(),
+            message_id,
             filename: filename.to_string(),
             token: CancellationToken::new(),
         }
