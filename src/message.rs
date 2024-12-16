@@ -6,13 +6,10 @@
 */
 
 use crate::client::TelegramClient;
-use anyhow::{anyhow, Context, Result};
-use grammers_client::{
-    grammers_tl_types as tl,
-    types::{Chat, InputMessage, Media, Message, PackedChat},
-};
+use anyhow::{Context, Result};
+use grammers_client::types::{Chat, InputMessage, Media, Message, PackedChat};
 use std::sync::Arc;
-use tokio::sync::mpsc::{self, Sender};
+use tokio::sync::mpsc::Sender;
 
 #[derive(Clone)]
 pub struct TelegramMessage {
@@ -49,43 +46,23 @@ impl TelegramMessage {
     }
 
     pub async fn respond<M: Into<InputMessage>>(&self, message: M) -> Result<Self> {
-        let (tx, mut rx) = mpsc::channel(1);
-
-        let queued_message =
-            QueuedMessage::new(QueuedMessageType::Respond, message, self.chat(), tx);
-
-        self.client.push_queued_message(queued_message).await;
-
-        rx.recv()
-            .await
-            .ok_or_else(|| anyhow!("failed to receive message result"))??
-            .ok_or_else(|| anyhow!("received message is None"))
+        self.client.send_message(self.chat(), message).await
     }
 
     pub async fn reply<M: Into<InputMessage>>(&self, message: M) -> Result<Self> {
-        let (tx, mut rx) = mpsc::channel(1);
-
-        let queued_message = QueuedMessage::new(
-            QueuedMessageType::Reply(self.id()),
-            message,
-            self.chat(),
-            tx,
-        );
-
-        self.client.push_queued_message(queued_message).await;
-
-        rx.recv()
+        self.client
+            .reply_message(self.chat(), self.id(), message)
             .await
-            .ok_or_else(|| anyhow!("failed to receive message result"))??
-            .ok_or_else(|| anyhow!("received message is None"))
+    }
+
+    pub async fn edit<M: Into<InputMessage>>(&self, message_id: i32, new_message: M) -> Result<()> {
+        self.client
+            .edit_message(self.chat(), message_id, new_message)
+            .await
     }
 
     pub async fn delete(&self) -> Result<()> {
         self.raw.delete().await.context("failed to delete message")
-    }
-
-    pub fn forward_header(&self) -> Option<tl::enums::MessageFwdHeader> {
-        self.raw.forward_header()
     }
 }
 

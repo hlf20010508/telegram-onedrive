@@ -100,6 +100,25 @@ impl TelegramClient {
             .ok_or_else(|| anyhow!("received message is None"))
     }
 
+    pub async fn reply_message<C: Into<PackedChat>, M: Into<InputMessage>>(
+        &self,
+        chat: C,
+        message_id: i32,
+        message: M,
+    ) -> Result<TelegramMessage> {
+        let (tx, mut rx) = mpsc::channel(1);
+
+        let queued_message =
+            QueuedMessage::new(QueuedMessageType::Reply(message_id), message, chat, tx);
+
+        self.push_queued_message(queued_message).await;
+
+        rx.recv()
+            .await
+            .ok_or_else(|| anyhow!("failed to receive message result"))??
+            .ok_or_else(|| anyhow!("received message is None"))
+    }
+
     pub async fn edit_message<C: Into<PackedChat>, M: Into<InputMessage>>(
         &self,
         chat: C,
