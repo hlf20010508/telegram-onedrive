@@ -5,18 +5,6 @@ A Telegram Bot to transfer files to OneDrive.
 - **Please read [Preparation](#preparation) carefully and don't omit any steps.**
 - **Please read [Usage - Before Start](#before-start-important), or the bot may not work.**
 
-## Account Types
-### Supported
-- Persoanl account.
-- All types of business accounts, [details](https://learn.microsoft.com/en-us/office365/servicedescriptions/office-365-platform-service-description/office-365-platform-service-description#feature-availability-across-some-plans).
-- All types of educational accounts if domain administrator exists.
-
-### Not Supported
-- All types of educational accounts if domain administrator **doesn't** exist.
-
-### Not Supported Yet
-- Microsoft 365 operated by 21Vianet(世纪互联).
-
 ## Introductions
 - Based on [gramme.rs](https://github.com/Lonami/grammers).
 - Works only in Group.
@@ -29,6 +17,32 @@ A Telegram Bot to transfer files to OneDrive.
 - Support OneDrive directory changing.
 - Support multitasking in parallel.
 - Support task cancellation.
+
+## Demos
+<details>
+    <summary>files</summary>
+    <img src="https://github.com/user-attachments/assets/e3f62c2e-c562-4018-84bd-235f351d6da7" alt="files">
+</details>
+<details>
+    <summary>link</summary>
+    <img src="https://github.com/user-attachments/assets/e1a00bde-9fdb-42ec-b020-dc7ee1cd9c91" alt="link">
+</details>
+<details>
+    <summary>url</summary>
+    <img src="https://github.com/user-attachments/assets/74c8f895-8768-437d-ad09-f0d5b2e8783d" alt="url">
+</details>
+
+## Account Types
+### Supported
+- Persoanl account.
+- All types of business accounts, [details](https://learn.microsoft.com/en-us/office365/servicedescriptions/office-365-platform-service-description/office-365-platform-service-description#feature-availability-across-some-plans).
+- All types of educational accounts if domain administrator exists.
+
+### Not Supported
+- All types of educational accounts if domain administrator **doesn't** exist.
+
+### Not Supported Yet
+- Microsoft 365 operated by 21Vianet(世纪互联).
 
 ## Preparation
 1. Open `docker-compose.yml` and edit the environment configuration.
