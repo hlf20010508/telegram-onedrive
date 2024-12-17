@@ -8,23 +8,22 @@
 use crate::{message::TelegramMessage, state::AppState};
 use anyhow::Result;
 use futures::{future::BoxFuture, Future, FutureExt};
-use std::{collections::HashMap, fmt::Display, sync::Arc};
+use std::{collections::HashMap, fmt::Display};
 
-type EventFn = dyn Fn(TelegramMessage, AppState) -> BoxFuture<'static, Result<()>> + Send + Sync;
-type EventsInner = HashMap<String, Box<EventFn>>;
-pub type Events = Arc<EventsInner>;
+type EventFn = dyn Fn(TelegramMessage, AppState) -> BoxFuture<'static, Result<()>>;
+pub type Events = HashMap<String, Box<EventFn>>;
 
 pub trait HashMapExt {
     fn on<F, Fut>(self, event_type: EventType, callback: F) -> Self
     where
-        F: Fn(TelegramMessage, AppState) -> Fut + Send + Sync + 'static,
+        F: Fn(TelegramMessage, AppState) -> Fut + 'static,
         Fut: Future<Output = Result<()>> + Send + 'static;
 }
 
-impl HashMapExt for EventsInner {
+impl HashMapExt for Events {
     fn on<F, Fut>(mut self, event_type: EventType, callback: F) -> Self
     where
-        F: Fn(TelegramMessage, AppState) -> Fut + Send + Sync + 'static,
+        F: Fn(TelegramMessage, AppState) -> Fut + 'static,
         Fut: Future<Output = Result<()>> + Send + 'static,
     {
         let boxed_callback = Box::new(move |message, state| callback(message, state).boxed());

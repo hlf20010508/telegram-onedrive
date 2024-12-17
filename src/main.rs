@@ -22,7 +22,7 @@ use handlers::{
     auth, auto_delete, clear, dir, drive, file, help, link, links, logs, start, url, version,
 };
 use listener::{EventType, HashMapExt, Listener};
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 use trace::trace_registor;
 
 // tested on ubuntu server, 2C2G,
@@ -52,5 +52,5 @@ async fn main() {
         .on(EventType::media(), file::handler)
         .on(EventType::text(), link::handler);
 
-    Listener::new(Arc::new(events)).await.run().await;
+    Listener::new(events).await.run().await;
 }

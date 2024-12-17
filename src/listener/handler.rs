@@ -14,13 +14,13 @@ use crate::{
 use anyhow::{anyhow, Context, Result};
 use grammers_client::types::{Downloadable, Media};
 
-pub struct Handler {
-    pub events: Events,
+pub struct Handler<'h> {
+    pub events: &'h Events,
     pub state: AppState,
 }
 
-impl Handler {
-    pub fn new(events: Events, state: AppState) -> Self {
+impl<'h> Handler<'h> {
+    pub fn new(events: &'h Events, state: AppState) -> Self {
         Self { events, state }
     }
 
