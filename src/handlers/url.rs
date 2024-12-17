@@ -61,7 +61,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                     .await
                     .context("failed to send head request for /url")?;
 
-                let filename = get_filename(&url, &response)?;
+                let filename = get_filename(response.url().as_ref(), &response)?;
 
                 let total_length = match response.headers().get(header::CONTENT_LENGTH) {
                     Some(content_length) => content_length
