@@ -107,28 +107,25 @@ impl Handler {
         }
 
         let batch = String::from_utf8(batch_bytes).context("failed to parse batch")?;
-        let handler = Self::new(self.events.clone(), self.state.clone());
-        tokio::spawn(async move {
-            let batch = batch.trim();
+        let batch = batch.trim();
 
-            for (i, line) in batch.split('\n').enumerate() {
-                let detail = format!("line {}: {}", i + 1, line);
+        for (i, line) in batch.split('\n').enumerate() {
+            let detail = format!("line {}: {}", i + 1, line);
 
-                let mut message_clone = message.clone();
-                message_clone.override_text(line.to_string());
+            let mut message_clone = message.clone();
+            message_clone.override_text(line.to_string());
 
-                if let Err(e) = handler
-                    .handle_text(message_clone)
-                    .await
-                    .context("failed to send command in batch")
-                    .context(detail)
-                {
-                    e.send(message.clone()).await.unwrap_both().trace();
+            if let Err(e) = self
+                .handle_text(message_clone)
+                .await
+                .context("failed to send command in batch")
+                .context(detail)
+            {
+                e.send(message.clone()).await.unwrap_both().trace();
 
-                    continue;
-                }
+                continue;
             }
-        });
+        }
 
         Ok(())
     }

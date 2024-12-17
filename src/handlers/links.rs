@@ -49,24 +49,22 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             id: head_message_id,
         } = get_message_info(link_head)?;
 
-        tokio::spawn(async move {
-            for offset in 0..link_num {
-                let message_origin_id = head_message_id + offset as i32;
-                let message_link = get_message_link(&chat_entity, message_origin_id);
+        for offset in 0..link_num {
+            let message_origin_id = head_message_id + offset as i32;
+            let message_link = get_message_link(&chat_entity, message_origin_id);
 
-                let mut message_clone = message.clone();
-                message_clone.override_text(message_link.clone());
+            let mut message_clone = message.clone();
+            message_clone.override_text(message_link.clone());
 
-                if link::handler(message_clone, state.clone()).await.is_err() {
-                    message
-                        .reply(format!("message {} not found", message_link))
-                        .await
-                        .unwrap_or_trace();
+            if link::handler(message_clone, state.clone()).await.is_err() {
+                message
+                    .reply(format!("message {} not found", message_link))
+                    .await
+                    .unwrap_or_trace();
 
-                    continue;
-                }
+                continue;
             }
-        });
+        }
     } else {
         return Err(anyhow!(format_unknown_command_help(PATTERN)));
     }
