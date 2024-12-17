@@ -5,12 +5,11 @@
 :license: MIT, see LICENSE for more details.
 */
 
+use crate::error::ResultExt;
 use anyhow::Context;
 use regex::Regex;
 use std::fmt::Display;
 use url::Url;
-
-use crate::error::ResultExt;
 
 pub fn cmd_parser<T>(cmd: T) -> Vec<String>
 where

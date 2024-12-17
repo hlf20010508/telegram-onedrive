@@ -8,22 +8,23 @@
 use crate::{message::TelegramMessage, state::AppState};
 use anyhow::Result;
 use futures::{future::BoxFuture, Future, FutureExt};
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display, sync::Arc};
 
-type EventFn = dyn Fn(TelegramMessage, AppState) -> BoxFuture<'static, Result<()>>;
-pub type Events = HashMap<String, Box<EventFn>>;
+type EventFn = dyn Fn(TelegramMessage, AppState) -> BoxFuture<'static, Result<()>> + Send + Sync;
+type EventsInner = HashMap<String, Box<EventFn>>;
+pub type Events = Arc<EventsInner>;
 
 pub trait HashMapExt {
     fn on<F, Fut>(self, event_type: EventType, callback: F) -> Self
     where
-        F: Fn(TelegramMessage, AppState) -> Fut + 'static,
+        F: Fn(TelegramMessage, AppState) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<()>> + Send + 'static;
 }
 
-impl HashMapExt for Events {
+impl HashMapExt for EventsInner {
     fn on<F, Fut>(mut self, event_type: EventType, callback: F) -> Self
     where
-        F: Fn(TelegramMessage, AppState) -> Fut + 'static,
+        F: Fn(TelegramMessage, AppState) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<()>> + Send + 'static,
     {
         let boxed_callback = Box::new(move |message, state| callback(message, state).boxed());
@@ -38,7 +39,6 @@ pub enum EventType {
     Command(String),
     Text,
     Media,
-    Batch,
 }
 
 impl EventType {
@@ -54,16 +54,11 @@ impl EventType {
         Self::Media
     }
 
-    pub const fn batch() -> Self {
-        Self::Batch
-    }
-
     pub fn to_str(&self) -> &str {
         match self {
             Self::Command(command) => command.as_str(),
             Self::Text => "__TEXT__",
             Self::Media => "__MEDIA__",
-            Self::Batch => "__BATCH__",
         }
     }
 }
@@ -83,8 +78,6 @@ impl From<&String> for EventType {
             Self::Text
         } else if value == Self::Media.to_str() {
             Self::Media
-        } else if value == Self::Batch.to_str() {
-            Self::Batch
         } else {
             Self::Command(value.to_string())
         }

@@ -188,7 +188,7 @@ async fn handler_dispatch(
 
                     if state
                         .task_session
-                        .is_last_task(chat_id, task.message_id)
+                        .is_last_task(chat_id, task.message_indicator_id)
                         .await?
                     {
                         telegram_user

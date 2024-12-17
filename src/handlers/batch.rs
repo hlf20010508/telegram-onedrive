@@ -45,6 +45,9 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         for (i, line) in batch.split('\n').enumerate() {
             let detail = format!("line {}: {}", i + 1, line);
 
+            let mut message_clone = message.clone();
+            message_clone.override_text(line.to_string());
+
             if let Err(e) = telegram_user
                 .send_message(&chat_user, line)
                 .await
@@ -52,6 +55,8 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                 .context(detail)
             {
                 e.send(message.clone()).await.unwrap_both().trace();
+
+                continue;
             }
         }
 

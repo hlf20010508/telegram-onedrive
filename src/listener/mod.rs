@@ -68,7 +68,7 @@ impl Listener {
                 if !message_raw.outgoing() {
                     let message = TelegramMessage::new(client.clone(), message_raw);
 
-                    let handler = Handler::new(&self.events, &self.state);
+                    let handler = Handler::new(self.events.clone(), self.state.clone());
                     if let Err(e) = handler.handle_message(message.clone()).await {
                         e.send(message).await.unwrap_both().trace();
                     }

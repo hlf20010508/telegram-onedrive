@@ -6,7 +6,7 @@
 */
 
 use crate::{client::TelegramClient, message::TelegramMessage};
-use anyhow::{Context, Error, Ok, Result};
+use anyhow::{Context, Error, Result};
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -30,7 +30,7 @@ impl<T> ResultExt<T> for Result<T> {
     fn unwrap_or_trace(self) -> T {
         self.unwrap_or_else(|e| {
             tracing::error!("{:?}", e);
-            panic!("{:?}", e);
+            panic!();
         })
     }
 }

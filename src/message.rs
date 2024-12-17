@@ -6,7 +6,7 @@
 */
 
 use crate::client::TelegramClient;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use grammers_client::types::{Chat, InputMessage, Media, Message, PackedChat};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
@@ -15,6 +15,7 @@ use tokio::sync::mpsc::Sender;
 pub struct TelegramMessage {
     pub raw: Arc<Message>,
     client: TelegramClient,
+    text_override: Option<String>,
 }
 
 impl TelegramMessage {
@@ -22,7 +23,12 @@ impl TelegramMessage {
         Self {
             raw: Arc::new(message),
             client,
+            text_override: None,
         }
+    }
+
+    pub fn override_text(&mut self, text: String) {
+        self.text_override = Some(text);
     }
 
     pub fn chat(&self) -> Chat {
@@ -30,7 +36,9 @@ impl TelegramMessage {
     }
 
     pub fn text(&self) -> &str {
-        self.raw.text()
+        self.text_override
+            .as_deref()
+            .unwrap_or_else(|| self.raw.text())
     }
 
     pub fn id(&self) -> i32 {
@@ -59,10 +67,6 @@ impl TelegramMessage {
         self.client
             .edit_message(self.chat(), message_id, new_message)
             .await
-    }
-
-    pub async fn delete(&self) -> Result<()> {
-        self.raw.delete().await.context("failed to delete message")
     }
 }
 

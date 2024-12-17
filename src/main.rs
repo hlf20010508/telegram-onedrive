@@ -19,10 +19,10 @@ mod utils;
 
 use env::{Env, ENV};
 use handlers::{
-    auth, auto_delete, batch, clear, dir, drive, file, help, link, links, logs, start, url, version,
+    auth, auto_delete, clear, dir, drive, file, help, link, links, logs, start, url, version,
 };
 use listener::{EventType, HashMapExt, Listener};
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 use trace::trace_registor;
 
 // tested on ubuntu server, 2C2G,
@@ -50,8 +50,7 @@ async fn main() {
         .on(EventType::command(links::PATTERN), links::handler)
         .on(EventType::command(version::PATTERN), version::handler)
         .on(EventType::media(), file::handler)
-        .on(EventType::text(), link::handler)
-        .on(EventType::batch(), batch::handler);
+        .on(EventType::text(), link::handler);
 
-    Listener::new(events).await.run().await;
+    Listener::new(Arc::new(events)).await.run().await;
 }

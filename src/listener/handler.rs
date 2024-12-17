@@ -6,17 +6,21 @@
 */
 
 use super::{EventType, Events};
-use crate::{message::TelegramMessage, state::AppState};
-use anyhow::Result;
-use grammers_client::types::Media;
+use crate::{
+    error::{ErrorExt, ResultUnwrapExt},
+    message::{ChatEntity, TelegramMessage},
+    state::AppState,
+};
+use anyhow::{anyhow, Context, Result};
+use grammers_client::types::{Downloadable, Media};
 
-pub struct Handler<'h> {
-    pub events: &'h Events,
-    pub state: &'h AppState,
+pub struct Handler {
+    pub events: Events,
+    pub state: AppState,
 }
 
-impl<'h> Handler<'h> {
-    pub fn new(events: &'h Events, state: &'h AppState) -> Self {
+impl Handler {
+    pub fn new(events: Events, state: AppState) -> Self {
         Self { events, state }
     }
 
@@ -79,7 +83,54 @@ impl<'h> Handler<'h> {
     async fn handle_batch(&self, message: TelegramMessage) -> Result<()> {
         tracing::info!("handle batch");
 
-        self.trigger(EventType::Batch, message).await
+        let telegram_user = self.state.telegram_user.clone();
+
+        let chat_user = telegram_user
+            .get_chat(&ChatEntity::from(message.chat()))
+            .await?;
+
+        let message_user = telegram_user.get_message(&chat_user, message.id()).await?;
+
+        let media = message_user
+            .media()
+            .ok_or_else(|| anyhow!("message does not contain any media"))?;
+
+        let downloadable = Downloadable::Media(media);
+        let mut download = telegram_user.iter_download(&downloadable);
+        let mut batch_bytes = Vec::new();
+        while let Some(chunk) = download
+            .next()
+            .await
+            .context("failed to get next chunk from tg file downloader")?
+        {
+            batch_bytes.extend(chunk);
+        }
+
+        let batch = String::from_utf8(batch_bytes).context("failed to parse batch")?;
+        let handler = Self::new(self.events.clone(), self.state.clone());
+        tokio::spawn(async move {
+            let batch = batch.trim();
+
+            for (i, line) in batch.split('\n').enumerate() {
+                let detail = format!("line {}: {}", i + 1, line);
+
+                let mut message_clone = message.clone();
+                message_clone.override_text(line.to_string());
+
+                if let Err(e) = handler
+                    .handle_text(message_clone)
+                    .await
+                    .context("failed to send command in batch")
+                    .context(detail)
+                {
+                    e.send(message.clone()).await.unwrap_both().trace();
+
+                    continue;
+                }
+            }
+        });
+
+        Ok(())
     }
 
     async fn trigger(&self, event_name: EventType, message: TelegramMessage) -> Result<()> {
