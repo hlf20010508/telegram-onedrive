@@ -15,8 +15,8 @@ use std::{collections::HashMap, path::Path, sync::Arc};
 use tokio::{fs, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
-// (chat id, message indicator id) -> (task aborter, message id)
-pub type TaskAborters = Arc<Mutex<HashMap<(i64, i32), Arc<TaskAborter>>>>;
+// (chat id, message indicator id) -> task aborter
+pub type TaskAborters = Arc<Mutex<HashMap<(i64, i32), TaskAborter>>>;
 
 pub struct TaskSession {
     connection: DatabaseConnection,

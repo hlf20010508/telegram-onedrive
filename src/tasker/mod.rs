@@ -91,12 +91,12 @@ impl Tasker {
             let progress_clone = self.progress.clone();
 
             // create aborter here to avoid creating too many aborters before tasks start
-            let aborter = Arc::new(TaskAborter::new(
+            let aborter = TaskAborter::new(
                 task.id,
                 &task.chat_user_hex,
                 task.message_id,
                 &task.filename,
-            ));
+            );
             let cancellation_token = aborter.token.clone();
 
             aborters.insert((chat.id, task.message_indicator_id), aborter);
