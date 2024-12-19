@@ -24,7 +24,10 @@ use reqwest::{header, Response, StatusCode};
 use std::collections::HashMap;
 use url::Url;
 
-pub fn get_filename(url: &str, response: &Response) -> Result<String> {
+// according to https://support.microsoft.com/en-us/office/restrictions-and-limitations-in-onedrive-and-sharepoint-64883a5d-228e-48f5-b3d2-eb39e07630fa#filenamepathlengths
+const MAX_FILE_NAME_LEN: usize = 400;
+
+pub fn get_filename(url: &str, response: &Response, od_root_path: &str) -> Result<String> {
     if response.status() != StatusCode::OK {
         return Err(anyhow!("file from url not found"));
     }
@@ -61,7 +64,7 @@ pub fn get_filename(url: &str, response: &Response) -> Result<String> {
             if !exts.is_empty() && content_type != "application/octet-stream" {
                 let origin_ext = get_ext(&filename);
 
-                if filename.len() < 100 {
+                if filename.len() + od_root_path.len() <= MAX_FILE_NAME_LEN {
                     if !exts.contains(&origin_ext) {
                         filename = filename + "." + &exts[0];
                     }
@@ -74,7 +77,7 @@ pub fn get_filename(url: &str, response: &Response) -> Result<String> {
                         filename = filename + "." + &exts[0];
                     }
                 }
-            } else if filename.len() > 100 {
+            } else if filename.len() + od_root_path.len() > MAX_FILE_NAME_LEN {
                 filename = get_current_timestamp().to_string();
             }
 
@@ -82,7 +85,12 @@ pub fn get_filename(url: &str, response: &Response) -> Result<String> {
         },
     );
 
-    Ok(preprocess_url_file_name(&filename))
+    let filename = preprocess_url_file_name(&filename);
+    let filename = percent_decode_str(&filename)
+        .decode_utf8_lossy()
+        .to_string();
+
+    Ok(filename)
 }
 
 fn get_filename_from_cd(response: &Response) -> Result<Option<String>> {
@@ -142,14 +150,12 @@ fn get_filename_from_url(url: &str) -> Result<Option<String>> {
         filename
     };
 
+    // last segment of path
     let filename = filename.unwrap_or_else(|| {
-        let last_segment = parsed_url
+        parsed_url
             .path_segments()
             .and_then(|segments| segments.last())
-            .unwrap_or("");
-
-        percent_decode_str(last_segment)
-            .decode_utf8_lossy()
+            .unwrap_or("")
             .to_string()
     });
 
