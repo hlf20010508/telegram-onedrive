@@ -59,6 +59,9 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         ))?,
     };
 
+    // in case if cancellation happens before inserting the task
+    let _aborters = state.task_session.task_aborters.lock().await;
+
     let response = format_message_link(chat_user.id(), message_id, &filename);
     let message_indicator_id = match uploaded {
         Some(uploaded) => message
@@ -91,9 +94,6 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
     let chat_user_hex = chat_user.pack().to_hex();
 
     let auto_delete = state.should_auto_delete.load(Ordering::Acquire);
-
-    // in case if cancellation happens before inserting the task
-    let _aborters = state.task_session.aborters.lock().await;
 
     task_session
         .insert_task(InsertTask {

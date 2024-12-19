@@ -15,12 +15,14 @@ use std::{collections::HashMap, path::Path, sync::Arc};
 use tokio::{fs, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
-// (chat id, message indicator id) -> task aborter
+// (chat id, message indicator id) -> aborter
 pub type TaskAborters = Arc<Mutex<HashMap<(i64, i32), TaskAborter>>>;
+pub type BatchAborters = Arc<Mutex<HashMap<(i64, i32), BatchAborter>>>;
 
 pub struct TaskSession {
     connection: DatabaseConnection,
-    pub aborters: TaskAborters,
+    pub task_aborters: TaskAborters,
+    pub batch_aborters: BatchAborters,
 }
 
 impl TaskSession {
@@ -32,11 +34,13 @@ impl TaskSession {
         }
 
         let connection = Self::connect_db(session_path).await?;
-        let aborters = Arc::new(Mutex::new(HashMap::new()));
+        let task_aborters = Arc::new(Mutex::new(HashMap::new()));
+        let batch_aborters = Arc::new(Mutex::new(HashMap::new()));
 
         Ok(Self {
             connection,
-            aborters,
+            task_aborters,
+            batch_aborters,
         })
     }
 
@@ -238,7 +242,7 @@ impl TaskSession {
     }
 
     pub async fn clear(&self) -> Result<()> {
-        let mut aborters_guard = self.aborters.lock().await;
+        let mut aborters_guard = self.task_aborters.lock().await;
         let aborters = aborters_guard.values();
 
         for aborter in aborters {
@@ -356,6 +360,27 @@ impl TaskAborter {
 
     pub fn abort(&self) {
         tracing::info!("task {} aborted", self.filename);
+
+        self.token.cancel();
+    }
+}
+
+pub struct BatchAborter {
+    pub token: CancellationToken,
+    // whether the batch is generating command
+    pub processing: bool,
+}
+
+impl BatchAborter {
+    pub fn new() -> Self {
+        Self {
+            token: CancellationToken::new(),
+            processing: true,
+        }
+    }
+
+    pub fn abort(&self) {
+        tracing::info!("batch or links aborted");
 
         self.token.cancel();
     }
