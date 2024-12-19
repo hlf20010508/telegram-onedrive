@@ -82,8 +82,7 @@ const INSTRUCTION: &str = "\
 - To transfer restricted content, right click the content, copy the message link, and send to me.
 - Tap the file name on the Progress message to locate the job.
 - To upload files through url, the headers of the file response must includes Content-Length.
-- To cancel a job, delete the related message.
-- Support multiple lines command.
+- To cancel a job, delete the responded message.
 - Support files with extension .t2o as scripts.
 
 See <a href=\"https://github.com/hlf20010508/telegram-onedrive#example\">example</a>.
