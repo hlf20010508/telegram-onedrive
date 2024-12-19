@@ -32,10 +32,11 @@ where
     T: Display,
 {
     fn purify(&self) -> String {
+        // ~ may be used in the url
         let text = self
             .to_string()
             .trim()
-            .replace(['*', '`', '~'], "")
+            .replace(['*', '`'], "")
             .replace("<b>", "")
             .replace("</b>", "")
             .replace("<strong>", "")
