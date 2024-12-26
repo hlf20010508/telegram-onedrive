@@ -1,6 +1,6 @@
 [package]
 name = "telegram-onedrive"
-version = "0.1.0"
+version = "4.0.0"
 authors = ["L-ING <hlf01@icloud.com>"]
 edition = "2021"
 
