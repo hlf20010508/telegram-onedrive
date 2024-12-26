@@ -1,12 +1,11 @@
-version: '3'
 services:
   telegram-onedrive:
     container_name: telegram-onedrive
     image: hlf01/telegram-onedrive
     restart: always
     volumes:
-      - telegram-onedrive-rust-session:/session
-      - telegram-onedrive-rust-logs:/logs
+      - telegram-onedrive-session:/session
+      - telegram-onedrive-logs:/logs
       # - /path/to/*.crt:/ssl/server.crt
       # - /path/to/*.key:/ssl/server.key
     ports:
