@@ -16,7 +16,6 @@ A Telegram Bot to transfer files to OneDrive.
 - Support multiple OneDrive accounts.
 - Support OneDrive directory changing.
 - Support multitasking in parallel.
-- Support task cancellation.
 
 ## Demos
 <details>
@@ -151,10 +150,10 @@ If you don't follow these steps, the bot may not work.
 - `/version` to show the version.
 - `/help` for help.
 
-The bot support files with extension `.t2o` as batch scripts. You can use them to automate the bot.
-
-To cancel a job, delete the responded message.  
-To cancel batch or links tasks, delete the message you sent.
+### Experimental Features
+- The bot support files with extension `.t2o` as batch scripts. You can use them to automate the bot.
+- To cancel a job, delete the responded message.  
+- To cancel batch or links tasks, delete the message you sent.
 
 ### Example
 - `/links https://t.me/c/xxxxxxx/100 2` will transfer `https://t.me/c/xxxxxxx/100` and `https://t.me/c/xxxxxxx/101`.
