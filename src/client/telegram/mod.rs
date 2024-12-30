@@ -182,7 +182,9 @@ impl TelegramClient {
                 message.respond(response).await.context(response)?;
 
                 match client.sign_in(&token, &code).await {
-                    Ok(_) => {}
+                    Ok(_) => {
+                        break;
+                    }
                     Err(SignInError::PasswordRequired(password_token)) => match password {
                         Some(password) => {
                             client
@@ -197,7 +199,9 @@ impl TelegramClient {
                     Err(SignInError::InvalidCode) => {
                         message.respond("Code invalid, please input again.").await?;
                     }
-                    Err(e) => Err(e).context("failed to sign in telegram user")?,
+                    Err(e) => {
+                        return Err(e).context("failed to sign in telegram user");
+                    }
                 };
             }
 
