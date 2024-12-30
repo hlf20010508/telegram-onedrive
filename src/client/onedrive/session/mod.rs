@@ -39,7 +39,9 @@ impl OneDriveSession {
         session_path: &str,
         root_path: &str,
     ) -> Result<Self> {
-        let username = Self::get_username(client).await?;
+        let username = Self::get_username(client)
+            .await
+            .unwrap_or_else(|_| String::from("unknown_username"));
         let expiration_timestamp = Self::get_expiration_timestamp(expires_in_secs);
         let connection = Self::connect_db(session_path).await?;
 
