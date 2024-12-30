@@ -2598,6 +2598,7 @@ dependencies = [
  "anyhow",
  "axum",
  "axum-server",
+ "base64 0.22.1",
  "chrono",
  "du",
  "futures",

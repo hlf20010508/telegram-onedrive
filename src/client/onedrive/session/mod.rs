@@ -9,9 +9,8 @@ mod models;
 
 use crate::utils::get_current_timestamp;
 use anyhow::{anyhow, Context, Result};
-use axum::http::header;
+use base64::{engine::general_purpose::URL_SAFE as base64, Engine};
 use models::{current_user, session};
-use onedrive_api::OneDrive;
 use sea_orm::{
     sea_query::Expr, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityName, EntityTrait,
     ModelTrait, QueryFilter, QuerySelect, Schema, Set,
@@ -32,16 +31,13 @@ pub struct OneDriveSession {
 
 impl OneDriveSession {
     pub async fn new(
-        client: &OneDrive,
         expires_in_secs: u64,
         access_token: &str,
         refresh_token: &str,
         session_path: &str,
         root_path: &str,
     ) -> Result<Self> {
-        let username = Self::get_username(client)
-            .await
-            .unwrap_or_else(|_| String::from("unknown_username"));
+        let username = Self::get_username(access_token)?;
         let expiration_timestamp = Self::get_expiration_timestamp(expires_in_secs);
         let connection = Self::connect_db(session_path).await?;
 
@@ -75,34 +71,27 @@ impl OneDriveSession {
         );
     }
 
-    async fn get_username(client: &OneDrive) -> Result<String> {
-        let http_client = client.client();
+    fn get_username(access_token: &str) -> Result<String> {
+        // header.payload.signature
+        let access_token_split = access_token.split('.').collect::<Vec<_>>();
+        let mut profile_field = (*access_token_split
+            .get(1)
+            .ok_or_else(|| anyhow!("failed to get profile field from onedrive access token"))?)
+        .to_string();
 
-        let url = "https://graph.microsoft.com/v1.0/me/";
+        // padding
+        while profile_field.len() % 4 != 0 {
+            profile_field.push('=');
+        }
 
-        let response = http_client
-            .get(url)
-            .header(
-                header::AUTHORIZATION,
-                format!("Bearer {}", client.access_token()),
-            )
-            .send()
-            .await
-            .context("failed to send request for user profile")?;
+        let profile_bytes = base64.decode(profile_field)?;
+        let profile: Value = serde_json::from_slice(&profile_bytes)?;
 
-        let content = response
-            .text()
-            .await
-            .context("failed to get response text for user profile")?;
-
-        let user_profile = serde_json::from_str::<Value>(&content)
-            .context("failed to deserialize user profile into Value")?;
-
-        let username = user_profile
-            .get("userPrincipalName")
-            .ok_or_else(|| anyhow!("field userPrincipalName not found in user profile"))?
+        let username = profile
+            .get("unique_name")
+            .ok_or_else(|| anyhow!("field unique_name not found in user profile"))?
             .as_str()
-            .ok_or_else(|| anyhow!("userPrincipalName value is not a string"))?
+            .ok_or_else(|| anyhow!("unique_name value is not a string"))?
             .to_string();
 
         tracing::debug!("got onedrive username: {}", username);
