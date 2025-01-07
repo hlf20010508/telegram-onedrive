@@ -28,14 +28,11 @@ derive_partial_eq_without_eq = "allow"
 future_not_send = "allow"
 significant_drop_tightening = "allow"
 
-[profile.dev]
-incremental = true
-
 [profile.release]
 codegen-units = 1
 lto = true
 opt-level = 'z'
-strip = true
+debug = true
 
 [dependencies]
 proc_macros = { path = "./lib/proc_macros" }
