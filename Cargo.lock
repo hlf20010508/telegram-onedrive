@@ -157,6 +157,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "async_io_stream"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6d7b9decdf35d8908a7e3ef02f64c5e9b1695e230154c0e8de3969142d9b94c"
+dependencies = [
+ "futures",
+ "pharos",
+ "rustc_version",
+ "tokio",
+]
+
+[[package]]
 name = "atoi"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -204,9 +216,9 @@ dependencies = [
  "serde_json",
  "serde_path_to_error",
  "serde_urlencoded",
- "sync_wrapper 1.0.1",
+ "sync_wrapper",
  "tokio",
- "tower 0.5.1",
+ "tower 0.5.2",
  "tower-layer",
  "tower-service",
 ]
@@ -226,7 +238,7 @@ dependencies = [
  "mime",
  "pin-project-lite",
  "rustversion",
- "sync_wrapper 1.0.1",
+ "sync_wrapper",
  "tower-layer",
  "tower-service",
 ]
@@ -457,6 +469,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ctr"
+version = "0.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0369ee1ad671834580515889b80f2ea915f23b8be8d0daa4bbaf2ac5c7590835"
+dependencies = [
+ "cipher",
+]
+
+[[package]]
 name = "deranged"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -630,6 +651,7 @@ checksum = "65bc07b1a8bc7c85c5f2e110c476c7389b4554ba72af57d8445ea63a576b0876"
 dependencies = [
  "futures-channel",
  "futures-core",
+ "futures-executor",
  "futures-io",
  "futures-sink",
  "futures-task",
@@ -747,8 +769,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4567c8db10ae91089c99af84c68c38da3ec2f087c3f82960bcdbf3656b6f4d7"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -774,7 +798,7 @@ dependencies = [
 [[package]]
 name = "grammers-client"
 version = "0.7.0"
-source = "git+https://github.com/Lonami/grammers.git?rev=b733d70936a6028256ed19443ee05199ce4d1171#b733d70936a6028256ed19443ee05199ce4d1171"
+source = "git+https://github.com/Lonami/grammers.git?rev=3d0b640f731606ff07841d9f38f54640fcf3d067#3d0b640f731606ff07841d9f38f54640fcf3d067"
 dependencies = [
  "chrono",
  "futures-util",
@@ -791,14 +815,16 @@ dependencies = [
  "os_info",
  "pin-project-lite",
  "tokio",
+ "web-time",
 ]
 
 [[package]]
 name = "grammers-crypto"
 version = "0.7.0"
-source = "git+https://github.com/Lonami/grammers.git?rev=b733d70936a6028256ed19443ee05199ce4d1171#b733d70936a6028256ed19443ee05199ce4d1171"
+source = "git+https://github.com/Lonami/grammers.git?rev=3d0b640f731606ff07841d9f38f54640fcf3d067#3d0b640f731606ff07841d9f38f54640fcf3d067"
 dependencies = [
  "aes",
+ "ctr",
  "getrandom",
  "glass_pumpkin",
  "hmac",
@@ -812,7 +838,7 @@ dependencies = [
 [[package]]
 name = "grammers-mtproto"
 version = "0.7.0"
-source = "git+https://github.com/Lonami/grammers.git?rev=b733d70936a6028256ed19443ee05199ce4d1171#b733d70936a6028256ed19443ee05199ce4d1171"
+source = "git+https://github.com/Lonami/grammers.git?rev=3d0b640f731606ff07841d9f38f54640fcf3d067#3d0b640f731606ff07841d9f38f54640fcf3d067"
 dependencies = [
  "bytes",
  "crc32fast",
@@ -823,13 +849,15 @@ dependencies = [
  "log",
  "num-bigint",
  "sha1",
+ "web-time",
 ]
 
 [[package]]
 name = "grammers-mtsender"
 version = "0.7.0"
-source = "git+https://github.com/Lonami/grammers.git?rev=b733d70936a6028256ed19443ee05199ce4d1171#b733d70936a6028256ed19443ee05199ce4d1171"
+source = "git+https://github.com/Lonami/grammers.git?rev=3d0b640f731606ff07841d9f38f54640fcf3d067#3d0b640f731606ff07841d9f38f54640fcf3d067"
 dependencies = [
+ "async_io_stream",
  "bytes",
  "futures-util",
  "grammers-crypto",
@@ -837,24 +865,29 @@ dependencies = [
  "grammers-tl-types",
  "log",
  "tokio",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "web-time",
+ "ws_stream_wasm",
 ]
 
 [[package]]
 name = "grammers-session"
 version = "0.7.0"
-source = "git+https://github.com/Lonami/grammers.git?rev=b733d70936a6028256ed19443ee05199ce4d1171#b733d70936a6028256ed19443ee05199ce4d1171"
+source = "git+https://github.com/Lonami/grammers.git?rev=3d0b640f731606ff07841d9f38f54640fcf3d067#3d0b640f731606ff07841d9f38f54640fcf3d067"
 dependencies = [
  "grammers-crypto",
  "grammers-tl-gen",
  "grammers-tl-parser",
  "grammers-tl-types",
  "log",
+ "web-time",
 ]
 
 [[package]]
 name = "grammers-tl-gen"
 version = "0.7.0"
-source = "git+https://github.com/Lonami/grammers.git?rev=b733d70936a6028256ed19443ee05199ce4d1171#b733d70936a6028256ed19443ee05199ce4d1171"
+source = "git+https://github.com/Lonami/grammers.git?rev=3d0b640f731606ff07841d9f38f54640fcf3d067#3d0b640f731606ff07841d9f38f54640fcf3d067"
 dependencies = [
  "grammers-tl-parser",
 ]
@@ -862,7 +895,7 @@ dependencies = [
 [[package]]
 name = "grammers-tl-parser"
 version = "1.1.2"
-source = "git+https://github.com/Lonami/grammers.git?rev=b733d70936a6028256ed19443ee05199ce4d1171#b733d70936a6028256ed19443ee05199ce4d1171"
+source = "git+https://github.com/Lonami/grammers.git?rev=3d0b640f731606ff07841d9f38f54640fcf3d067#3d0b640f731606ff07841d9f38f54640fcf3d067"
 dependencies = [
  "crc32fast",
 ]
@@ -870,7 +903,7 @@ dependencies = [
 [[package]]
 name = "grammers-tl-types"
 version = "0.7.0"
-source = "git+https://github.com/Lonami/grammers.git?rev=b733d70936a6028256ed19443ee05199ce4d1171#b733d70936a6028256ed19443ee05199ce4d1171"
+source = "git+https://github.com/Lonami/grammers.git?rev=3d0b640f731606ff07841d9f38f54640fcf3d067#3d0b640f731606ff07841d9f38f54640fcf3d067"
 dependencies = [
  "grammers-tl-gen",
  "grammers-tl-parser",
@@ -1055,9 +1088,9 @@ dependencies = [
 
 [[package]]
 name = "hyper-util"
-version = "0.1.9"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41296eb09f183ac68eec06e03cdbea2e759633d4067b2f6552fc2e009bcad08b"
+checksum = "df2dcfbe0677734ab2f3ffa7fa7bfd4706bfdc1ef393f2ee30184aed67e631b4"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -1278,10 +1311,11 @@ checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
 
 [[package]]
 name = "js-sys"
-version = "0.3.71"
+version = "0.3.76"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0cb94a0ffd3f3ee755c20f7d8752f45cac88605a4dcf808abcff72873296ec7b"
+checksum = "6717b6b5b077764fb5966237269cb3c64edddde4b14ce42647430a78ced9e7b7"
 dependencies = [
+ "once_cell",
  "wasm-bindgen",
 ]
 
@@ -1682,6 +1716,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
+name = "pharos"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9567389417feee6ce15dd6527a8a1ecac205ef62c2932bcf3d9f6fc5b78b414"
+dependencies = [
+ "futures",
+ "rustc_version",
+]
+
+[[package]]
 name = "phf"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1967,9 +2011,9 @@ checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 
 [[package]]
 name = "reqwest"
-version = "0.12.9"
+version = "0.12.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a77c62af46e79de0a562e1a9849205ffcb7fc1238876e9bd743357570e04046f"
+checksum = "43e734407157c3c2034e0258f5e4473ddb361b1e85f95a66690d67264d7cd1da"
 dependencies = [
  "async-compression",
  "base64 0.22.1",
@@ -1994,10 +2038,11 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_urlencoded",
- "sync_wrapper 1.0.1",
+ "sync_wrapper",
  "tokio",
  "tokio-native-tls",
  "tokio-util",
+ "tower 0.5.2",
  "tower-service",
  "url",
  "wasm-bindgen",
@@ -2027,6 +2072,15 @@ name = "rustc-demangle"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "719b953e2095829ee67db738b3bfa9fa368c94900df327b3f07fe6e794d2fe1f"
+
+[[package]]
+name = "rustc_version"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
+dependencies = [
+ "semver",
+]
 
 [[package]]
 name = "rustix"
@@ -2216,6 +2270,18 @@ dependencies = [
  "core-foundation-sys",
  "libc",
 ]
+
+[[package]]
+name = "semver"
+version = "1.0.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3cb6eb87a131f756572d7fb904f6e7b68633f09cca868c5df1c4b8d1a694bbba"
+
+[[package]]
+name = "send_wrapper"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 
 [[package]]
 name = "serde"
@@ -2566,12 +2632,6 @@ dependencies = [
 
 [[package]]
 name = "sync_wrapper"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160"
-
-[[package]]
-name = "sync_wrapper"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7065abeca94b6a8a577f9bd45aa0867a2238b74e8eb67cf10d492bc39351394"
@@ -2828,14 +2888,14 @@ dependencies = [
 
 [[package]]
 name = "tower"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2873938d487c3cfb9aed7546dc9f2711d867c9f90c46b889989a2cb84eba6b4f"
+checksum = "d039ad9159c98b70ecfd540b2573b97f7f52c3e8d9f8ad57a24b916a536975f9"
 dependencies = [
  "futures-core",
  "futures-util",
  "pin-project-lite",
- "sync_wrapper 0.1.2",
+ "sync_wrapper",
  "tokio",
  "tower-layer",
  "tower-service",
@@ -3046,9 +3106,9 @@ checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.94"
+version = "0.2.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef073ced962d62984fb38a36e5fdc1a2b23c9e0e1fa0689bb97afa4202ef6887"
+checksum = "a474f6281d1d70c17ae7aa6a613c87fce69a127e2624002df63dcb39d6cf6396"
 dependencies = [
  "cfg-if",
  "once_cell",
@@ -3057,13 +3117,12 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-backend"
-version = "0.2.94"
+version = "0.2.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4bfab14ef75323f4eb75fa52ee0a3fb59611977fd3240da19b2cf36ff85030e"
+checksum = "5f89bb38646b4f81674e8f5c3fb81b562be1fd936d84320f3264486418519c79"
 dependencies = [
  "bumpalo",
  "log",
- "once_cell",
  "proc-macro2",
  "quote",
  "syn 2.0.90",
@@ -3072,21 +3131,22 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-futures"
-version = "0.4.44"
+version = "0.4.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65471f79c1022ffa5291d33520cbbb53b7687b01c2f8e83b57d102eed7ed479d"
+checksum = "38176d9b44ea84e9184eff0bc34cc167ed044f816accfe5922e54d84cf48eca2"
 dependencies = [
  "cfg-if",
  "js-sys",
+ "once_cell",
  "wasm-bindgen",
  "web-sys",
 ]
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.94"
+version = "0.2.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7bec9830f60924d9ceb3ef99d55c155be8afa76954edffbb5936ff4509474e7"
+checksum = "2cc6181fd9a7492eef6fef1f33961e3695e4579b9872a6f7c83aee556666d4fe"
 dependencies = [
  "quote",
  "wasm-bindgen-macro-support",
@@ -3094,9 +3154,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.94"
+version = "0.2.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c74f6e152a76a2ad448e223b0fc0b6b5747649c3d769cc6bf45737bf97d0ed6"
+checksum = "30d7a95b763d3c45903ed6c81f156801839e5ee968bb07e534c44df0fcd330c2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3107,9 +3167,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.94"
+version = "0.2.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a42f6c679374623f295a8623adfe63d9284091245c3504bde47c17a3ce2777d9"
+checksum = "943aab3fdaaa029a6e0271b35ea10b72b943135afe9bffca82384098ad0e06a6"
 
 [[package]]
 name = "wasm-streams"
@@ -3126,9 +3186,19 @@ dependencies = [
 
 [[package]]
 name = "web-sys"
-version = "0.3.71"
+version = "0.3.76"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44188d185b5bdcae1052d08bcbcf9091a5524038d4572cc4f4f2bb9d5554ddd9"
+checksum = "04dd7223427d52553d3702c004d3b2fe07c148165faa56313cb00211e31c12bc"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "web-time"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
@@ -3294,6 +3364,25 @@ name = "writeable"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e9df38ee2d2c3c5948ea468a8406ff0db0b29ae1ffde1bcf20ef305bcc95c51"
+
+[[package]]
+name = "ws_stream_wasm"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7999f5f4217fe3818726b66257a4475f71e74ffd190776ad053fa159e50737f5"
+dependencies = [
+ "async_io_stream",
+ "futures",
+ "js-sys",
+ "log",
+ "pharos",
+ "rustc_version",
+ "send_wrapper",
+ "thiserror 1.0.64",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
 
 [[package]]
 name = "yasna"
