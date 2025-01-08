@@ -177,8 +177,29 @@ pub async fn multi_parts_uploader_from_tg_file(
                 .iter_download(downloadable_clone.as_ref())
                 .skip_chunks(current_chunk_num);
 
+            let fut = async {
+                let mut retries = 0;
+
+                loop {
+                    match download.next().await {
+                        Ok(chunk) => break Ok(chunk),
+                        Err(e) => {
+                            if retries <= MAX_RETRIES {
+                                tokio::time::sleep(Duration::from_secs(2)).await;
+
+                                retries += 1;
+
+                                continue;
+                            }
+
+                            break Err(e);
+                        }
+                    }
+                }
+            };
+
             tokio::select! {
-                result = download.next() => result.context("failed to get next chunk from tg file downloader"),
+                result = fut => result.context("failed to get next chunk from tg file downloader"),
                 () = cancellation_token_clone.cancelled() => Err(TaskAbortError.into())
             }
         }));
