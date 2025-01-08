@@ -271,7 +271,9 @@ async fn handle_failed_task(task: tasks::Model, state: AppState) -> Result<()> {
 
     let telegram_bot = &state.telegram_bot;
 
-    let message_indicator = telegram_bot.get_message(chat_bot, task.message_id).await?;
+    let message_indicator = telegram_bot
+        .get_message(chat_bot, task.message_indicator_id)
+        .await?;
 
     let response = format!("{}\n\nFailed.", message_indicator.text());
     message_indicator
