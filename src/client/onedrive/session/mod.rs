@@ -11,6 +11,9 @@ use crate::utils::get_current_timestamp;
 use anyhow::{anyhow, Context, Result};
 use base64::{engine::general_purpose::URL_SAFE as base64, Engine};
 use models::{current_user, session};
+use onedrive_api::OneDrive;
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use reqwest::header;
 use sea_orm::{
     sea_query::Expr, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityName, EntityTrait,
     ModelTrait, QueryFilter, QuerySelect, Schema, Set,
@@ -31,13 +34,14 @@ pub struct OneDriveSession {
 
 impl OneDriveSession {
     pub async fn new(
+        client: &OneDrive,
         expires_in_secs: u64,
         access_token: &str,
         refresh_token: &str,
         session_path: &str,
         root_path: &str,
     ) -> Result<Self> {
-        let username = Self::get_username(access_token)?;
+        let username = Self::get_username(access_token, client).await;
         let expiration_timestamp = Self::get_expiration_timestamp(expires_in_secs);
         let connection = Self::connect_db(session_path).await?;
 
@@ -71,7 +75,32 @@ impl OneDriveSession {
         );
     }
 
-    fn get_username(access_token: &str) -> Result<String> {
+    async fn get_username(access_token: &str, client: &OneDrive) -> String {
+        match Self::get_username_jwt(access_token) {
+            Ok(username) => username,
+            Err(e) => {
+                tracing::warn!("failed to get onedrive username from access token, fallback to use request: {}", e);
+                match Self::get_username_req(client).await {
+                    Ok(username) => username,
+                    Err(e) => {
+                        tracing::warn!("failed to get onedrive username from request, fallback to default username: {}", e);
+
+                        let random_id: String = thread_rng()
+                            .sample_iter(&Alphanumeric)
+                            .take(16)
+                            .map(char::from)
+                            .collect();
+
+                        format!("unknown_user@{}", random_id)
+                    }
+                }
+            }
+        }
+    }
+
+    // for business and developer account
+    // access token of personal account is encrypted
+    fn get_username_jwt(access_token: &str) -> Result<String> {
         // header.payload.signature
         let access_token_split = access_token.split('.').collect::<Vec<_>>();
         let mut profile_field = (*access_token_split
@@ -94,7 +123,43 @@ impl OneDriveSession {
             .ok_or_else(|| anyhow!("unique_name value is not a string"))?
             .to_string();
 
-        tracing::debug!("got onedrive username: {}", username);
+        tracing::debug!("got onedrive username from access token: {}", username);
+
+        Ok(username)
+    }
+
+    // for personal account
+    async fn get_username_req(client: &OneDrive) -> Result<String> {
+        let http_client = client.client();
+
+        let url = "https://graph.microsoft.com/v1.0/me/";
+
+        let response = http_client
+            .get(url)
+            .header(
+                header::AUTHORIZATION,
+                format!("Bearer {}", client.access_token()),
+            )
+            .send()
+            .await
+            .context("failed to send request for user profile")?;
+
+        let content = response
+            .text()
+            .await
+            .context("failed to get response text for user profile")?;
+
+        let user_profile = serde_json::from_str::<Value>(&content)
+            .context("failed to deserialize user profile into Value")?;
+
+        let username = user_profile
+            .get("userPrincipalName")
+            .ok_or_else(|| anyhow!("field userPrincipalName not found in user profile"))?
+            .as_str()
+            .ok_or_else(|| anyhow!("userPrincipalName value is not a string"))?
+            .to_string();
+
+        tracing::debug!("got onedrive username from request: {}", username);
 
         Ok(username)
     }

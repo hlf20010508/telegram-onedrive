@@ -150,6 +150,7 @@ impl OneDriveClient {
         tracing::info!("onedrive authorized");
 
         let session = OneDriveSession::new(
+            &client,
             expires_in_secs,
             &access_token,
             &refresh_token,
