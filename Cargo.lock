@@ -2652,7 +2652,7 @@ dependencies = [
 
 [[package]]
 name = "telegram-onedrive"
-version = "4.0.4"
+version = "4.0.5"
 dependencies = [
  "ansi_term",
  "anyhow",
