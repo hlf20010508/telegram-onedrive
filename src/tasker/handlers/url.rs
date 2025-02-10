@@ -5,14 +5,17 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use super::{tasks, transfer::multi_parts_uploader_from_url, Progress};
+use super::{tasks, transfer::multi_parts_uploader_from_url};
+use crate::state::AppState;
 use anyhow::Result;
-use std::sync::Arc;
 
-pub async fn handler(task: tasks::Model, progress: Arc<Progress>) -> Result<()> {
-    let filename = multi_parts_uploader_from_url(&task, progress.clone()).await?;
+pub async fn handler(task: tasks::Model, state: AppState) -> Result<()> {
+    let filename = multi_parts_uploader_from_url(&task, &state.progress).await?;
 
-    progress.update_filename(task.id, &filename).await?;
+    state
+        .task_session
+        .update_filename(task.id, &filename)
+        .await?;
 
     Ok(())
 }
