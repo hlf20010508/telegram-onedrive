@@ -25,7 +25,6 @@ pub struct Model {
     pub url: Option<String>,
     // onedrive upload url
     pub upload_url: String,
-    pub current_length: i64,
     pub total_length: i64,
     pub chat_id: i64,
     // chat hex used by bot
@@ -209,7 +208,6 @@ pub struct InsertTask {
     pub root_path: String,
     pub url: Option<String>,
     pub upload_url: String,
-    pub current_length: u64,
     pub total_length: u64,
     pub chat_id: i64,
     pub chat_bot_hex: String,

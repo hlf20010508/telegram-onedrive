@@ -10,20 +10,20 @@ use anyhow::Result;
 use futures::{future::BoxFuture, Future, FutureExt};
 use std::{collections::HashMap, fmt::Display};
 
-type EventFn = dyn Fn(TelegramMessage, AppState) -> BoxFuture<'static, Result<()>>;
+type EventFn = dyn Fn(TelegramMessage, AppState) -> BoxFuture<'static, Result<()>> + Send + Sync;
 pub type Events = HashMap<String, Box<EventFn>>;
 
 pub trait HashMapExt {
     fn on<F, Fut>(self, event_type: EventType, callback: F) -> Self
     where
-        F: Fn(TelegramMessage, AppState) -> Fut + 'static,
+        F: Fn(TelegramMessage, AppState) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<()>> + Send + 'static;
 }
 
 impl HashMapExt for Events {
     fn on<F, Fut>(mut self, event_type: EventType, callback: F) -> Self
     where
-        F: Fn(TelegramMessage, AppState) -> Fut + 'static,
+        F: Fn(TelegramMessage, AppState) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<()>> + Send + 'static,
     {
         let boxed_callback = Box::new(move |message, state| callback(message, state).boxed());
