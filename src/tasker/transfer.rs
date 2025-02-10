@@ -5,9 +5,10 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use super::{tasks, Progress};
+use super::tasks;
 use crate::{
-    client::utils::chat_from_hex, error::TaskAbortError, state::AppState, utils::get_http_client,
+    client::utils::chat_from_hex, error::TaskAbortError, progresser::Progress, state::AppState,
+    utils::get_http_client,
 };
 use anyhow::{anyhow, Context, Error, Result};
 use grammers_client::client::files::MAX_CHUNK_SIZE;
@@ -22,11 +23,10 @@ pub async fn multi_parts_uploader_from_url(
         id,
         url,
         upload_url,
-        current_length,
         total_length,
         ..
     }: &tasks::Model,
-    progress: Arc<Progress>,
+    progress: &Progress,
 ) -> Result<String> {
     const PART_SIZE: usize = 3276800;
 
@@ -36,12 +36,8 @@ pub async fn multi_parts_uploader_from_url(
 
     let upload_session = UploadSession::from_upload_url(upload_url);
 
-    let mut current_length = current_length.to_owned() as u64;
+    let mut current_length = 0;
     let total_length = total_length.to_owned() as u64;
-
-    progress
-        .set_current_length(id.to_owned(), current_length)
-        .await?;
 
     let mut response = http_client
         .get(url)
@@ -102,7 +98,6 @@ pub async fn multi_parts_uploader_from_tg_file(
         id,
         cmd_type,
         upload_url,
-        current_length,
         total_length,
         chat_user_hex,
         chat_origin_hex,
@@ -110,7 +105,6 @@ pub async fn multi_parts_uploader_from_tg_file(
         message_origin_id,
         ..
     }: &tasks::Model,
-    progress: Arc<Progress>,
     cancellation_token: CancellationToken,
     state: AppState,
 ) -> Result<String> {
@@ -120,12 +114,10 @@ pub async fn multi_parts_uploader_from_tg_file(
 
     let upload_session = UploadSession::from_upload_url(upload_url);
 
-    let mut current_length = current_length.to_owned() as u64;
+    let mut current_length = 0;
     let total_length = total_length.to_owned() as u64;
 
-    progress
-        .set_current_length(id.to_owned(), current_length)
-        .await?;
+    let progress = &state.progress;
 
     let mut upload_response = None;
 

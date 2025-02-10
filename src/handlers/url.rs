@@ -97,14 +97,9 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 
                 let root_path = onedrive.get_root_path(true).await?;
 
-                let (upload_session, upload_session_meta) = onedrive
+                let (upload_session, _) = onedrive
                     .multipart_upload_session_builder(&root_path, &filename)
                     .await?;
-
-                let current_length = upload_session_meta
-                    .next_expected_ranges
-                    .first()
-                    .map_or(0, |range| range.start);
 
                 let chat_bot_hex = message.chat().pack().to_hex();
                 let chat_user_hex = chat_user.pack().to_hex();
@@ -121,7 +116,6 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
                         root_path,
                         url: Some(url),
                         upload_url: upload_session.upload_url().to_string(),
-                        current_length,
                         total_length,
                         chat_id: message.chat().id(),
                         chat_bot_hex,

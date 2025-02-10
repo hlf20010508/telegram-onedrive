@@ -5,13 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use crate::{client::TelegramClient, message::TelegramMessage};
+use crate::message::TelegramMessage;
 use anyhow::{Context, Error, Result};
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use grammers_client::{types::PackedChat, InputMessage};
+use grammers_client::InputMessage;
 use std::{fmt::Display, panic};
 
 pub trait ResultExt<T> {
@@ -41,10 +41,6 @@ pub trait ErrorExt {
     fn format_tg(&self) -> String;
 
     async fn send(self, message: TelegramMessage) -> Result<Error>;
-
-    async fn send_chat<C>(self, telegram_client: &TelegramClient, chat: C) -> Result<Error>
-    where
-        C: Into<PackedChat>;
 }
 
 impl ErrorExt for Error {
@@ -70,18 +66,6 @@ impl ErrorExt for Error {
     async fn send(self, message: TelegramMessage) -> Result<Self> {
         message
             .reply(InputMessage::html(self.format_tg()))
-            .await
-            .context(self.format_tg())?;
-
-        Ok(self)
-    }
-
-    async fn send_chat<C>(self, telegram_client: &TelegramClient, chat: C) -> Result<Self>
-    where
-        C: Into<PackedChat>,
-    {
-        telegram_client
-            .send_message(chat, self.format_tg())
             .await
             .context(self.format_tg())?;
 

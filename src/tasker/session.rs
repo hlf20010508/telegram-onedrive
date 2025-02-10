@@ -102,7 +102,6 @@ impl TaskSession {
             root_path,
             url,
             upload_url,
-            current_length,
             total_length,
             chat_id,
             chat_bot_hex,
@@ -121,7 +120,6 @@ impl TaskSession {
             root_path: Set(root_path.to_string()),
             url: Set(url),
             upload_url: Set(upload_url.to_string()),
-            current_length: Set(current_length as i64),
             total_length: Set(total_length as i64),
             chat_id: Set(chat_id),
             chat_bot_hex: Set(chat_bot_hex.to_string()),
@@ -154,42 +152,6 @@ impl TaskSession {
         Ok(())
     }
 
-    pub async fn set_current_length(&self, id: i64, current_length: u64) -> Result<()> {
-        tasks::Entity::update_many()
-            .filter(tasks::Column::Id.eq(id))
-            .col_expr(
-                tasks::Column::CurrentLength,
-                Expr::value(current_length as i64),
-            )
-            .exec(&self.connection)
-            .await
-            .context("failed to update current length")?;
-
-        Ok(())
-    }
-
-    pub async fn get_chats_current_tasks(&self) -> Result<HashMap<ChatHex, Vec<tasks::Model>>> {
-        let mut chats = HashMap::new();
-
-        let tasks = tasks::Entity::find()
-            .filter(tasks::Column::Status.eq(TaskStatus::Started))
-            .all(&self.connection)
-            .await
-            .context("failed to get chat current tasks")?;
-
-        for task in tasks {
-            chats
-                .entry(ChatHex {
-                    chat_bot_hex: task.chat_bot_hex.clone(),
-                    chat_user_hex: task.chat_user_hex.clone(),
-                })
-                .or_insert(Vec::new())
-                .push(task);
-        }
-
-        Ok(chats)
-    }
-
     pub async fn get_chat_pending_tasks_number(&self, chat_bot_hex: &str) -> Result<u64> {
         tasks::Entity::find()
             .filter(
@@ -204,21 +166,6 @@ impl TaskSession {
             .count(&self.connection)
             .await
             .context("failed to get pending tasks number")
-    }
-
-    pub async fn does_chat_has_started_tasks(&self, chat_bot_hex: &str) -> Result<bool> {
-        let has_started_tasks = tasks::Entity::find()
-            .filter(
-                Condition::all()
-                    .add(tasks::Column::ChatBotHex.eq(chat_bot_hex))
-                    .add(tasks::Column::Status.eq(TaskStatus::Started)),
-            )
-            .count(&self.connection)
-            .await
-            .context("failed to get chat started tasks number")?
-            > 0;
-
-        Ok(has_started_tasks)
     }
 
     pub async fn update_filename(&self, id: i64, filename: &str) -> Result<()> {

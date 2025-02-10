@@ -5,22 +5,18 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use super::{tasks, transfer::multi_parts_uploader_from_tg_file, Progress};
+use super::{tasks, transfer::multi_parts_uploader_from_tg_file};
 use crate::{error::TaskAbortError, state::AppState};
 use anyhow::Result;
-use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 
 pub async fn handler(
     task: tasks::Model,
-    progress: Arc<Progress>,
     cancellation_token: CancellationToken,
     state: AppState,
 ) -> Result<()> {
     let filename =
-        match multi_parts_uploader_from_tg_file(&task, progress.clone(), cancellation_token, state)
-            .await
-        {
+        match multi_parts_uploader_from_tg_file(&task, cancellation_token, state.clone()).await {
             Ok(filename) => filename,
             Err(e) => {
                 if e.downcast_ref::<TaskAbortError>().is_some() {
@@ -30,7 +26,10 @@ pub async fn handler(
             }
         };
 
-    progress.update_filename(task.id, &filename).await?;
+    state
+        .task_session
+        .update_filename(task.id, &filename)
+        .await?;
 
     Ok(())
 }

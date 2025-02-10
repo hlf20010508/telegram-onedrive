@@ -12,6 +12,7 @@ mod error;
 mod handlers;
 mod listener;
 mod message;
+mod progresser;
 mod state;
 mod tasker;
 mod trace;
@@ -22,7 +23,10 @@ use handlers::{
     auth, auto_delete, clear, dir, drive, file, help, link, links, logs, start, url, version,
 };
 use listener::{EventType, HashMapExt, Listener};
-use std::collections::HashMap;
+use progresser::Progresser;
+use state::State;
+use std::{collections::HashMap, sync::Arc};
+use tasker::Tasker;
 use trace::trace_registor;
 
 // tested on ubuntu server, 2C2G,
@@ -52,5 +56,9 @@ async fn main() {
         .on(EventType::media(), file::handler)
         .on(EventType::text(), link::handler);
 
-    Listener::new(events).await.run().await;
+    let state = Arc::new(State::new().await);
+
+    Progresser::run(state.clone());
+    Tasker::run(state.clone());
+    Listener::run(events, state).await;
 }

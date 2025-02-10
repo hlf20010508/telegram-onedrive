@@ -9,6 +9,7 @@ use crate::{
     client::{OneDriveClient, TelegramClient},
     env::ENV,
     error::ResultExt,
+    progresser::Progress,
     tasker::TaskSession,
 };
 use std::sync::{atomic::AtomicBool, Arc};
@@ -19,6 +20,7 @@ pub struct State {
     pub onedrive: OneDriveClient,
     pub should_auto_delete: AtomicBool,
     pub task_session: TaskSession,
+    pub progress: Progress,
 }
 
 impl State {
@@ -32,6 +34,7 @@ impl State {
         let task_session = TaskSession::new(&env.tasker_session_path)
             .await
             .unwrap_or_trace();
+        let progress = Progress::new();
 
         Self {
             telegram_bot,
@@ -39,6 +42,7 @@ impl State {
             onedrive,
             should_auto_delete,
             task_session,
+            progress,
         }
     }
 }

@@ -12,15 +12,14 @@ use crate::{
     client::utils::chat_from_hex,
     error::{ErrorExt, ResultExt, ResultUnwrapExt},
     message::{ChatEntity, TelegramMessage},
-    state::{AppState, State},
-    tasker::Tasker,
+    state::AppState,
 };
 use anyhow::{Ok, Result};
 use events::Events;
 pub use events::{EventType, HashMapExt};
 use grammers_client::Update;
 use handler::Handler;
-use std::sync::Arc;
+use tokio::spawn;
 
 pub struct Listener {
     pub events: Events,
@@ -28,22 +27,14 @@ pub struct Listener {
 }
 
 impl Listener {
-    pub async fn new(events: Events) -> Self {
-        let state = Arc::new(State::new().await);
-
+    pub fn new(events: Events, state: AppState) -> Self {
         Self { events, state }
     }
 
-    pub async fn run(self) {
-        tracing::info!("listener started");
+    pub async fn run(events: Events, state: AppState) {
+        let listener = Self::new(events, state.clone());
 
-        let tasker = Tasker::new(self.state.clone());
-        tokio::spawn(async move {
-            tasker.run().await;
-        });
-
-        let state = self.state.clone();
-        tokio::spawn(async move {
+        spawn(async move {
             loop {
                 handle_batch_cancellation(state.clone())
                     .await
@@ -51,9 +42,15 @@ impl Listener {
             }
         });
 
-        loop {
-            self.handle_message().await.trace();
-        }
+        spawn(async move {
+            tracing::info!("listener started");
+
+            loop {
+                listener.handle_message().await.trace();
+            }
+        })
+        .await
+        .unwrap();
     }
 
     async fn handle_message(&self) -> Result<()> {
