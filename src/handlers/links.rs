@@ -15,9 +15,8 @@ use super::{
 };
 use crate::{
     error::ResultExt,
-    message::{ChatEntity, MessageInfo, TelegramMessage},
+    message::{MessageInfo, TelegramMessage},
     state::AppState,
-    tasker::BatchAborter,
 };
 use anyhow::{anyhow, Context, Result};
 use grammers_client::InputMessage;
@@ -50,56 +49,20 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
             id: head_message_id,
         } = get_message_info(link_head)?;
 
-        let telegram_user = &state.telegram_user;
+        for offset in 0..link_num {
+            let message_origin_id = head_message_id + offset as i32;
+            let message_link = get_message_link(&chat_entity, message_origin_id);
 
-        let chat_user = telegram_user
-            .get_chat(&ChatEntity::from(message.chat()))
-            .await?;
+            let mut message_clone = message.clone();
+            message_clone.override_text(message_link.clone());
 
-        let mut batch_aborters = state.task_session.batch_aborters.lock().await;
-        // /links may be in a batch
-        #[allow(clippy::option_if_let_else)]
-        let (cancellation_token, wrapped_in_batch) =
-            if let Some(batch_aborter) = batch_aborters.get(&(chat_user.id(), message.id())) {
-                (batch_aborter.token.clone(), true)
-            } else {
-                let batch_aborter = BatchAborter::new();
-                let cancellation_token = batch_aborter.token.clone();
-                batch_aborters.insert((chat_user.id(), message.id()), batch_aborter);
+            if link::handler(message_clone, state.clone()).await.is_err() {
+                message
+                    .reply(format!("message {} not found", message_link))
+                    .await
+                    .unwrap_or_trace();
 
-                (cancellation_token, false)
-            };
-        // allow cancellation
-        drop(batch_aborters);
-
-        let fut = async {
-            for offset in 0..link_num {
-                let message_origin_id = head_message_id + offset as i32;
-                let message_link = get_message_link(&chat_entity, message_origin_id);
-
-                let mut message_clone = message.clone();
-                message_clone.override_text(message_link.clone());
-
-                if link::handler(message_clone, state.clone()).await.is_err() {
-                    message
-                        .reply(format!("message {} not found", message_link))
-                        .await
-                        .unwrap_or_trace();
-
-                    continue;
-                }
-            }
-        };
-
-        tokio::select! {
-            () = fut => {}
-            () = cancellation_token.cancelled() => {}
-        }
-
-        if !wrapped_in_batch {
-            let mut batch_aborters = state.task_session.batch_aborters.lock().await;
-            if let Some(batch_aborter) = batch_aborters.get_mut(&(chat_user.id(), message.id())) {
-                batch_aborter.processing = false;
+                continue;
             }
         }
     } else {

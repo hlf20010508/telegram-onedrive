@@ -10,7 +10,6 @@ use crate::{
     error::{ErrorExt, ResultUnwrapExt},
     message::{ChatEntity, TelegramMessage},
     state::AppState,
-    tasker::BatchAborter,
 };
 use anyhow::{anyhow, Context, Result};
 use grammers_client::types::Media;
@@ -110,41 +109,22 @@ impl<'h> Handler<'h> {
         let batch = String::from_utf8(batch_bytes).context("failed to parse batch")?;
         let batch = batch.trim();
 
-        let mut batch_aborters = self.state.task_session.batch_aborters.lock().await;
-        let batch_aborter = BatchAborter::new();
-        let cancellation_token = batch_aborter.token.clone();
-        batch_aborters.insert((chat_user.id(), message.id()), batch_aborter);
-        // allow cancellation
-        drop(batch_aborters);
+        for (i, line) in batch.split('\n').enumerate() {
+            let detail = format!("line {}: {}", i + 1, line);
 
-        let fut = async {
-            for (i, line) in batch.split('\n').enumerate() {
-                let detail = format!("line {}: {}", i + 1, line);
+            let mut message_clone = message.clone();
+            message_clone.override_text(line.to_string());
 
-                let mut message_clone = message.clone();
-                message_clone.override_text(line.to_string());
+            if let Err(e) = self
+                .handle_text(message_clone)
+                .await
+                .context("failed to send command in batch")
+                .context(detail)
+            {
+                e.send(message.clone()).await.unwrap_both().trace();
 
-                if let Err(e) = self
-                    .handle_text(message_clone)
-                    .await
-                    .context("failed to send command in batch")
-                    .context(detail)
-                {
-                    e.send(message.clone()).await.unwrap_both().trace();
-
-                    continue;
-                }
+                continue;
             }
-        };
-
-        tokio::select! {
-            () = fut => {}
-            () = cancellation_token.cancelled() => {}
-        }
-
-        let mut batch_aborters = self.state.task_session.batch_aborters.lock().await;
-        if let Some(batch_aborter) = batch_aborters.get_mut(&(chat_user.id(), message.id())) {
-            batch_aborter.processing = false;
         }
 
         Ok(())
