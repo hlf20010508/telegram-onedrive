@@ -11,18 +11,11 @@ use sea_orm::{
     sea_query::Expr, ActiveValue, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection,
     EntityName, EntityTrait, PaginatorTrait, QueryFilter, Schema, Set,
 };
-use std::{collections::HashMap, path::Path, sync::Arc};
-use tokio::{fs, sync::Mutex};
-use tokio_util::sync::CancellationToken;
-
-// (chat id, message indicator id) -> aborter
-pub type TaskAborters = Arc<Mutex<HashMap<(i64, i32), TaskAborter>>>;
-pub type BatchAborters = Arc<Mutex<HashMap<(i64, i32), BatchAborter>>>;
+use std::path::Path;
+use tokio::fs;
 
 pub struct TaskSession {
     connection: DatabaseConnection,
-    pub task_aborters: TaskAborters,
-    pub batch_aborters: BatchAborters,
 }
 
 impl TaskSession {
@@ -34,14 +27,8 @@ impl TaskSession {
         }
 
         let connection = Self::connect_db(session_path).await?;
-        let task_aborters = Arc::new(Mutex::new(HashMap::new()));
-        let batch_aborters = Arc::new(Mutex::new(HashMap::new()));
 
-        Ok(Self {
-            connection,
-            task_aborters,
-            batch_aborters,
-        })
+        Ok(Self { connection })
     }
 
     async fn connect_db(path: &str) -> Result<DatabaseConnection> {
@@ -189,34 +176,10 @@ impl TaskSession {
     }
 
     pub async fn clear(&self) -> Result<()> {
-        let mut aborters_guard = self.task_aborters.lock().await;
-        let aborters = aborters_guard.values();
-
-        for aborter in aborters {
-            aborter.abort();
-        }
-
-        aborters_guard.clear();
-
         tasks::Entity::delete_many()
             .exec(&self.connection)
             .await
             .context("failed to clear tasks")?;
-
-        Ok(())
-    }
-
-    pub async fn delete_task_from_message_indicator_id_if_exists(
-        &self,
-        chat_id: i64,
-        message_id: i32,
-    ) -> Result<()> {
-        tasks::Entity::delete_many()
-            .filter(tasks::Column::ChatId.eq(chat_id))
-            .filter(tasks::Column::MessageIndicatorId.eq(message_id))
-            .exec(&self.connection)
-            .await
-            .context("failed to delete task from message indicator id")?;
 
         Ok(())
     }
@@ -263,72 +226,10 @@ impl TaskSession {
 
         Ok(false)
     }
-
-    pub async fn get_message_indicator_ids(
-        &self,
-        chat_id: i64,
-        message_id: i32,
-    ) -> Result<Vec<i32>> {
-        let tasks = tasks::Entity::find()
-            .filter(tasks::Column::ChatId.eq(chat_id))
-            .filter(tasks::Column::MessageId.eq(message_id))
-            .all(&self.connection)
-            .await
-            .context("failed to get message indicator ids")?;
-
-        Ok(tasks.iter().map(|task| task.message_indicator_id).collect())
-    }
 }
 
 #[derive(Eq, PartialEq, Hash)]
 pub struct ChatHex {
     pub chat_bot_hex: String,
     pub chat_user_hex: String,
-}
-
-pub struct TaskAborter {
-    pub id: i64,
-    pub chat_user_hex: String,
-    pub message_id: i32,
-    filename: String,
-    pub token: CancellationToken,
-}
-
-impl TaskAborter {
-    pub fn new(id: i64, chat_user_hex: &str, message_id: i32, filename: &str) -> Self {
-        Self {
-            id,
-            chat_user_hex: chat_user_hex.to_string(),
-            message_id,
-            filename: filename.to_string(),
-            token: CancellationToken::new(),
-        }
-    }
-
-    pub fn abort(&self) {
-        tracing::info!("task {} aborted", self.filename);
-
-        self.token.cancel();
-    }
-}
-
-pub struct BatchAborter {
-    pub token: CancellationToken,
-    // whether the batch is generating command
-    pub processing: bool,
-}
-
-impl BatchAborter {
-    pub fn new() -> Self {
-        Self {
-            token: CancellationToken::new(),
-            processing: true,
-        }
-    }
-
-    pub fn abort(&self) {
-        tracing::info!("batch or links aborted");
-
-        self.token.cancel();
-    }
 }

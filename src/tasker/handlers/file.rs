@@ -6,25 +6,11 @@
 */
 
 use super::{tasks, transfer::multi_parts_uploader_from_tg_file};
-use crate::{error::TaskAbortError, state::AppState};
+use crate::state::AppState;
 use anyhow::Result;
-use tokio_util::sync::CancellationToken;
 
-pub async fn handler(
-    task: tasks::Model,
-    cancellation_token: CancellationToken,
-    state: AppState,
-) -> Result<()> {
-    let filename =
-        match multi_parts_uploader_from_tg_file(&task, cancellation_token, state.clone()).await {
-            Ok(filename) => filename,
-            Err(e) => {
-                if e.downcast_ref::<TaskAbortError>().is_some() {
-                    return Ok(());
-                }
-                return Err(e);
-            }
-        };
+pub async fn handler(task: tasks::Model, state: AppState) -> Result<()> {
+    let filename = multi_parts_uploader_from_tg_file(&task, state.clone()).await?;
 
     state
         .task_session
