@@ -20,11 +20,10 @@ use crate::{
 use anyhow::{Context, Result};
 use grammers_client::InputMessage;
 use path_slash::PathBufExt;
-pub use session::{BatchAborter, TaskAborter, TaskSession};
+pub use session::TaskSession;
 use std::{path::Path, sync::Arc, time::Duration};
 pub use tasks::{CmdType, InsertTask};
 use tokio::{spawn, sync::Semaphore};
-use tokio_util::sync::CancellationToken;
 
 pub struct Tasker {
     state: AppState,
@@ -58,7 +57,6 @@ impl Tasker {
     }
 
     async fn handle_tasks(&self, semaphore: Arc<Semaphore>) -> Result<()> {
-        let mut aborters = self.state.task_session.task_aborters.lock().await;
         let task = self.session().fetch_task().await?;
 
         if let Some(task) = task {
@@ -84,17 +82,6 @@ impl Tasker {
             let semaphore_clone = semaphore.clone();
             let state_clone = self.state.clone();
 
-            // create aborter here to avoid creating too many aborters before tasks start
-            let aborter = TaskAborter::new(
-                task.id,
-                &task.chat_user_hex,
-                task.message_id,
-                &task.filename,
-            );
-            let cancellation_token = aborter.token.clone();
-            aborters.insert((chat.id, task.message_indicator_id), aborter);
-            drop(aborters);
-
             tokio::spawn(async move {
                 let _permit = semaphore_clone
                     .acquire()
@@ -102,9 +89,7 @@ impl Tasker {
                     .context("failed to acquire semaphore for task handler")
                     .unwrap_or_trace();
 
-                if let Err(e) =
-                    handler_dispatch(task, message.clone(), cancellation_token, state_clone).await
-                {
+                if let Err(e) = handler_dispatch(task, message.clone(), state_clone).await {
                     e.send(message).await.unwrap_both().trace();
                 }
             });
@@ -117,7 +102,6 @@ impl Tasker {
 async fn handler_dispatch(
     task: tasks::Model,
     message: TelegramMessage,
-    cancellation_token: CancellationToken,
     state: AppState,
 ) -> Result<()> {
     let session = &state.task_session;
@@ -140,49 +124,20 @@ async fn handler_dispatch(
         )
         .await;
 
-    let fut = async {
-        match task.cmd_type {
-            CmdType::Url => {
-                tracing::info!("handle url task");
+    let result = match task.cmd_type {
+        CmdType::Url => {
+            tracing::info!("handle url task");
 
-                handlers::url::handler(task.clone(), state.clone()).await
-            }
-            CmdType::File | CmdType::Link => {
-                tracing::info!("handle file or link task");
-
-                handlers::file::handler(task.clone(), cancellation_token.clone(), state.clone())
-                    .await
-            }
+            handlers::url::handler(task.clone(), state.clone()).await
         }
-    };
+        CmdType::File | CmdType::Link => {
+            tracing::info!("handle file or link task");
 
-    let mut aborted = false;
-
-    let result = tokio::select! {
-        result = fut => result,
-        () = cancellation_token.cancelled() => {
-            aborted = true;
-
-            Ok(())
+            handlers::file::handler(task.clone(), state.clone()).await
         }
     };
 
     let chat_id = message.chat().id();
-
-    let mut task_aborters = state.task_session.task_aborters.lock().await;
-    let task_aborter_exists = task_aborters
-        .remove(&(chat_id, task.message_indicator_id))
-        .is_some();
-    drop(task_aborters);
-
-    let batch_aborters = state.task_session.batch_aborters.lock().await;
-    let batch_aborter = batch_aborters.get(&(chat_id, task.message_id));
-    let batch_is_processing = batch_aborter.is_some_and(|batch_aborter| batch_aborter.processing);
-    drop(batch_aborters);
-
-    if aborted {
-        return Ok(());
-    }
 
     match result {
         Ok(()) => {
@@ -190,32 +145,25 @@ async fn handler_dispatch(
                 .set_task_status(task.id, tasks::TaskStatus::Completed)
                 .await?;
 
-            if task_aborter_exists {
-                if task.auto_delete {
-                    let chat_bot = chat_from_hex(&task.chat_bot_hex)?;
-                    let chat_user = chat_from_hex(&task.chat_user_hex)?;
+            if task.auto_delete {
+                let chat_bot = chat_from_hex(&task.chat_bot_hex)?;
+                let chat_user = chat_from_hex(&task.chat_user_hex)?;
 
-                    telegram_bot
-                        .delete_messages(chat_bot, &[task.message_indicator_id])
+                telegram_bot
+                    .delete_messages(chat_bot, &[task.message_indicator_id])
+                    .await?;
+
+                if state
+                    .task_session
+                    .is_last_task(chat_id, task.message_indicator_id)
+                    .await?
+                {
+                    telegram_user
+                        .delete_messages(chat_user, &[task.message_id])
                         .await?;
-
-                    if state
-                        .task_session
-                        .is_last_task(chat_id, task.message_indicator_id)
-                        .await?
-                        && !batch_is_processing
-                    {
-                        let mut batch_aborters = state.task_session.batch_aborters.lock().await;
-                        batch_aborters.remove(&(chat_id, task.message_id));
-                        drop(batch_aborters);
-
-                        telegram_user
-                            .delete_messages(chat_user, &[task.message_id])
-                            .await?;
-                    }
-                } else {
-                    handle_completed_task(task.clone(), state.clone()).await?;
                 }
+            } else {
+                handle_completed_task(task.clone(), state.clone()).await?;
             }
         }
         Err(e) => {

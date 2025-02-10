@@ -98,14 +98,3 @@ impl ResultUnwrapExt for Result<Error> {
         self.unwrap_or_else(|e| e)
     }
 }
-
-#[derive(Debug)]
-pub struct TaskAbortError;
-
-impl std::error::Error for TaskAbortError {}
-
-impl Display for TaskAbortError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Task was aborted")
-    }
-}

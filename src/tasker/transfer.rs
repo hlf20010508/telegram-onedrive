@@ -7,14 +7,12 @@
 
 use super::tasks;
 use crate::{
-    client::utils::chat_from_hex, error::TaskAbortError, progresser::Progress, state::AppState,
-    utils::get_http_client,
+    client::utils::chat_from_hex, progresser::Progress, state::AppState, utils::get_http_client,
 };
 use anyhow::{anyhow, Context, Error, Result};
 use grammers_client::client::files::MAX_CHUNK_SIZE;
 use onedrive_api::{resource::DriveItem, UploadSession};
 use std::{collections::VecDeque, ops::Range, sync::Arc, time::Duration};
-use tokio_util::sync::CancellationToken;
 
 const MAX_RETRIES: i32 = 5;
 
@@ -105,7 +103,6 @@ pub async fn multi_parts_uploader_from_tg_file(
         message_origin_id,
         ..
     }: &tasks::Model,
-    cancellation_token: CancellationToken,
     state: AppState,
 ) -> Result<String> {
     const WORKER_COUNT: i32 = 4;
@@ -161,38 +158,29 @@ pub async fn multi_parts_uploader_from_tg_file(
         let telegram_user_clone = telegram_user.clone();
         let media_clone = media.clone();
 
-        let cancellation_token_clone = cancellation_token.clone();
-
         // create a worker
         work_handles.push_back(tokio::spawn(async move {
             let mut download = telegram_user_clone
                 .iter_download(media_clone.as_ref())
                 .skip_chunks(current_chunk_num);
 
-            let fut = async {
-                let mut retries = 0;
+            let mut retries = 0;
 
-                loop {
-                    match download.next().await {
-                        Ok(chunk) => break Ok(chunk),
-                        Err(e) => {
-                            if retries <= MAX_RETRIES {
-                                tokio::time::sleep(Duration::from_secs(2)).await;
+            loop {
+                match download.next().await {
+                    Ok(chunk) => break Ok(chunk),
+                    Err(e) => {
+                        if retries <= MAX_RETRIES {
+                            tokio::time::sleep(Duration::from_secs(2)).await;
 
-                                retries += 1;
+                            retries += 1;
 
-                                continue;
-                            }
-
-                            break Err(e);
+                            continue;
                         }
+
+                        break Err(e).context("failed to get next chunk from tg file downloader");
                     }
                 }
-            };
-
-            tokio::select! {
-                result = fut => result.context("failed to get next chunk from tg file downloader"),
-                () = cancellation_token_clone.cancelled() => Err(TaskAbortError.into())
             }
         }));
 

@@ -59,9 +59,6 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
         ))?,
     };
 
-    // in case if cancellation happens before inserting the task
-    let _aborters = state.task_session.task_aborters.lock().await;
-
     let response = format_message_link(chat_user.id(), message_id, &filename);
     let message_indicator_id = match uploaded {
         Some(uploaded) => message
