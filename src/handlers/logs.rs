@@ -60,7 +60,7 @@ pub async fn handler(message: TelegramMessage, state: AppState) -> Result<()> {
 async fn send_log_zip(telegram_bot: &TelegramClient, message: TelegramMessage) -> Result<()> {
     const ZIP_PATH: &str = "./logs.zip";
 
-    zip_dir(LOGS_PATH, ZIP_PATH)?;
+    zip_dir(LOGS_PATH, ZIP_PATH).await?;
 
     let file = fs::File::open(ZIP_PATH)
         .await

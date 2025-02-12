@@ -41,6 +41,9 @@ anyhow = { version = "1.0.94", default-features = false, features = [
     "std",
     "backtrace",
 ] }
+async_zip = { version = "0.0.17", default-features = false, features = [
+    "tokio",
+] }
 axum = { version = "0.7.9", default-features = false, features = [
     "tokio",
     "http1",
@@ -102,4 +105,3 @@ tracing-log = { version = "0.2.0", default-features = false, features = [
     "log-tracer",
 ] }
 url = { version = "2.5.4", default-features = false }
-zip = { version = "2.2.1", default-features = false, features = ["time"] }
