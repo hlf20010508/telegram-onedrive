@@ -60,7 +60,8 @@ impl<'h> Handler<'h> {
     }
 
     async fn handle_text(&self, message: TelegramMessage) -> Result<()> {
-        let text = message.text().trim();
+        let text = message.text();
+        let text = text.trim();
 
         if !text.is_empty() {
             if text.starts_with('/') {

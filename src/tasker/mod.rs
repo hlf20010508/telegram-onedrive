@@ -19,6 +19,7 @@ use crate::{
     state::AppState,
 };
 use anyhow::{Context, Result};
+use grammers_client::InputMessage;
 use path_slash::PathBufExt;
 use progress::Progress;
 pub use session::{BatchAborter, TaskAborter, TaskSession};
@@ -259,7 +260,7 @@ async fn handle_completed_task(task: tasks::Model, state: AppState) -> Result<()
         task.total_length as f64 / 1024.0 / 1024.0
     );
     message_indicator
-        .edit(task.message_indicator_id, response.as_str())
+        .edit(task.message_indicator_id, InputMessage::html(&response))
         .await
         .context(response)?;
 
@@ -277,7 +278,7 @@ async fn handle_failed_task(task: tasks::Model, state: AppState) -> Result<()> {
 
     let response = format!("{}\n\nFailed.", message_indicator.text());
     message_indicator
-        .edit(task.message_id, response.as_str())
+        .edit(task.message_id, InputMessage::html(&response))
         .await
         .context(response)?;
 

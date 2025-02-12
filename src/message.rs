@@ -35,10 +35,10 @@ impl TelegramMessage {
         self.raw.chat()
     }
 
-    pub fn text(&self) -> &str {
+    pub fn text(&self) -> String {
         self.text_override
-            .as_deref()
-            .unwrap_or_else(|| self.raw.text())
+            .clone()
+            .unwrap_or_else(|| self.raw.html_text())
     }
 
     pub fn id(&self) -> i32 {
