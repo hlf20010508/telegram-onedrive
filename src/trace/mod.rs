@@ -24,14 +24,8 @@ pub fn trace_registor() {
         .with_writer(std::io::stdout)
         .event_format(EventFormatter);
 
-    let log_writer = RollingFileAppender::builder()
-        .rotation(Rotation::DAILY)
-        .filename_suffix("log")
-        .build(LOGS_PATH)
-        .unwrap();
-
     let file_layer = fmt::layer()
-        .with_writer(log_writer)
+        .with_writer(log_writer_builder)
         .event_format(EventFormatter);
 
     tracing_subscriber::registry()
@@ -41,4 +35,12 @@ pub fn trace_registor() {
         .init();
 
     cleaner::run();
+}
+
+fn log_writer_builder() -> RollingFileAppender {
+    RollingFileAppender::builder()
+        .rotation(Rotation::DAILY)
+        .filename_suffix("log")
+        .build(LOGS_PATH)
+        .unwrap()
 }
