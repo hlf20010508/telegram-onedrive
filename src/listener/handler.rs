@@ -13,7 +13,7 @@ use crate::{
     tasker::BatchAborter,
 };
 use anyhow::{anyhow, Context, Result};
-use grammers_client::types::{Downloadable, Media};
+use grammers_client::types::Media;
 
 pub struct Handler<'h> {
     pub events: &'h Events,
@@ -97,8 +97,7 @@ impl<'h> Handler<'h> {
             .media()
             .ok_or_else(|| anyhow!("message does not contain any media"))?;
 
-        let downloadable = Downloadable::Media(media);
-        let mut download = telegram_user.iter_download(&downloadable);
+        let mut download = telegram_user.iter_download(&media);
         let mut batch_bytes = Vec::new();
         while let Some(chunk) = download
             .next()

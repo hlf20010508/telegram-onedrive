@@ -37,7 +37,7 @@ overflow-checks = true
 
 [dependencies]
 proc_macros = { path = "./lib/proc_macros" }
-anyhow = { version = "1.0.94", default-features = false, features = [
+anyhow = { version = "1.0.95", default-features = false, features = [
     "std",
     "backtrace",
 ] }
@@ -59,15 +59,15 @@ base64 = { version = "0.22.1", default-features = false, features = ["std"] }
 chrono = { version = "0.4.39", default-features = false }
 du = { version = "0.1.1", default-features = false }
 futures = { version = "0.3.31", default-features = false }
-grammers-client = { git = "https://github.com/Lonami/grammers.git", rev = "3d0b640f731606ff07841d9f38f54640fcf3d067", default-features = false, features = [
+grammers-client = { git = "https://github.com/Lonami/grammers.git", rev = "19b81d153e2cc7ac057d238cc80d021afa5f004d", default-features = false, features = [
     "html",
     "fs",
 ] }
 mime_guess = { version = "2.0.5", default-features = false }
-onedrive-api = { version = "0.10.0", default-features = false }
+onedrive-api = { version = "0.10.2", default-features = false }
 percent-encoding = { version = "2.3.1", default-features = false }
 path-slash = { version = "0.2.1", default-features = false }
-rcgen = { version = "0.13.1", default-features = false, features = [
+rcgen = { version = "0.13.2", default-features = false, features = [
     "crypto",
     "ring",
     "pem",
@@ -81,14 +81,14 @@ rand = { version = "0.8.5", default-features = false, features = [
     "std",
     "std_rng",
 ] }
-serde = { version = "1.0.216", default-features = false }
-serde_json = { version = "1.0.133", default-features = false }
+serde = { version = "1.0.217", default-features = false }
+serde_json = { version = "1.0.138", default-features = false }
 sea-orm = { version = "0.12.15", default-features = false, features = [
     "sqlx-sqlite",
     "runtime-tokio-rustls",
     "macros",
 ] }
-tokio = { version = "1.42.0", default-features = false, features = [
+tokio = { version = "1.43.0", default-features = false, features = [
     "macros",
     "rt-multi-thread",
     "fs",

@@ -10,15 +10,13 @@ use anyhow::{Context, Result};
 use grammers_client::types::{
     media::Uploaded,
     photo_sizes::{PhotoSize, VecExt},
-    Downloadable,
 };
 use std::io::Cursor;
 
 pub async fn upload_thumb(state: AppState, thumbs: Vec<PhotoSize>) -> Result<Option<Uploaded>> {
     let uploaded = match thumbs.largest() {
         Some(thumb) => {
-            let downloadable = Downloadable::PhotoSize(thumb.clone());
-            let mut download = state.telegram_user.iter_download(&downloadable);
+            let mut download = state.telegram_user.iter_download(thumb);
 
             let mut buffer = Vec::new();
             while let Some(chunk) = download

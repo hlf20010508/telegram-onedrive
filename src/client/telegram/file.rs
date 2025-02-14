@@ -38,7 +38,7 @@ impl TelegramClient {
             .context("failed to upload stream")
     }
 
-    pub fn iter_download(&self, downloadable: &Downloadable) -> DownloadIter {
+    pub fn iter_download<D: Downloadable>(&self, downloadable: &D) -> DownloadIter {
         self.raw().iter_download(downloadable)
     }
 }

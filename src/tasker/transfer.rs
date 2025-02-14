@@ -10,7 +10,7 @@ use crate::{
     client::utils::chat_from_hex, error::TaskAbortError, state::AppState, utils::get_http_client,
 };
 use anyhow::{anyhow, Context, Error, Result};
-use grammers_client::{client::files::MAX_CHUNK_SIZE, types::Downloadable};
+use grammers_client::client::files::MAX_CHUNK_SIZE;
 use onedrive_api::{resource::DriveItem, UploadSession};
 use std::{collections::VecDeque, ops::Range, sync::Arc, time::Duration};
 use tokio_util::sync::CancellationToken;
@@ -150,11 +150,11 @@ pub async fn multi_parts_uploader_from_tg_file(
         tasks::CmdType::Url => return Err(anyhow!("invalid cmd type")),
     };
 
-    let media = message
-        .media()
-        .ok_or_else(|| anyhow!("message does not contain any media"))?;
-
-    let downloadable = Arc::new(Downloadable::Media(media));
+    let media = Arc::new(
+        message
+            .media()
+            .ok_or_else(|| anyhow!("message does not contain any media"))?,
+    );
 
     let mut work_handles = VecDeque::new();
 
@@ -167,14 +167,14 @@ pub async fn multi_parts_uploader_from_tg_file(
 
     while current_chunk_num < total_chunks_num {
         let telegram_user_clone = telegram_user.clone();
-        let downloadable_clone = downloadable.clone();
+        let media_clone = media.clone();
 
         let cancellation_token_clone = cancellation_token.clone();
 
         // create a worker
         work_handles.push_back(tokio::spawn(async move {
             let mut download = telegram_user_clone
-                .iter_download(downloadable_clone.as_ref())
+                .iter_download(media_clone.as_ref())
                 .skip_chunks(current_chunk_num);
 
             let fut = async {
