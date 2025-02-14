@@ -152,7 +152,6 @@ impl OneDriveClient {
         let session = OneDriveSession::new(
             &client,
             expires_in_secs,
-            &access_token,
             &refresh_token,
             &self.session_path,
             &self.default_root_path,
