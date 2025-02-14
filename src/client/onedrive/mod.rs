@@ -22,7 +22,7 @@ use onedrive_api::{
 };
 use path_slash::PathBufExt;
 use session::OneDriveSession;
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 use tokio::sync::{mpsc::Receiver, RwLock};
 
 pub struct OneDriveClient {
@@ -211,7 +211,18 @@ impl OneDriveClient {
     }
 
     pub fn get_auth_url(&self) -> String {
-        let auth_url = self.auth_provider.code_auth_url().to_string();
+        let mut url = self.auth_provider.code_auth_url();
+
+        let mut query_pairs = url
+            .query_pairs()
+            .into_owned()
+            .collect::<HashMap<String, String>>();
+
+        query_pairs.get_mut("scope").unwrap().push_str(" user.read");
+
+        url.query_pairs_mut().clear().extend_pairs(query_pairs);
+
+        let auth_url = url.to_string();
 
         tracing::info!("onedrive auth url: {}", auth_url);
 
