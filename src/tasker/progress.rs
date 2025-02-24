@@ -5,13 +5,13 @@
 :license: MIT, see LICENSE for more details.
 */
 
-use super::{session::ChatHex, tasks, TaskSession};
+use super::{TaskSession, session::ChatHex, tasks};
 use crate::{
     client::utils::chat_from_hex,
     error::{ErrorExt, ResultExt, ResultUnwrapExt},
     state::AppState,
 };
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use grammers_client::InputMessage;
 use std::{collections::HashMap, time::Duration};
 
@@ -174,51 +174,48 @@ impl Progress {
             .get_mut(chat_bot_hex)
             .ok_or_else(|| anyhow!("chat_bot_hex not in chat_progress_message_id"))?;
 
-        match progress_message_id {
-            Some(progress_message_id) => {
-                let chat_user = chat_from_hex(chat_user_hex)?;
+        if let Some(progress_message_id) = progress_message_id {
+            let chat_user = chat_from_hex(chat_user_hex)?;
 
-                let latest_message = telegram_user
-                    .iter_messages(chat_user)
-                    .limit(1)
-                    .next()
-                    .await
-                    .context("failed to iter messages for latest message")?;
+            let latest_message = telegram_user
+                .iter_messages(chat_user)
+                .limit(1)
+                .next()
+                .await
+                .context("failed to iter messages for latest message")?;
 
-                if let Some(latest_message) = latest_message {
-                    if latest_message.id() == *progress_message_id {
-                        if *last_progress_response != response {
-                            telegram_bot
-                                .edit_message(
-                                    chat,
-                                    progress_message_id.to_owned(),
-                                    InputMessage::html(response.as_str()),
-                                )
-                                .await
-                                .context(response.clone())?;
-                        }
-                    } else {
+            if let Some(latest_message) = latest_message {
+                if latest_message.id() == *progress_message_id {
+                    if *last_progress_response != response {
                         telegram_bot
-                            .delete_messages(chat, &[progress_message_id.to_owned()])
-                            .await?;
-
-                        let message = telegram_bot
-                            .send_message(chat, InputMessage::html(response.as_str()))
+                            .edit_message(
+                                chat,
+                                progress_message_id.to_owned(),
+                                InputMessage::html(response.as_str()),
+                            )
                             .await
                             .context(response.clone())?;
-
-                        *progress_message_id = message.id();
                     }
+                } else {
+                    telegram_bot
+                        .delete_messages(chat, &[progress_message_id.to_owned()])
+                        .await?;
+
+                    let message = telegram_bot
+                        .send_message(chat, InputMessage::html(response.as_str()))
+                        .await
+                        .context(response.clone())?;
+
+                    *progress_message_id = message.id();
                 }
             }
-            None => {
-                let message = telegram_bot
-                    .send_message(chat, InputMessage::html(response.as_str()))
-                    .await
-                    .context(response.clone())?;
+        } else {
+            let message = telegram_bot
+                .send_message(chat, InputMessage::html(response.as_str()))
+                .await
+                .context(response.clone())?;
 
-                *progress_message_id = Some(message.id());
-            }
+            *progress_message_id = Some(message.id());
         }
 
         *last_progress_response = response;

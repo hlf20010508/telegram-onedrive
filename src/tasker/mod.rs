@@ -184,7 +184,7 @@ async fn handler_dispatch(
 
     let batch_aborters = state.task_session.batch_aborters.lock().await;
     let batch_aborter = batch_aborters.get(&(chat_id, task.message_id));
-    let batch_is_processing = batch_aborter.map_or(false, |batch_aborter| batch_aborter.processing);
+    let batch_is_processing = batch_aborter.is_some_and(|batch_aborter| batch_aborter.processing);
     drop(batch_aborters);
 
     if aborted {

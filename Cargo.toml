@@ -2,7 +2,7 @@
 name = "telegram-onedrive"
 version = "4.0.6"
 authors = ["L-ING <hlf01@icloud.com>"]
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -37,7 +37,7 @@ overflow-checks = true
 
 [dependencies]
 proc_macros = { path = "./lib/proc_macros" }
-anyhow = { version = "1.0.95", default-features = false, features = [
+anyhow = { version = "1.0.96", default-features = false, features = [
     "std",
     "backtrace",
 ] }
@@ -58,7 +58,7 @@ ansi_term = { version = "0.12.1", default-features = false }
 chrono = { version = "0.4.39", default-features = false }
 du = { version = "0.1.1", default-features = false }
 futures = { version = "0.3.31", default-features = false }
-grammers-client = { git = "https://github.com/Lonami/grammers.git", rev = "19b81d153e2cc7ac057d238cc80d021afa5f004d", default-features = false, features = [
+grammers-client = { git = "https://github.com/Lonami/grammers.git", rev = "ea0b3dcce89759c00605b2aff8cae668f73d087f", default-features = false, features = [
     "html",
     "fs",
 ] }
@@ -80,8 +80,8 @@ rand = { version = "0.8.5", default-features = false, features = [
     "std",
     "std_rng",
 ] }
-serde = { version = "1.0.217", default-features = false }
-serde_json = { version = "1.0.138", default-features = false }
+serde = { version = "1.0.218", default-features = false }
+serde_json = { version = "1.0.139", default-features = false }
 sea-orm = { version = "0.12.15", default-features = false, features = [
     "sqlx-sqlite",
     "runtime-tokio-rustls",

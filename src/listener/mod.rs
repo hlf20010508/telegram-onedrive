@@ -90,7 +90,7 @@ impl Listener {
                             let batch_aborters = task_session.batch_aborters.lock().await;
                             let batch_is_processing = batch_aborters
                                 .get(&(chat_id, task_aborter.message_id))
-                                .map_or(false, |batch_aborter| batch_aborter.processing);
+                                .is_some_and(|batch_aborter| batch_aborter.processing);
                             drop(batch_aborters);
 
                             // must before deleting task
