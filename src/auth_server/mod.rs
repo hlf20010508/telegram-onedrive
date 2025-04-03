@@ -10,14 +10,14 @@ mod cert;
 mod handlers;
 
 use crate::{
-    env::{Env, ENV},
+    env::{ENV, Env},
     error::ResultExt,
 };
 use anyhow::{Context, Result};
 use auto_abort::AutoAbortHandle;
 use axum::{
-    routing::{get, post},
     Extension, Router,
+    routing::{get, post},
 };
 use axum_server::Handle;
 use cert::get_rustls_config;
