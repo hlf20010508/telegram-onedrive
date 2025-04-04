@@ -9,7 +9,7 @@ use crate::{
     client::TelegramClient,
     message::{ChatEntity, MessageInfo, TelegramMessage},
 };
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 
 pub fn get_message_info(link: &str) -> Result<MessageInfo> {
     let (message_info, is_private) =
@@ -23,13 +23,18 @@ pub fn get_message_info(link: &str) -> Result<MessageInfo> {
             return Err(anyhow!("not a message link"));
         };
 
-    let message_info_vec = message_info
+    let mut message_info_vec = message_info
         .split('/')
         .map(|s| s.to_string())
         .collect::<Vec<String>>();
 
     if message_info_vec.len() != 2 {
-        return Err(anyhow!("message info doesn't contain 2 elements"));
+        if message_info_vec.len() == 3 {
+            // link from a topic
+            message_info_vec.remove(1);
+        } else {
+            return Err(anyhow!("message info doesn't contain 2 elements"));
+        }
     }
 
     let chat_entity = if is_private {
